@@ -132,7 +132,9 @@ class SchoolRepository {
           department = "Physical & Chemical Sciences",
           assignedClasses = listOf("Class 10-A", "Class 10-B", "Class 9-A", "Class 11-Science"),
           subjectsTaught = listOf("Physics", "Science Lab", "General Science"),
-          qualification = "M.Sc. Physics, B.Ed (Gold Medalist)"
+          qualification = "M.Sc. Physics, B.Ed (Gold Medalist)",
+          isClassTeacher = true,
+          classTeacherOf = "Class 10-A"
         )
       }
       UserRole.STAFF -> {
@@ -214,17 +216,21 @@ class SchoolRepository {
     _homeworks.update { listOf(newHw) + it }
   }
 
-  fun updateAttendanceRecord(studentId: String, newStatus: AttendanceStatus) {
+  fun updateAttendanceRecord(studentId: String, newStatus: AttendanceStatus, markedBy: String = "Prof. Sarah Jenkins (Class Teacher)") {
     _attendanceRecords.update { list ->
       list.map { rec ->
-        if (rec.studentId == studentId) rec.copy(status = newStatus) else rec
+        if (rec.studentId == studentId) rec.copy(status = newStatus, markedBy = markedBy) else rec
       }
     }
   }
 
-  fun markAllAttendance(status: AttendanceStatus) {
+  fun markAllAttendance(status: AttendanceStatus = AttendanceStatus.FULL_DAY, className: String = "Class 10-A", markedBy: String = "Prof. Sarah Jenkins (Class Teacher)") {
     _attendanceRecords.update { list ->
-      list.map { it.copy(status = status) }
+      list.map { rec ->
+        if (rec.className.equals(className, ignoreCase = true) || className.isEmpty()) {
+          rec.copy(status = status, markedBy = markedBy)
+        } else rec
+      }
     }
   }
 
@@ -391,18 +397,18 @@ class SchoolRepository {
     )
 
     private val initialAttendanceRecords = listOf(
-      AttendanceRecord("att_1", "std_101", "Alex Johnson", 1, "Class 10-A", "Today", AttendanceStatus.PRESENT),
-      AttendanceRecord("att_2", "std_102", "Bella Collins", 2, "Class 10-A", "Today", AttendanceStatus.PRESENT),
-      AttendanceRecord("att_3", "std_103", "Christian Davies", 3, "Class 10-A", "Today", AttendanceStatus.LATE, "Bus delay"),
-      AttendanceRecord("att_4", "std_104", "Daniel Evans", 4, "Class 10-A", "Today", AttendanceStatus.PRESENT),
-      AttendanceRecord("att_5", "std_105", "Emma Foster", 5, "Class 10-A", "Today", AttendanceStatus.ABSENT, "Medical leave"),
-      AttendanceRecord("att_6", "std_106", "Felix Gomez", 6, "Class 10-A", "Today", AttendanceStatus.PRESENT),
-      AttendanceRecord("att_7", "std_107", "Grace Howard", 7, "Class 10-A", "Today", AttendanceStatus.PRESENT),
-      AttendanceRecord("att_8", "std_108", "Henry Irwin", 8, "Class 10-A", "Today", AttendanceStatus.PRESENT),
-      AttendanceRecord("att_9", "std_109", "Isabella Jackson", 9, "Class 10-A", "Today", AttendanceStatus.PRESENT),
-      AttendanceRecord("att_10", "std_110", "Jacob Klein", 10, "Class 10-A", "Today", AttendanceStatus.PRESENT),
-      AttendanceRecord("att_11", "std_111", "Lily Morris", 11, "Class 10-A", "Today", AttendanceStatus.PRESENT),
-      AttendanceRecord("att_12", "std_112", "Noah Parker", 12, "Class 10-A", "Today", AttendanceStatus.PRESENT)
+      AttendanceRecord("att_1", "std_101", "Alex Johnson", 1, "Class 10-A", "Today", AttendanceStatus.FULL_DAY, "Prof. Sarah Jenkins (Class Teacher)"),
+      AttendanceRecord("att_2", "std_102", "Bella Collins", 2, "Class 10-A", "Today", AttendanceStatus.FULL_DAY, "Prof. Sarah Jenkins (Class Teacher)"),
+      AttendanceRecord("att_3", "std_103", "Christian Davies", 3, "Class 10-A", "Today", AttendanceStatus.HALF_DAY, "Prof. Sarah Jenkins (Class Teacher)", "Departed 12:30 PM (Medical appointment)"),
+      AttendanceRecord("att_4", "std_104", "Daniel Evans", 4, "Class 10-A", "Today", AttendanceStatus.ON_DUTY, "Prof. Sarah Jenkins (Class Teacher)", "Inter-School Science Olympiad (OD Approved)"),
+      AttendanceRecord("att_5", "std_105", "Emma Foster", 5, "Class 10-A", "Today", AttendanceStatus.ABSENT, "Prof. Sarah Jenkins (Class Teacher)", "Sick leave (Parent letter received)"),
+      AttendanceRecord("att_6", "std_106", "Felix Gomez", 6, "Class 10-A", "Today", AttendanceStatus.FULL_DAY, "Prof. Sarah Jenkins (Class Teacher)"),
+      AttendanceRecord("att_7", "std_107", "Grace Howard", 7, "Class 10-A", "Today", AttendanceStatus.FULL_DAY, "Prof. Sarah Jenkins (Class Teacher)"),
+      AttendanceRecord("att_8", "std_108", "Henry Irwin", 8, "Class 10-A", "Today", AttendanceStatus.ON_DUTY, "Prof. Sarah Jenkins (Class Teacher)", "State Basketball Championship (OD Approved)"),
+      AttendanceRecord("att_9", "std_109", "Isabella Jackson", 9, "Class 10-A", "Today", AttendanceStatus.FULL_DAY, "Prof. Sarah Jenkins (Class Teacher)"),
+      AttendanceRecord("att_10", "std_110", "Jacob Klein", 10, "Class 10-A", "Today", AttendanceStatus.FULL_DAY, "Prof. Sarah Jenkins (Class Teacher)"),
+      AttendanceRecord("att_11", "std_111", "Lily Morris", 11, "Class 10-A", "Today", AttendanceStatus.HALF_DAY, "Prof. Sarah Jenkins (Class Teacher)", "Morning Session Only (Family event)"),
+      AttendanceRecord("att_12", "std_112", "Noah Parker", 12, "Class 10-A", "Today", AttendanceStatus.FULL_DAY, "Prof. Sarah Jenkins (Class Teacher)")
     )
 
     private val initialDuties = listOf(

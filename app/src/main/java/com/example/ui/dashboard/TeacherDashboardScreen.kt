@@ -44,7 +44,7 @@ fun TeacherDashboardScreen(
     item {
       WelcomeGreetingBanner(
         user = profile.user,
-        subtitle = "${profile.department} • Emp #${profile.employeeId} • ${profile.qualification}"
+        subtitle = "${profile.department} • Class Teacher (${profile.classTeacherOf ?: "Class 10-A"}) • Emp #${profile.employeeId}"
       )
     }
 
@@ -67,10 +67,10 @@ fun TeacherDashboardScreen(
             horizontalArrangement = Arrangement.SpaceBetween
           ) {
             QuickActionButton(
-              title = "Take Attendance",
+              title = "Daily Roll Call",
               icon = Icons.Default.FactCheck,
               color = Color(0xFF059669),
-              onClick = { onOpenMarkAttendance("Class 10-A") }
+              onClick = { onOpenMarkAttendance(profile.classTeacherOf ?: "Class 10-A") }
             )
             QuickActionButton(
               title = "Assign HW",

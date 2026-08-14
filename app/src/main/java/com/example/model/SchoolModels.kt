@@ -52,6 +52,8 @@ data class TeacherProfile(
   val assignedClasses: List<String>,
   val subjectsTaught: List<String>,
   val qualification: String,
+  val isClassTeacher: Boolean = true,
+  val classTeacherOf: String? = "Class 10-A",
   val roomNo: String = "Staff Room 2B",
   val joiningDate: String = "15 July 2018"
 ) {
@@ -120,11 +122,17 @@ data class TimetableEntry(
   val className: String
 )
 
-enum class AttendanceStatus(val label: String, val colorHex: Long) {
-  PRESENT("Present", 0xFF059669),
-  ABSENT("Absent", 0xFFDC2626),
-  LATE("Late", 0xFFD97706),
-  EXCUSED("Excused", 0xFF2563EB)
+enum class AttendanceStatus(
+  val label: String,
+  val code: String,
+  val colorHex: Long,
+  val description: String,
+  val weight: Double // 1.0 for Full Day and OD, 0.5 for Half Day, 0.0 for Absent
+) {
+  FULL_DAY("Full Day", "FD", 0xFF059669, "Full Day Present", 1.0),
+  HALF_DAY("Half Day", "HD", 0xFFD97706, "Half Day Present", 0.5),
+  ON_DUTY("On-Duty", "OD", 0xFF2563EB, "Official School On-Duty", 1.0),
+  ABSENT("Absent", "AB", 0xFFDC2626, "Absent", 0.0)
 }
 
 data class AttendanceRecord(
@@ -135,14 +143,16 @@ data class AttendanceRecord(
   val className: String,
   val date: String,
   val status: AttendanceStatus,
+  val markedBy: String = "Prof. Sarah Jenkins (Class Teacher)",
   val notes: String = ""
 )
 
 data class AttendanceSummary(
   val totalWorkingDays: Int,
-  val presentDays: Int,
+  val fullDays: Int,
+  val halfDays: Int,
+  val onDutyDays: Int,
   val absentDays: Int,
-  val lateDays: Int,
   val percentage: Double,
   val subjectWiseAttendance: Map<String, Double>
 )

@@ -351,11 +351,13 @@ fun MainSchoolApp(
           AttendanceScreen(
             userRole = currentUser.role,
             studentProfile = studentProfile,
+            teacherProfile = teacherProfile,
+            adminProfile = adminProfile,
             attendanceRecords = attendanceRecords,
             selectedClass = selectedClassForAttendance,
             onSelectClass = { viewModel.setSelectedClass(it) },
             onUpdateStatus = { studentId, status -> viewModel.updateStudentAttendanceStatus(studentId, status) },
-            onMarkAllPresent = { viewModel.markAllPresent() }
+            onMarkAllFullDay = { cls -> viewModel.markAllFullDay(cls) }
           )
         }
 
@@ -381,6 +383,8 @@ fun MainSchoolApp(
         NavigationTab.CLASSES -> {
           ClassesScreen(
             classes = schoolClasses,
+            userRole = currentUser.role,
+            teacherProfile = teacherProfile,
             onOpenAttendanceForClass = { cls ->
               viewModel.setSelectedClass(cls)
               currentTab = NavigationTab.ATTENDANCE

@@ -109,11 +109,15 @@ class SchoolViewModel(
     repository.addDuty(title, area, time, priority)
   }
 
-  fun updateStudentAttendanceStatus(studentId: String, status: AttendanceStatus) {
-    repository.updateAttendanceRecord(studentId, status)
+  fun updateStudentAttendanceStatus(studentId: String, status: AttendanceStatus, markedBy: String = "Prof. Sarah Jenkins (Class Teacher)") {
+    repository.updateAttendanceRecord(studentId, status, markedBy)
+  }
+
+  fun markAllFullDay(className: String = _selectedClassForAttendance.value, markedBy: String = "Prof. Sarah Jenkins (Class Teacher)") {
+    repository.markAllAttendance(AttendanceStatus.FULL_DAY, className, markedBy)
   }
 
   fun markAllPresent() {
-    repository.markAllAttendance(AttendanceStatus.PRESENT)
+    repository.markAllAttendance(AttendanceStatus.FULL_DAY, _selectedClassForAttendance.value)
   }
 }
