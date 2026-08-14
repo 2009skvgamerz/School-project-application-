@@ -11,46 +11,100 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
-private val DarkColorScheme = darkColorScheme(
-  primary = SchoolNavyPrimaryDark,
-  onPrimary = Color(0xFF003258),
-  primaryContainer = SchoolNavyDark,
-  onPrimaryContainer = Color(0xFFD1E4FF),
-  secondary = SchoolGoldDarkTheme,
-  onSecondary = Color(0xFF452B00),
-  secondaryContainer = Color(0xFF633F00),
-  onSecondaryContainer = Color(0xFFFFDDB3),
-  tertiary = Color(0xFF6EE7B7),
-  background = SchoolSurfaceDark,
-  surface = SchoolCardDark,
-  onBackground = SchoolTextPrimaryDark,
-  onSurface = SchoolTextPrimaryDark,
-  surfaceVariant = SchoolBorderDark,
-  outline = Color(0xFF64748B)
-)
+// ==========================================
+// St. Joseph's School - Material 3 Theme Configuration
+// ==========================================
 
-private val LightColorScheme = lightColorScheme(
+private val StJosephLightColorScheme = lightColorScheme(
+  // Primary (Deep Academic Navy)
   primary = SchoolNavyPrimary,
   onPrimary = Color.White,
-  primaryContainer = Color(0xFFD8E6FF),
-  onPrimaryContainer = Color(0xFF001B3F),
+  primaryContainer = SchoolNavyContainer,
+  onPrimaryContainer = SchoolNavyOnContainer,
+  inversePrimary = SchoolNavyPrimaryDark,
+
+  // Secondary (Heritage Academic Gold)
   secondary = SchoolGold,
   onSecondary = Color.White,
-  secondaryContainer = Color(0xFFFFECCF),
-  onSecondaryContainer = Color(0xFF2E1500),
-  tertiary = SchoolAccentGreen,
+  secondaryContainer = SchoolGoldContainer,
+  onSecondaryContainer = SchoolGoldOnContainer,
+
+  // Tertiary (Academic Emerald)
+  tertiary = SchoolEmerald,
+  onTertiary = Color.White,
+  tertiaryContainer = SchoolEmeraldContainer,
+  onTertiaryContainer = SchoolEmeraldOnContainer,
+
+  // Background & Surfaces
   background = SchoolSurfaceLight,
-  surface = SchoolCardLight,
   onBackground = SchoolTextPrimary,
+  surface = SchoolCardLight,
   onSurface = SchoolTextPrimary,
-  surfaceVariant = Color(0xFFF1F5F9),
-  outline = SchoolBorderLight
+  surfaceVariant = SchoolSurfaceVariantLight,
+  onSurfaceVariant = SchoolTextSecondary,
+  surfaceTint = SchoolNavyPrimary,
+
+  // Outlines & Borders
+  outline = SchoolBorderLight,
+  outlineVariant = SchoolOutlineVariantLight,
+
+  // Error & Status
+  error = SchoolError,
+  onError = Color.White,
+  errorContainer = SchoolErrorContainer,
+  onErrorContainer = SchoolOnErrorContainer,
+
+  // Scrim
+  scrim = Color.Black
+)
+
+private val StJosephDarkColorScheme = darkColorScheme(
+  // Primary
+  primary = SchoolNavyPrimaryDark,
+  onPrimary = SchoolNavyOnPrimaryDark,
+  primaryContainer = SchoolNavyContainerDark,
+  onPrimaryContainer = SchoolNavyOnContainerDark,
+  inversePrimary = SchoolNavyPrimary,
+
+  // Secondary
+  secondary = SchoolGoldDarkTheme,
+  onSecondary = SchoolGoldOnDark,
+  secondaryContainer = SchoolGoldContainerDark,
+  onSecondaryContainer = SchoolGoldOnContainerDark,
+
+  // Tertiary
+  tertiary = SchoolEmeraldDark,
+  onTertiary = SchoolEmeraldOnDark,
+  tertiaryContainer = SchoolEmeraldContainerDark,
+  onTertiaryContainer = SchoolEmeraldOnContainerDark,
+
+  // Background & Surfaces
+  background = SchoolSurfaceDark,
+  onBackground = SchoolTextPrimaryDark,
+  surface = SchoolCardDark,
+  onSurface = SchoolTextPrimaryDark,
+  surfaceVariant = SchoolSurfaceVariantDark,
+  onSurfaceVariant = SchoolTextSecondaryDark,
+  surfaceTint = SchoolNavyPrimaryDark,
+
+  // Outlines & Borders
+  outline = SchoolBorderDark,
+  outlineVariant = Color(0xFF64748B),
+
+  // Error & Status
+  error = Color(0xFFFFB4AB),
+  onError = Color(0xFF690005),
+  errorContainer = Color(0xFF93000A),
+  onErrorContainer = Color(0xFFFFDAD6),
+
+  // Scrim
+  scrim = Color.Black
 )
 
 @Composable
-fun MyApplicationTheme(
+fun StJosephTheme(
   darkTheme: Boolean = isSystemInDarkTheme(),
-  dynamicColor: Boolean = false, // Set to false to prioritize school branding
+  dynamicColor: Boolean = false, // Keep false by default to ensure St. Joseph's brand identity consistency
   content: @Composable () -> Unit
 ) {
   val colorScheme = when {
@@ -58,13 +112,28 @@ fun MyApplicationTheme(
       val context = LocalContext.current
       if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
     }
-    darkTheme -> DarkColorScheme
-    else -> LightColorScheme
+    darkTheme -> StJosephDarkColorScheme
+    else -> StJosephLightColorScheme
   }
 
   MaterialTheme(
     colorScheme = colorScheme,
     typography = Typography,
+    shapes = Shapes,
+    content = content
+  )
+}
+
+// Backward-compatible alias for existing Composable references
+@Composable
+fun MyApplicationTheme(
+  darkTheme: Boolean = isSystemInDarkTheme(),
+  dynamicColor: Boolean = false,
+  content: @Composable () -> Unit
+) {
+  StJosephTheme(
+    darkTheme = darkTheme,
+    dynamicColor = dynamicColor,
     content = content
   )
 }

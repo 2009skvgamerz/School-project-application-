@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.model.*
+import com.example.ui.auth.LoginScreen
 import com.example.ui.components.*
 import com.example.ui.dashboard.*
 import com.example.ui.screens.*
@@ -63,7 +64,24 @@ fun MainSchoolApp(
   val selectedNoticeCategory by viewModel.selectedNoticeCategory.collectAsState()
   val pendingHomeworkCount by viewModel.pendingHomeworkCount.collectAsState()
 
+  var isAuthenticated by remember { mutableStateOf(true) }
   var currentTab by remember { mutableStateOf(NavigationTab.DASHBOARD) }
+
+  if (!isAuthenticated) {
+    LoginScreen(
+      onLogin = { _, _, role ->
+        viewModel.switchRole(role)
+        isAuthenticated = true
+        currentTab = NavigationTab.DASHBOARD
+      },
+      onQuickRoleLogin = { role ->
+        viewModel.switchRole(role)
+        isAuthenticated = true
+        currentTab = NavigationTab.DASHBOARD
+      }
+    )
+    return
+  }
 
   // Dialog States
   var showRoleSwitcherDialog by remember { mutableStateOf(false) }
@@ -385,6 +403,9 @@ fun MainSchoolApp(
             onSwitchRole = { role ->
               viewModel.switchRole(role)
               currentTab = NavigationTab.DASHBOARD
+            },
+            onSignOut = {
+              isAuthenticated = false
             }
           )
         }

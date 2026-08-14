@@ -28,7 +28,8 @@ fun ProfileScreen(
   staffProfile: StaffProfile?,
   adminProfile: AdminProfile?,
   onSwitchRole: (UserRole) -> Unit,
-  modifier: Modifier = Modifier
+  modifier: Modifier = Modifier,
+  onSignOut: (() -> Unit)? = null
 ) {
   LazyColumn(
     modifier = modifier
@@ -278,14 +279,43 @@ fun ProfileScreen(
           verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
           Text(
-            text = "School Contact & Campus Info",
+            text = "St. Joseph's School Campus",
             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
             color = SchoolNavyPrimary
           )
           Text(
-            text = "Grandview International Academy\n100 Knowledge Boulevard, Academic District\nHelpline: +1 (800) 555-SCHL • info@grandviewacademy.edu",
+            text = "St. Joseph's High School Campus, Museum Road, Bengaluru, Karnataka 560025\nGeneral Enquiries: +91 (080) 2221-4416 • info@stjosephs.edu\nIT Helpdesk: ithelpdesk@stjosephs.edu",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
+          )
+        }
+      }
+    }
+
+    if (onSignOut != null) {
+      item {
+        OutlinedButton(
+          onClick = onSignOut,
+          modifier = Modifier
+            .fillMaxWidth()
+            .testTag("sign_out_button"),
+          shape = RoundedCornerShape(12.dp),
+          colors = ButtonDefaults.outlinedButtonColors(
+            contentColor = SchoolError
+          ),
+          border = ButtonDefaults.outlinedButtonBorder.copy(
+            brush = androidx.compose.ui.graphics.SolidColor(SchoolError.copy(alpha = 0.5f))
+          )
+        ) {
+          Icon(
+            imageVector = Icons.Default.Logout,
+            contentDescription = "Sign Out",
+            modifier = Modifier.size(18.dp)
+          )
+          Spacer(modifier = Modifier.width(8.dp))
+          Text(
+            text = "Sign Out to Login Screen",
+            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold)
           )
         }
       }
