@@ -40,6 +40,15 @@ interface AttendanceDao {
     timestamp: Long = System.currentTimeMillis()
   )
 
+  @Query("UPDATE attendance_records SET status = :status, notes = :notes, marked_by = :markedBy, recorded_at = :timestamp WHERE student_id = :studentId")
+  suspend fun updateStudentAttendanceStatusWithNotes(
+    studentId: String,
+    status: AttendanceStatus,
+    notes: String,
+    markedBy: String,
+    timestamp: Long = System.currentTimeMillis()
+  )
+
   @Query("UPDATE attendance_records SET status = :status, marked_by = :markedBy, recorded_at = :timestamp WHERE class_name = :className")
   suspend fun markAllClassAttendance(
     className: String,

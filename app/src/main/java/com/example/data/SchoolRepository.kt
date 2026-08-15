@@ -224,6 +224,14 @@ class SchoolRepository {
     }
   }
 
+  fun updateAttendanceRecordWithNotes(studentId: String, newStatus: AttendanceStatus, notes: String, markedBy: String = "Prof. Sarah Jenkins (Class Teacher)") {
+    _attendanceRecords.update { list ->
+      list.map { rec ->
+        if (rec.studentId == studentId) rec.copy(status = newStatus, notes = notes, markedBy = markedBy) else rec
+      }
+    }
+  }
+
   fun markAllAttendance(status: AttendanceStatus = AttendanceStatus.FULL_DAY, className: String = "Class 10-A", markedBy: String = "Prof. Sarah Jenkins (Class Teacher)") {
     _attendanceRecords.update { list ->
       list.map { rec ->

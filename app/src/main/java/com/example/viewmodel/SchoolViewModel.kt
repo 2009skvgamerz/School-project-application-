@@ -1,15 +1,33 @@
 package com.example.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.SchoolRepository
+import com.example.data.local.AppDatabase
+import com.example.data.local.entity.AttendanceEntity
 import com.example.model.*
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class SchoolViewModel(
-  private val repository: SchoolRepository = SchoolRepository()
+  private val repository: SchoolRepository = SchoolRepository(),
+  private val database: AppDatabase? = null
 ) : ViewModel() {
+
+  private var runtimeDatabase: AppDatabase? = database
+
+  fun setDatabase(db: AppDatabase) {
+    runtimeDatabase = db
+  }
+
+  fun initializeWithContext(context: Context) {
+    if (runtimeDatabase == null) {
+      runtimeDatabase = AppDatabase.getDatabase(context.applicationContext)
+    }
+  }
 
   init {
     // Default logged in as Student to show rich interface immediately
@@ -60,6 +78,31 @@ class SchoolViewModel(
     .map { list -> list.count { it.status == HomeworkStatus.PENDING } }
     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 2)
 
+  // Room DB live attendance records stream
+  val roomAttendanceRecords: StateFlow<List<AttendanceEntity>> = flow {
+    val db = runtimeDatabase
+    if (db != null) {
+      emitAll(db.attendanceDao().getAllAttendanceRecords())
+    } else {
+      // Fallback map from repository
+      emitAll(attendanceRecords.map { list ->
+        list.map {
+          AttendanceEntity(
+            id = it.id,
+            studentId = it.studentId,
+            studentName = it.studentName,
+            rollNo = it.rollNo,
+            className = it.className,
+            date = it.date,
+            status = it.status,
+            markedBy = it.markedBy,
+            notes = it.notes
+          )
+        }
+      })
+    }
+  }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
   // Actions
   fun switchRole(role: UserRole) {
     repository.loginAsRole(role)
@@ -109,15 +152,64 @@ class SchoolViewModel(
     repository.addDuty(title, area, time, priority)
   }
 
-  fun updateStudentAttendanceStatus(studentId: String, status: AttendanceStatus, markedBy: String = "Prof. Sarah Jenkins (Class Teacher)") {
-    repository.updateAttendanceRecord(studentId, status, markedBy)
+  fun updateStudentAttendanceStatus(
+    studentId: String,
+    status: AttendanceStatus,
+    notes: String = "",
+    markedBy: String = "Prof. Sarah Jenkins (Class Teacher)"
+  ) {
+    // 1. Update in-memory repository
+    if (notes.isNotBlank()) {
+      repository.updateAttendanceRecordWithNotes(studentId, status, notes, markedBy)
+    } else {
+      repository.updateAttendanceRecord(studentId, status, markedBy)
+    }
+
+    // 2. Persist in Room Database
+    viewModelScope.launch {
+      runtimeDatabase?.let { db ->
+        withContext(Dispatchers.IO) {
+          if (notes.isNotBlank()) {
+            db.attendanceDao().updateStudentAttendanceStatusWithNotes(
+              studentId = studentId,
+              status = status,
+              notes = notes,
+              markedBy = markedBy
+            )
+          } else {
+            db.attendanceDao().updateStudentAttendanceStatus(
+              studentId = studentId,
+              status = status,
+              markedBy = markedBy
+            )
+          }
+        }
+      }
+    }
   }
 
-  fun markAllFullDay(className: String = _selectedClassForAttendance.value, markedBy: String = "Prof. Sarah Jenkins (Class Teacher)") {
+  fun markAllFullDay(
+    className: String = _selectedClassForAttendance.value,
+    markedBy: String = "Prof. Sarah Jenkins (Class Teacher)"
+  ) {
+    // 1. Update in-memory repository
     repository.markAllAttendance(AttendanceStatus.FULL_DAY, className, markedBy)
+
+    // 2. Persist in Room Database
+    viewModelScope.launch {
+      runtimeDatabase?.let { db ->
+        withContext(Dispatchers.IO) {
+          db.attendanceDao().markAllClassAttendance(
+            className = className,
+            status = AttendanceStatus.FULL_DAY,
+            markedBy = markedBy
+          )
+        }
+      }
+    }
   }
 
   fun markAllPresent() {
-    repository.markAllAttendance(AttendanceStatus.FULL_DAY, _selectedClassForAttendance.value)
+    markAllFullDay(_selectedClassForAttendance.value)
   }
 }

@@ -58,6 +58,12 @@ fun MainSchoolApp(
   val schoolClasses by viewModel.schoolClasses.collectAsState()
   val staffDuties by viewModel.staffDuties.collectAsState()
   val attendanceRecords by viewModel.attendanceRecords.collectAsState()
+  val roomAttendanceRecords by viewModel.roomAttendanceRecords.collectAsState()
+
+  val context = androidx.compose.ui.platform.LocalContext.current
+  LaunchedEffect(Unit) {
+    viewModel.initializeWithContext(context)
+  }
 
   val selectedDay by viewModel.selectedDay.collectAsState()
   val selectedClassForAttendance by viewModel.selectedClassForAttendance.collectAsState()
@@ -348,17 +354,32 @@ fun MainSchoolApp(
         }
 
         NavigationTab.ATTENDANCE -> {
-          AttendanceScreen(
-            userRole = currentUser.role,
-            studentProfile = studentProfile,
-            teacherProfile = teacherProfile,
-            adminProfile = adminProfile,
-            attendanceRecords = attendanceRecords,
-            selectedClass = selectedClassForAttendance,
-            onSelectClass = { viewModel.setSelectedClass(it) },
-            onUpdateStatus = { studentId, status -> viewModel.updateStudentAttendanceStatus(studentId, status) },
-            onMarkAllFullDay = { cls -> viewModel.markAllFullDay(cls) }
-          )
+          if (currentUser.role == UserRole.TEACHER) {
+            TeacherClassAttendanceScreen(
+              teacherProfile = teacherProfile,
+              attendanceList = roomAttendanceRecords,
+              selectedClass = selectedClassForAttendance,
+              onClassSelected = { viewModel.setSelectedClass(it) },
+              onUpdateStatus = { studentId, status, notes ->
+                viewModel.updateStudentAttendanceStatus(studentId, status, notes)
+              },
+              onMarkAllFullDay = { cls ->
+                viewModel.markAllFullDay(cls)
+              }
+            )
+          } else {
+            AttendanceScreen(
+              userRole = currentUser.role,
+              studentProfile = studentProfile,
+              teacherProfile = teacherProfile,
+              adminProfile = adminProfile,
+              attendanceRecords = attendanceRecords,
+              selectedClass = selectedClassForAttendance,
+              onSelectClass = { viewModel.setSelectedClass(it) },
+              onUpdateStatus = { studentId, status -> viewModel.updateStudentAttendanceStatus(studentId, status) },
+              onMarkAllFullDay = { cls -> viewModel.markAllFullDay(cls) }
+            )
+          }
         }
 
         NavigationTab.NOTICES -> {

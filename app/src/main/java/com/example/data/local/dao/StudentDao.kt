@@ -19,8 +19,11 @@ interface StudentDao {
   @Query("SELECT * FROM students WHERE id = :id LIMIT 1")
   suspend fun getStudentById(id: String): StudentEntity?
 
-  @Query("SELECT * FROM students WHERE admission_no = :admissionNo LIMIT 1")
-  suspend fun getStudentByAdmissionNo(admissionNo: String): StudentEntity?
+  @Query("SELECT * FROM students WHERE email = :email LIMIT 1")
+  suspend fun getStudentByEmail(email: String): StudentEntity?
+
+  @Query("SELECT * FROM students WHERE id = :query OR email = :query OR admission_no = :query LIMIT 1")
+  suspend fun findStudentByIdentifier(query: String): StudentEntity?
 
   @Insert(onConflict = OnConflictStrategy.REPLACE)
   suspend fun insertStudent(student: StudentEntity)

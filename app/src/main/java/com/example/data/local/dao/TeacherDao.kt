@@ -19,6 +19,9 @@ interface TeacherDao {
   @Query("SELECT * FROM teachers WHERE email = :email LIMIT 1")
   suspend fun getTeacherByEmail(email: String): TeacherEntity?
 
+  @Query("SELECT * FROM teachers WHERE id = :query OR email = :query OR employee_id = :query LIMIT 1")
+  suspend fun findTeacherByIdentifier(query: String): TeacherEntity?
+
   @Query("SELECT * FROM teachers WHERE class_teacher_of = :className AND is_class_teacher = 1 LIMIT 1")
   suspend fun getClassTeacherForClass(className: String): TeacherEntity?
 
