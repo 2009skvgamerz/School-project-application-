@@ -104,6 +104,14 @@ class SchoolViewModel(
   }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
   // Actions
+  fun login(username: String, password: String): Result<User> {
+    return repository.login(username, password)
+  }
+
+  fun logout() {
+    repository.logout()
+  }
+
   fun switchRole(role: UserRole) {
     repository.loginAsRole(role)
   }

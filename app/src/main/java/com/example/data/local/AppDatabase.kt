@@ -5,7 +5,6 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
-import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.data.local.dao.AttendanceDao
 import com.example.data.local.dao.StudentDao
@@ -49,18 +48,7 @@ abstract class AppDatabase : RoomDatabase() {
     private var INSTANCE: AppDatabase? = null
 
     /**
-     * Migration strategy for Schema Version 1 -> Version 2.
-     * Demonstrates incremental table and index migrations for future schema evolutions.
-     */
-    val MIGRATION_1_2 = object : Migration(1, 2) {
-      override fun migrate(db: SupportSQLiteDatabase) {
-        // Example migration logic for adding remarks column or audit indices
-        db.execSQL("ALTER TABLE attendance_records ADD COLUMN is_excused INTEGER NOT NULL DEFAULT 0")
-      }
-    }
-
-    /**
-     * Database initializer with singleton instance, migration strategy, and pre-population callback.
+     * Database initializer with singleton instance and pre-population callback.
      */
     fun getDatabase(
       context: Context,
@@ -72,8 +60,6 @@ abstract class AppDatabase : RoomDatabase() {
           AppDatabase::class.java,
           DATABASE_NAME
         )
-          .addMigrations(MIGRATION_1_2)
-          .fallbackToDestructiveMigration()
           .addCallback(AppDatabaseCallback(scope))
           .build()
         INSTANCE = instance

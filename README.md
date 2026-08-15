@@ -122,14 +122,26 @@ gradle :app:testDebugUnitTest
 
 ---
 
-## 👥 Demo Institutional Accounts
+## 👥 Demo Institutional Accounts (Science Expo Prototype)
 
-| Role | Name | Admission / Employee ID | Default View / Assignment |
-| :--- | :--- | :--- | :--- |
-| **Student** | Alex Johnson | `SJ-2024-1001` | Class 10-A, Roll #1, St. Patrick House |
-| **Teacher** | Prof. Sarah Jenkins | `EMP-0412` | Class Teacher of Class 10-A (Physics & Lab) |
-| **Staff** | Mr. Thomas Wright | `EMP-0280` | Senior Operations Supervisor |
-| **Admin** | Dr. Arthur Pendelton | `EMP-0101` | Principal & Head of Institution |
+> ℹ️ **Prototype Authentication Notice**: The current demo authentication system is temporary and explicitly configured for the interactive Science Expo demonstration. Unauthorized or unknown usernames are rejected. In future production releases, this authentication layer will be replaced with Firebase Authentication using Google Sign-In and institutional identity federation.
+
+**Default Prototype Password**: `password123`
+
+| Role | Username | Email | Name | Default Assignment / Profile |
+| :--- | :--- | :--- | :--- | :--- |
+| **Student** | `student01` | `alex.j@stjosephs.edu` | Alex Johnson | Class 10-A, Roll #1, St. Patrick House |
+| **Teacher** | `teacher01` | `s.jenkins@stjosephs.edu` | Prof. Sarah Jenkins | Class Teacher of Class 10-A (Physics & Lab) |
+| **Staff** | `staff01` | `t.wright@stjosephs.edu` | Mr. Thomas Wright | Senior Operations Supervisor |
+| **Admin** | `admin01` | `principal@stjosephs.edu` | Dr. Arthur Pendelton | Principal & Head of Institution |
+
+---
+
+## 🏗️ Architecture & Cleaned Structure
+
+- **Single Authoritative Room Database**: `AppDatabase.kt` manages all local SQLite tables (`students`, `teachers`, `attendance_records`) with automated seeding and DAOs. Duplicate databases have been removed.
+- **Single Authoritative ViewModel**: `viewmodel/SchoolViewModel.kt` handles all application state, timetable flows, notice publishing, homework management, and attendance updates with Room synchronization. Duplicate ViewModels have been removed.
+- **Isolate Prototype Authentication**: `AuthenticationViewModel.kt` and `SchoolRepository.kt` manage login validation against explicitly authorized demo accounts and Room database entities, rejecting unknown usernames with descriptive error feedback.
 
 ---
 

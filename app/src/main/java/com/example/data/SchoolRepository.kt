@@ -52,33 +52,21 @@ class SchoolRepository {
   private val _classes = MutableStateFlow<List<SchoolClass>>(initialClasses)
   val classes: StateFlow<List<SchoolClass>> = _classes.asStateFlow()
 
-  // Demo Users Directory
-  val demoUsers = listOf(
-    DemoAccount("student01", "password123", UserRole.STUDENT, "Alex Johnson", "alex.j@stjosephs.edu"),
-    DemoAccount("teacher01", "password123", UserRole.TEACHER, "Prof. Sarah Jenkins", "s.jenkins@stjosephs.edu"),
-    DemoAccount("staff01", "password123", UserRole.STAFF, "Robert Taylor", "r.taylor@stjosephs.edu"),
-    DemoAccount("admin01", "password123", UserRole.ADMIN, "Dr. Anthony Davies", "principal@stjosephs.edu")
-  )
-
-  fun login(username: String, password: String):Result<User> {
+  fun login(username: String, password: String): Result<User> {
+    val trimmed = username.trim()
     val matched = demoUsers.find { 
-      it.username.equals(username.trim(), ignoreCase = true) && 
-      (it.password == password || password == "demo123" || password == "password123")
+      (it.username.equals(trimmed, ignoreCase = true) || it.email.equals(trimmed, ignoreCase = true)) && 
+      (it.password == password || password == "demo123" || password == DEMO_PASSWORD)
     }
 
     return if (matched != null) {
       setUserByRole(matched.role, matched.username, matched.fullName, matched.email)
       Result.success(_currentUser.value!!)
     } else {
-      // If user typed custom username, fallback or check role prefix
-      val fallbackRole = when {
-        username.contains("teacher", ignoreCase = true) -> UserRole.TEACHER
-        username.contains("staff", ignoreCase = true) -> UserRole.STAFF
-        username.contains("admin", ignoreCase = true) -> UserRole.ADMIN
-        else -> UserRole.STUDENT
-      }
-      setUserByRole(fallbackRole, username, "$username (Demo)", "$username@stjosephs.edu")
-      Result.success(_currentUser.value!!)
+      // Reject unknown accounts - prototype explicitly validates against predefined demo accounts
+      Result.failure(
+        IllegalArgumentException("Unknown credentials for '$username'. Authorized demo accounts are: student01, teacher01, staff01, admin01 (Password: $DEMO_PASSWORD).")
+      )
     }
   }
 
@@ -265,6 +253,23 @@ class SchoolRepository {
   }
 
   companion object {
+    /**
+     * PROTOTYPE AUTHENTICATION CONFIGURATION:
+     * This in-memory demo authentication system is temporary and explicitly created for the
+     * Science Expo interactive prototype. It validates against explicitly defined demo accounts.
+     * In future production releases, this module will be replaced with Firebase Authentication
+     * using Google Sign-In and institutional identity providers.
+     */
+    const val DEMO_PASSWORD = "password123"
+
+    // Explicitly defined demo accounts for Science Expo prototype
+    val demoUsers = listOf(
+      DemoAccount("student01", DEMO_PASSWORD, UserRole.STUDENT, "Alex Johnson", "alex.j@stjosephs.edu"),
+      DemoAccount("teacher01", DEMO_PASSWORD, UserRole.TEACHER, "Prof. Sarah Jenkins", "s.jenkins@stjosephs.edu"),
+      DemoAccount("staff01", DEMO_PASSWORD, UserRole.STAFF, "Mr. Thomas Wright", "t.wright@stjosephs.edu"),
+      DemoAccount("admin01", DEMO_PASSWORD, UserRole.ADMIN, "Dr. Arthur Pendelton", "principal@stjosephs.edu")
+    )
+
     private val initialNotices = listOf(
       Notice(
         id = "not_1",

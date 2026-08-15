@@ -71,10 +71,10 @@ fun LoginScreen(
 ) {
   var emailOrUsername by remember {
     mutableStateOf(
-      if (initialEmail.isNotBlank()) initialEmail else "alex.j@stjosephs.edu"
+      if (initialEmail.isNotBlank()) initialEmail else "student01"
     )
   }
-  var password by remember { mutableStateOf("password123") }
+  var password by remember { mutableStateOf(com.example.data.SchoolRepository.DEMO_PASSWORD) }
   var isPasswordVisible by remember { mutableStateOf(false) }
   var selectedRole by remember { mutableStateOf(initialRole) }
   var rememberMe by remember { mutableStateOf(true) }
@@ -87,10 +87,10 @@ fun LoginScreen(
   fun onRoleSelected(role: UserRole) {
     selectedRole = role
     emailOrUsername = when (role) {
-      UserRole.STUDENT -> "alex.j@stjosephs.edu"
-      UserRole.TEACHER -> "m.sharma@stjosephs.edu"
-      UserRole.STAFF -> "r.deshmukh@stjosephs.edu"
-      UserRole.ADMIN -> "principal@stjosephs.edu"
+      UserRole.STUDENT -> "student01"
+      UserRole.TEACHER -> "teacher01"
+      UserRole.STAFF -> "staff01"
+      UserRole.ADMIN -> "admin01"
     }
     localValidationError = null
   }

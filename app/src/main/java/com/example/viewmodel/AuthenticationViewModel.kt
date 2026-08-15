@@ -30,6 +30,11 @@ sealed class AuthState {
 /**
  * AuthenticationViewModel validates credentials against the Room database (AppDatabase)
  * and manages user sessions, active roles, and role-specific profile states across the application.
+ *
+ * PROTOTYPE NOTICE:
+ * This authentication implementation is explicitly structured for the Science Expo prototype.
+ * In future production versions, this will be migrated to Firebase Authentication (with Google
+ * Sign-In and institutional identity federation).
  */
 class AuthenticationViewModel(
   private val database: AppDatabase? = null,
@@ -117,7 +122,39 @@ class AuthenticationViewModel(
       val trimmed = identifier.trim()
       val db = runtimeDatabase
 
-      // 1. Try matching against StudentEntity in Room Database
+      // 1. Match against explicitly defined demo accounts (student01, teacher01, staff01, admin01)
+      val matchedDemo = SchoolRepository.demoUsers.find {
+        it.username.equals(trimmed, ignoreCase = true) || it.email.equals(trimmed, ignoreCase = true)
+      }
+
+      if (matchedDemo != null) {
+        if (expectedRole != null && matchedDemo.role != expectedRole) {
+          _errorMessage.value = "Account '${matchedDemo.username}' is a ${matchedDemo.role.displayName} account, not ${expectedRole.displayName}."
+          _authState.value = AuthState.Error("Role mismatch")
+          return false
+        }
+        when (matchedDemo.role) {
+          UserRole.STUDENT -> {
+            val studentEntity = if (db != null) {
+              withContext(Dispatchers.IO) { db.studentDao().findStudentByIdentifier(matchedDemo.email) }
+            } else null
+            if (studentEntity != null) setStudentSession(studentEntity)
+            else loginAsRole(UserRole.STUDENT)
+          }
+          UserRole.TEACHER -> {
+            val teacherEntity = if (db != null) {
+              withContext(Dispatchers.IO) { db.teacherDao().findTeacherByIdentifier(matchedDemo.email) }
+            } else null
+            if (teacherEntity != null) setTeacherSession(teacherEntity)
+            else loginAsRole(UserRole.TEACHER)
+          }
+          UserRole.STAFF -> setStaffSession()
+          UserRole.ADMIN -> setAdminSession()
+        }
+        return true
+      }
+
+      // 2. Try matching against StudentEntity in Room Database
       if (expectedRole == null || expectedRole == UserRole.STUDENT) {
         val studentEntity = if (db != null) {
           withContext(Dispatchers.IO) {
@@ -131,7 +168,7 @@ class AuthenticationViewModel(
         }
       }
 
-      // 2. Try matching against TeacherEntity in Room Database
+      // 3. Try matching against TeacherEntity in Room Database
       if (expectedRole == null || expectedRole == UserRole.TEACHER) {
         val teacherEntity = if (db != null) {
           withContext(Dispatchers.IO) {
@@ -145,49 +182,9 @@ class AuthenticationViewModel(
         }
       }
 
-      // 3. Fallback check for Administrative or Staff accounts
-      if (expectedRole == UserRole.ADMIN || trimmed.contains("admin", ignoreCase = true) || trimmed.contains("principal", ignoreCase = true)) {
-        setAdminSession()
-        return true
-      }
-
-      if (expectedRole == UserRole.STAFF || trimmed.contains("staff", ignoreCase = true)) {
-        setStaffSession()
-        return true
-      }
-
-      // 4. If DB wasn't attached or no direct entity match, check repository mocks
-      if (trimmed.equals("student01", ignoreCase = true) || trimmed.contains("alex", ignoreCase = true)) {
-        repository.loginAsRole(UserRole.STUDENT)
-        val user = repository.currentUser.value ?: defaultStudentUser
-        val profile = repository.currentStudentProfile.value
-        _currentUser.value = user
-        _currentRole.value = UserRole.STUDENT
-        _studentProfile.value = profile
-        _teacherProfile.value = null
-        _staffProfile.value = null
-        _adminProfile.value = null
-        _authState.value = AuthState.Authenticated(user, UserRole.STUDENT)
-        return true
-      }
-
-      if (trimmed.equals("sjenkins", ignoreCase = true) || trimmed.contains("jenkins", ignoreCase = true)) {
-        repository.loginAsRole(UserRole.TEACHER)
-        val user = repository.currentUser.value ?: defaultTeacherUser
-        val profile = repository.currentTeacherProfile.value
-        _currentUser.value = user
-        _currentRole.value = UserRole.TEACHER
-        _teacherProfile.value = profile
-        _studentProfile.value = null
-        _staffProfile.value = null
-        _adminProfile.value = null
-        _authState.value = AuthState.Authenticated(user, UserRole.TEACHER)
-        return true
-      }
-
-      // If not found in Room or predefined accounts
-      _errorMessage.value = "No account found matching '$identifier' in the institutional database."
-      _authState.value = AuthState.Error("Account not found")
+      // 4. Reject unknown accounts - prototype rejects unknown usernames
+      _errorMessage.value = "No account found matching '$identifier'. Demo accounts are: student01, teacher01, staff01, admin01 (Password: ${SchoolRepository.DEMO_PASSWORD})."
+      _authState.value = AuthState.Error("Unknown account")
       false
 
     } catch (e: Exception) {

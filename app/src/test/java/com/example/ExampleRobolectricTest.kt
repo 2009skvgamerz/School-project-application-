@@ -5,7 +5,6 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.example.data.SchoolRepository
 import com.example.data.local.AppDatabase
-import com.example.data.local.SchoolDatabase
 import com.example.data.local.entity.AttendanceEntity
 import com.example.data.local.entity.StudentEntity
 import com.example.data.local.entity.TeacherEntity
@@ -13,10 +12,14 @@ import com.example.model.AttendanceStatus
 import com.example.model.HomeworkStatus
 import com.example.model.NoticeCategory
 import com.example.model.UserRole
+import com.example.viewmodel.AuthenticationViewModel
+import com.example.viewmodel.AuthState
+import com.example.viewmodel.SchoolViewModel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -121,7 +124,7 @@ class ExampleRobolectricTest {
   }
 
   @Test
-  fun `verify AppDatabase pre-population and migration configuration`() = runBlocking {
+  fun `verify AppDatabase pre-population`() = runBlocking {
     // Populate initial data in AppDatabase
     AppDatabase.populateInitialData(appDb)
 
@@ -132,32 +135,48 @@ class ExampleRobolectricTest {
     assertTrue("Students should be seeded", studentCount >= 12)
     assertTrue("Teachers should be seeded", teacherCount >= 3)
     assertTrue("Attendance records should be seeded", attendanceRecords.isNotEmpty())
-
-    assertNotNull(AppDatabase.MIGRATION_1_2)
-    assertEquals(1, AppDatabase.MIGRATION_1_2.startVersion)
-    assertEquals(2, AppDatabase.MIGRATION_1_2.endVersion)
   }
 
   @Test
-  fun `verify role switching in repository`() {
+  fun `verify explicit demo accounts login and reject unknown accounts in SchoolRepository`() {
     val repository = SchoolRepository()
-    repository.loginAsRole(UserRole.STUDENT)
+
+    // 1. Verify student01
+    val studentResult = repository.login("student01", SchoolRepository.DEMO_PASSWORD)
+    assertTrue(studentResult.isSuccess)
     assertEquals(UserRole.STUDENT, repository.currentUser.value?.role)
+    assertEquals("Alex Johnson", repository.currentUser.value?.fullName)
     assertNotNull(repository.currentStudentProfile.value)
 
-    repository.loginAsRole(UserRole.TEACHER)
+    // 2. Verify teacher01
+    val teacherResult = repository.login("teacher01", SchoolRepository.DEMO_PASSWORD)
+    assertTrue(teacherResult.isSuccess)
     assertEquals(UserRole.TEACHER, repository.currentUser.value?.role)
+    assertEquals("Prof. Sarah Jenkins", repository.currentUser.value?.fullName)
     assertNotNull(repository.currentTeacherProfile.value)
-    assertEquals("Class 10-A", repository.currentTeacherProfile.value?.classTeacherOf)
-    assertTrue(repository.currentTeacherProfile.value?.isClassTeacher == true)
 
-    repository.loginAsRole(UserRole.STAFF)
+    // 3. Verify staff01
+    val staffResult = repository.login("staff01", SchoolRepository.DEMO_PASSWORD)
+    assertTrue(staffResult.isSuccess)
     assertEquals(UserRole.STAFF, repository.currentUser.value?.role)
+    assertEquals("Mr. Thomas Wright", repository.currentUser.value?.fullName)
     assertNotNull(repository.currentStaffProfile.value)
 
-    repository.loginAsRole(UserRole.ADMIN)
+    // 4. Verify admin01
+    val adminResult = repository.login("admin01", SchoolRepository.DEMO_PASSWORD)
+    assertTrue(adminResult.isSuccess)
     assertEquals(UserRole.ADMIN, repository.currentUser.value?.role)
+    assertEquals("Dr. Arthur Pendelton", repository.currentUser.value?.fullName)
     assertNotNull(repository.currentAdminProfile.value)
+
+    // 5. Verify rejection of unknown username
+    val unknownResult = repository.login("random_hacker", SchoolRepository.DEMO_PASSWORD)
+    assertTrue(unknownResult.isFailure)
+
+    // 6. Verify logout
+    repository.logout()
+    assertEquals(null, repository.currentUser.value)
+    assertEquals(null, repository.currentStudentProfile.value)
   }
 
   @Test
@@ -206,11 +225,11 @@ class ExampleRobolectricTest {
   }
 
   @Test
-  fun `verify AuthenticationViewModel validates credentials against Room database`() = runBlocking {
+  fun `verify AuthenticationViewModel validates credentials against Room database and rejects unknown`() = runBlocking {
     // Populate DB
     AppDatabase.populateInitialData(appDb)
 
-    val authViewModel = com.example.viewmodel.AuthenticationViewModel(
+    val authViewModel = AuthenticationViewModel(
       database = appDb
     )
 
@@ -220,25 +239,36 @@ class ExampleRobolectricTest {
     assertEquals(UserRole.STUDENT, authViewModel.currentRole.value)
     assertEquals("Alex Johnson", authViewModel.currentUser.value?.fullName)
     assertEquals("SJ-2024-1001", authViewModel.studentProfile.value?.admissionNo)
-    assertTrue(authViewModel.authState.value is com.example.viewmodel.AuthState.Authenticated)
+    assertTrue(authViewModel.authState.value is AuthState.Authenticated)
 
     // 2. Authenticate with Teacher Employee ID
-    val teacherAuthSuccess = authViewModel.authenticateUser(identifier = "EMP-0412", secret = "pass123")
+    val teacherAuthSuccess = authViewModel.authenticateUser(identifier = "EMP-0412", secret = "password123")
     assertTrue(teacherAuthSuccess)
     assertEquals(UserRole.TEACHER, authViewModel.currentRole.value)
     assertEquals("Prof. Sarah Jenkins", authViewModel.currentUser.value?.fullName)
     assertEquals("Class 10-A", authViewModel.teacherProfile.value?.classTeacherOf)
     assertTrue(authViewModel.teacherProfile.value?.isClassTeacher == true)
 
-    // 3. Authenticate with Administrator identifier
-    val adminAuthSuccess = authViewModel.authenticateUser(identifier = "principal@stjosephs.edu", secret = "admin123")
+    // 3. Authenticate with Staff demo account
+    val staffAuthSuccess = authViewModel.authenticateUser(identifier = "staff01", secret = "password123")
+    assertTrue(staffAuthSuccess)
+    assertEquals(UserRole.STAFF, authViewModel.currentRole.value)
+    assertNotNull(authViewModel.staffProfile.value)
+
+    // 4. Authenticate with Admin demo account
+    val adminAuthSuccess = authViewModel.authenticateUser(identifier = "admin01", secret = "password123")
     assertTrue(adminAuthSuccess)
     assertEquals(UserRole.ADMIN, authViewModel.currentRole.value)
     assertNotNull(authViewModel.adminProfile.value)
 
-    // 4. Logout test
+    // 5. Reject unknown username
+    val unknownAuthSuccess = authViewModel.authenticateUser(identifier = "hacker999", secret = "wrongpass")
+    assertFalse(unknownAuthSuccess)
+    assertTrue(authViewModel.authState.value is AuthState.Error)
+
+    // 6. Logout test
     authViewModel.logout()
-    assertTrue(authViewModel.authState.value is com.example.viewmodel.AuthState.Unauthenticated)
+    assertTrue(authViewModel.authState.value is AuthState.Unauthenticated)
     assertEquals(null, authViewModel.currentUser.value)
   }
 
@@ -247,7 +277,7 @@ class ExampleRobolectricTest {
     // Populate DB
     AppDatabase.populateInitialData(appDb)
 
-    val schoolViewModel = com.example.viewmodel.SchoolViewModel(
+    val schoolViewModel = SchoolViewModel(
       database = appDb
     )
 

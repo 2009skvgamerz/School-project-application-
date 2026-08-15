@@ -71,17 +71,25 @@ fun MainSchoolApp(
   val pendingHomeworkCount by viewModel.pendingHomeworkCount.collectAsState()
 
   var isAuthenticated by remember { mutableStateOf(true) }
+  var loginErrorMessage by remember { mutableStateOf<String?>(null) }
   var currentTab by remember { mutableStateOf(NavigationTab.DASHBOARD) }
 
   if (!isAuthenticated) {
     LoginScreen(
-      onLogin = { _, _, role ->
-        viewModel.switchRole(role)
-        isAuthenticated = true
-        currentTab = NavigationTab.DASHBOARD
+      errorMessage = loginErrorMessage,
+      onLogin = { username, password, _ ->
+        val result = viewModel.login(username, password)
+        result.onSuccess {
+          loginErrorMessage = null
+          isAuthenticated = true
+          currentTab = NavigationTab.DASHBOARD
+        }.onFailure { error ->
+          loginErrorMessage = error.message ?: "Authentication failed. Please check your credentials."
+        }
       },
       onQuickRoleLogin = { role ->
         viewModel.switchRole(role)
+        loginErrorMessage = null
         isAuthenticated = true
         currentTab = NavigationTab.DASHBOARD
       }
@@ -430,6 +438,8 @@ fun MainSchoolApp(
               currentTab = NavigationTab.DASHBOARD
             },
             onSignOut = {
+              viewModel.logout()
+              loginErrorMessage = null
               isAuthenticated = false
             }
           )
