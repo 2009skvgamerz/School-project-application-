@@ -16,11 +16,11 @@ jobs:
       - name: Make gradlew executable (if present)
         run: chmod +x ./gradlew || true
 
-      - name: Set up JDK 11
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '11'
+          java-version: '17'
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v2
@@ -28,15 +28,22 @@ jobs:
           api-level: 33
           build-tools: '33.0.0'
 
-      - name: Install system Gradle (if wrapper is missing)
+      - name: Install tools (wget, unzip) and download Gradle
         run: |
           sudo apt-get update
-          sudo apt-get install -y gradle
+          sudo apt-get install -y wget unzip
+          GRADLE_VERSION=7.6
+          wget https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip -O gradle.zip
+          sudo unzip -d /opt/gradle gradle.zip
+          echo "/opt/gradle/gradle-${GRADLE_VERSION}/bin" >> $GITHUB_PATH
+          gradle --version || true
 
-      - name: Generate Gradle wrapper if missing
+      - name: Generate or update Gradle wrapper to modern version
         run: |
-          if [ ! -f ./gradlew ]; then
-            gradle wrapper || true
+          GRADLE_BIN=/opt/gradle/gradle-7.6/bin/gradle
+          if [ -f "$GRADLE_BIN" ]; then
+            # Use the downloaded gradle to create/update wrapper to a modern version
+            $GRADLE_BIN wrapper --gradle-version 7.6 || true
           fi
           chmod +x ./gradlew || true
 
