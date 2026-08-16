@@ -29,6 +29,7 @@ fun ProfileScreen(
   adminProfile: AdminProfile?,
   onSwitchRole: (UserRole) -> Unit,
   modifier: Modifier = Modifier,
+  onNavigateToSettings: (() -> Unit)? = null,
   onSignOut: (() -> Unit)? = null
 ) {
   LazyColumn(
@@ -104,6 +105,24 @@ fun ProfileScreen(
                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                 color = SchoolNavyPrimary
               )
+            }
+          }
+
+          if (onNavigateToSettings != null) {
+            OutlinedButton(
+              onClick = onNavigateToSettings,
+              modifier = Modifier
+                .fillMaxWidth()
+                .testTag("profile_open_settings_btn"),
+              shape = RoundedCornerShape(10.dp)
+            ) {
+              Icon(
+                imageVector = Icons.Default.Settings,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+              )
+              Spacer(modifier = Modifier.width(8.dp))
+              Text("App Settings, Themes & Version Info")
             }
           }
         }

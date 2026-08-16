@@ -91,8 +91,9 @@ abstract class AppDatabase : RoomDatabase() {
       val teacherDao = database.teacherDao()
       val attendanceDao = database.attendanceDao()
 
-      // 1. Initial Student Entities
+      // 1. Initial Student Entities across multiple classes
       val initialStudents = listOf(
+        // Class 10-A
         StudentEntity("std_101", "SJ-2024-1001", "Alex Johnson", "alex.j@stjosephs.edu", "Class 10", "A", 1, "Robert Johnson", "+91 98450 11223", "O+", 96.4),
         StudentEntity("std_102", "SJ-2024-1002", "Bella Collins", "b.collins@stjosephs.edu", "Class 10", "A", 2, "Arthur Collins", "+91 98450 11224", "A+", 92.0),
         StudentEntity("std_103", "SJ-2024-1003", "Christian Davies", "c.davies@stjosephs.edu", "Class 10", "A", 3, "Marcus Davies", "+91 98450 11225", "B+", 88.5),
@@ -104,7 +105,22 @@ abstract class AppDatabase : RoomDatabase() {
         StudentEntity("std_109", "SJ-2024-1009", "Isabella Jackson", "i.jackson@stjosephs.edu", "Class 10", "A", 9, "Philip Jackson", "+91 98450 11231", "A+", 97.2),
         StudentEntity("std_110", "SJ-2024-1010", "Jacob Klein", "j.klein@stjosephs.edu", "Class 10", "A", 10, "Samuel Klein", "+91 98450 11232", "AB-", 89.0),
         StudentEntity("std_111", "SJ-2024-1011", "Lily Morris", "l.morris@stjosephs.edu", "Class 10", "A", 11, "Charles Morris", "+91 98450 11233", "O+", 93.4),
-        StudentEntity("std_112", "SJ-2024-1012", "Noah Parker", "n.parker@stjosephs.edu", "Class 10", "A", 12, "David Parker", "+91 98450 11234", "B+", 90.0)
+        StudentEntity("std_112", "SJ-2024-1012", "Noah Parker", "n.parker@stjosephs.edu", "Class 10", "A", 12, "David Parker", "+91 98450 11234", "B+", 90.0),
+        // Class 10-B
+        StudentEntity("std_201", "SJ-2024-2001", "Aaron Cooper", "a.cooper@stjosephs.edu", "Class 10", "B", 1, "Jason Cooper", "+91 98450 22001", "O+", 94.2),
+        StudentEntity("std_202", "SJ-2024-2002", "Brianna Diaz", "b.diaz@stjosephs.edu", "Class 10", "B", 2, "Manuel Diaz", "+91 98450 22002", "A+", 91.8),
+        StudentEntity("std_203", "SJ-2024-2003", "Chloe Edwards", "c.edwards@stjosephs.edu", "Class 10", "B", 3, "Victor Edwards", "+91 98450 22003", "B+", 95.0),
+        StudentEntity("std_204", "SJ-2024-2004", "Dylan Flores", "d.flores@stjosephs.edu", "Class 10", "B", 4, "Oscar Flores", "+91 98450 22004", "AB+", 88.0),
+        StudentEntity("std_205", "SJ-2024-2005", "Elena Garcia", "e.garcia@stjosephs.edu", "Class 10", "B", 5, "Rafael Garcia", "+91 98450 22005", "O-", 96.5),
+        // Class 9-A
+        StudentEntity("std_301", "SJ-2024-3001", "Adrian Hughes", "a.hughes@stjosephs.edu", "Class 9", "A", 1, "Paul Hughes", "+91 98450 33001", "A+", 95.0),
+        StudentEntity("std_302", "SJ-2024-3002", "Brooke Jenkins", "b.jenkins@stjosephs.edu", "Class 9", "A", 2, "Timothy Jenkins", "+91 98450 33002", "B+", 93.5),
+        StudentEntity("std_303", "SJ-2024-3003", "Caleb Kelly", "c.kelly@stjosephs.edu", "Class 9", "A", 3, "Steven Kelly", "+91 98450 33003", "O+", 97.0),
+        StudentEntity("std_304", "SJ-2024-3004", "Daisy Lewis", "d.lewis@stjosephs.edu", "Class 9", "A", 4, "Frank Lewis", "+91 98450 33004", "A-", 90.0),
+        // Class 11-Science
+        StudentEntity("std_401", "SJ-2024-4001", "Alexander Scott", "a.scott@stjosephs.edu", "Class 11", "Science", 1, "Walter Scott", "+91 98450 44001", "O+", 98.0),
+        StudentEntity("std_402", "SJ-2024-4002", "Benjamin Ward", "b.ward@stjosephs.edu", "Class 11", "Science", 2, "Kenneth Ward", "+91 98450 44002", "B+", 92.5),
+        StudentEntity("std_403", "SJ-2024-4003", "Charlotte Young", "c.young@stjosephs.edu", "Class 11", "Science", 3, "Jonathan Young", "+91 98450 44003", "A+", 96.0)
       )
       studentDao.insertStudents(initialStudents)
 
@@ -152,8 +168,9 @@ abstract class AppDatabase : RoomDatabase() {
       )
       teacherDao.insertTeachers(initialTeachers)
 
-      // 3. Initial Attendance Entities (Daily Roll Call)
+      // 3. Initial Attendance Entities (Daily Roll Call across classes)
       val initialAttendance = listOf(
+        // Class 10-A
         AttendanceEntity("att_1", "std_101", "Alex Johnson", 1, "Class 10-A", "Today", AttendanceStatus.FULL_DAY, "Prof. Sarah Jenkins (Class Teacher)"),
         AttendanceEntity("att_2", "std_102", "Bella Collins", 2, "Class 10-A", "Today", AttendanceStatus.FULL_DAY, "Prof. Sarah Jenkins (Class Teacher)"),
         AttendanceEntity("att_3", "std_103", "Christian Davies", 3, "Class 10-A", "Today", AttendanceStatus.HALF_DAY, "Prof. Sarah Jenkins (Class Teacher)", "Departed 12:30 PM (Medical appointment)"),
@@ -165,7 +182,22 @@ abstract class AppDatabase : RoomDatabase() {
         AttendanceEntity("att_9", "std_109", "Isabella Jackson", 9, "Class 10-A", "Today", AttendanceStatus.FULL_DAY, "Prof. Sarah Jenkins (Class Teacher)"),
         AttendanceEntity("att_10", "std_110", "Jacob Klein", 10, "Class 10-A", "Today", AttendanceStatus.FULL_DAY, "Prof. Sarah Jenkins (Class Teacher)"),
         AttendanceEntity("att_11", "std_111", "Lily Morris", 11, "Class 10-A", "Today", AttendanceStatus.HALF_DAY, "Prof. Sarah Jenkins (Class Teacher)", "Morning Session Only (Family event)"),
-        AttendanceEntity("att_12", "std_112", "Noah Parker", 12, "Class 10-A", "Today", AttendanceStatus.FULL_DAY, "Prof. Sarah Jenkins (Class Teacher)")
+        AttendanceEntity("att_12", "std_112", "Noah Parker", 12, "Class 10-A", "Today", AttendanceStatus.FULL_DAY, "Prof. Sarah Jenkins (Class Teacher)"),
+        // Class 10-B
+        AttendanceEntity("att_201", "std_201", "Aaron Cooper", 1, "Class 10-B", "Today", AttendanceStatus.FULL_DAY, "Mr. David Miller (Class Teacher)"),
+        AttendanceEntity("att_202", "std_202", "Brianna Diaz", 2, "Class 10-B", "Today", AttendanceStatus.FULL_DAY, "Mr. David Miller (Class Teacher)"),
+        AttendanceEntity("att_203", "std_203", "Chloe Edwards", 3, "Class 10-B", "Today", AttendanceStatus.ON_DUTY, "Mr. David Miller (Class Teacher)", "Debate Competition"),
+        AttendanceEntity("att_204", "std_204", "Dylan Flores", 4, "Class 10-B", "Today", AttendanceStatus.ABSENT, "Mr. David Miller (Class Teacher)", "Fever"),
+        AttendanceEntity("att_205", "std_205", "Elena Garcia", 5, "Class 10-B", "Today", AttendanceStatus.FULL_DAY, "Mr. David Miller (Class Teacher)"),
+        // Class 9-A
+        AttendanceEntity("att_301", "std_301", "Adrian Hughes", 1, "Class 9-A", "Today", AttendanceStatus.FULL_DAY, "Mrs. Clara Higgins (Class Teacher)"),
+        AttendanceEntity("att_302", "std_302", "Brooke Jenkins", 2, "Class 9-A", "Today", AttendanceStatus.FULL_DAY, "Mrs. Clara Higgins (Class Teacher)"),
+        AttendanceEntity("att_303", "std_303", "Caleb Kelly", 3, "Class 9-A", "Today", AttendanceStatus.HALF_DAY, "Mrs. Clara Higgins (Class Teacher)", "Afternoon appointment"),
+        AttendanceEntity("att_304", "std_304", "Daisy Lewis", 4, "Class 9-A", "Today", AttendanceStatus.FULL_DAY, "Mrs. Clara Higgins (Class Teacher)"),
+        // Class 11-Science
+        AttendanceEntity("att_401", "std_401", "Alexander Scott", 1, "Class 11-Science", "Today", AttendanceStatus.FULL_DAY, "Dr. Rachel Green (Class Teacher)"),
+        AttendanceEntity("att_402", "std_402", "Benjamin Ward", 2, "Class 11-Science", "Today", AttendanceStatus.ON_DUTY, "Dr. Rachel Green (Class Teacher)", "Robotics Expo Prep"),
+        AttendanceEntity("att_403", "std_403", "Charlotte Young", 3, "Class 11-Science", "Today", AttendanceStatus.FULL_DAY, "Dr. Rachel Green (Class Teacher)")
       )
       attendanceDao.insertRecords(initialAttendance)
     }

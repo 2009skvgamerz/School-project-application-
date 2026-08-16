@@ -292,9 +292,9 @@ class ExampleRobolectricTest {
       status = AttendanceStatus.HALF_DAY,
       notes = "Doctor appointment after lunch",
       markedBy = "Prof. Sarah Jenkins (Class Teacher)"
-    )
+    ).join()
 
-    // Allow coroutine to persist to Room
+    // Query persisted state from Room
     val updatedRecord = appDb.attendanceDao().getAttendanceForStudent(firstStudent.studentId).first().first()
     assertEquals(AttendanceStatus.HALF_DAY, updatedRecord.status)
     assertEquals("Doctor appointment after lunch", updatedRecord.notes)
@@ -306,7 +306,7 @@ class ExampleRobolectricTest {
       status = AttendanceStatus.ON_DUTY,
       notes = "State Athletics Championship",
       markedBy = "Prof. Sarah Jenkins (Class Teacher)"
-    )
+    ).join()
     val odRecord = appDb.attendanceDao().getAttendanceForStudent(firstStudent.studentId).first().first()
     assertEquals(AttendanceStatus.ON_DUTY, odRecord.status)
     assertEquals("State Athletics Championship", odRecord.notes)
@@ -317,7 +317,7 @@ class ExampleRobolectricTest {
       status = AttendanceStatus.ABSENT,
       notes = "Uninformed absence",
       markedBy = "Prof. Sarah Jenkins (Class Teacher)"
-    )
+    ).join()
     val abRecord = appDb.attendanceDao().getAttendanceForStudent(firstStudent.studentId).first().first()
     assertEquals(AttendanceStatus.ABSENT, abRecord.status)
     assertEquals("Uninformed absence", abRecord.notes)
@@ -326,7 +326,7 @@ class ExampleRobolectricTest {
     schoolViewModel.markAllFullDay(
       className = "Class 10-A",
       markedBy = "Prof. Sarah Jenkins (Class Teacher)"
-    )
+    ).join()
     val allFullDayRecords = appDb.attendanceDao().getAttendanceByClassAndDate("Class 10-A", "Today").first()
     assertTrue(allFullDayRecords.all { it.status == AttendanceStatus.FULL_DAY })
   }

@@ -8,6 +8,7 @@ import com.example.data.local.AppDatabase
 import com.example.data.local.entity.AttendanceEntity
 import com.example.model.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -17,20 +18,37 @@ class SchoolViewModel(
   private val database: AppDatabase? = null
 ) : ViewModel() {
 
-  private var runtimeDatabase: AppDatabase? = database
+  private val _databaseFlow = MutableStateFlow<AppDatabase?>(database)
+  val databaseFlow: StateFlow<AppDatabase?> = _databaseFlow.asStateFlow()
+
+  // App Theme Mode (System, Light, Dark)
+  private val _themeMode = MutableStateFlow(AppThemeMode.SYSTEM)
+  val themeMode: StateFlow<AppThemeMode> = _themeMode.asStateFlow()
+
+  fun setThemeMode(mode: AppThemeMode) {
+    _themeMode.value = mode
+  }
 
   fun setDatabase(db: AppDatabase) {
-    runtimeDatabase = db
+    _databaseFlow.value = db
   }
 
   fun initializeWithContext(context: Context) {
-    if (runtimeDatabase == null) {
-      runtimeDatabase = AppDatabase.getDatabase(context.applicationContext)
+    if (_databaseFlow.value == null) {
+      val db = AppDatabase.getDatabase(context.applicationContext)
+      _databaseFlow.value = db
+      viewModelScope.launch(Dispatchers.IO) {
+        // Ensure database has records populated
+        val records = db.attendanceDao().getRecordById("att_1")
+        if (records == null) {
+          AppDatabase.populateInitialData(db)
+        }
+      }
     }
   }
 
   init {
-    // Default logged in as Student to show rich interface immediately
+    // Default role
     repository.loginAsRole(UserRole.STUDENT)
   }
 
@@ -78,30 +96,31 @@ class SchoolViewModel(
     .map { list -> list.count { it.status == HomeworkStatus.PENDING } }
     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 2)
 
-  // Room DB live attendance records stream
-  val roomAttendanceRecords: StateFlow<List<AttendanceEntity>> = flow {
-    val db = runtimeDatabase
-    if (db != null) {
-      emitAll(db.attendanceDao().getAllAttendanceRecords())
-    } else {
-      // Fallback map from repository
-      emitAll(attendanceRecords.map { list ->
-        list.map {
-          AttendanceEntity(
-            id = it.id,
-            studentId = it.studentId,
-            studentName = it.studentName,
-            rollNo = it.rollNo,
-            className = it.className,
-            date = it.date,
-            status = it.status,
-            markedBy = it.markedBy,
-            notes = it.notes
-          )
+  // Room DB live attendance records stream with fallback to in-memory repository
+  @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+  val roomAttendanceRecords: StateFlow<List<AttendanceEntity>> = _databaseFlow
+    .flatMapLatest { db ->
+      if (db != null) {
+        db.attendanceDao().getAllAttendanceRecords()
+      } else {
+        attendanceRecords.map { list ->
+          list.map {
+            AttendanceEntity(
+              id = it.id,
+              studentId = it.studentId,
+              studentName = it.studentName,
+              rollNo = it.rollNo,
+              className = it.className,
+              date = it.date,
+              status = it.status,
+              markedBy = it.markedBy,
+              notes = it.notes
+            )
+          }
         }
-      })
+      }
     }
-  }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
   // Actions
   fun login(username: String, password: String): Result<User> {
@@ -160,13 +179,17 @@ class SchoolViewModel(
     repository.addDuty(title, area, time, priority)
   }
 
+  /**
+   * Updates student daily attendance status (Full-day, Half-day, On-duty, Absent)
+   * simultaneously syncing in-memory state flow and persisting in Room SQLite database.
+   */
   fun updateStudentAttendanceStatus(
     studentId: String,
     status: AttendanceStatus,
     notes: String = "",
     markedBy: String = "Prof. Sarah Jenkins (Class Teacher)"
-  ) {
-    // 1. Update in-memory repository
+  ): Job {
+    // 1. Update in-memory repository for instant UI reactivity
     if (notes.isNotBlank()) {
       repository.updateAttendanceRecordWithNotes(studentId, status, notes, markedBy)
     } else {
@@ -174,38 +197,63 @@ class SchoolViewModel(
     }
 
     // 2. Persist in Room Database
-    viewModelScope.launch {
-      runtimeDatabase?.let { db ->
+    return viewModelScope.launch {
+      _databaseFlow.value?.let { db ->
         withContext(Dispatchers.IO) {
-          if (notes.isNotBlank()) {
-            db.attendanceDao().updateStudentAttendanceStatusWithNotes(
-              studentId = studentId,
-              status = status,
-              notes = notes,
-              markedBy = markedBy
-            )
+          // Check if record exists in Room DB
+          val currentRecords = db.attendanceDao().getRecordById("att_$studentId")
+          if (currentRecords != null) {
+            if (notes.isNotBlank()) {
+              db.attendanceDao().updateStudentAttendanceStatusWithNotes(
+                studentId = studentId,
+                status = status,
+                notes = notes,
+                markedBy = markedBy
+              )
+            } else {
+              db.attendanceDao().updateStudentAttendanceStatus(
+                studentId = studentId,
+                status = status,
+                markedBy = markedBy
+              )
+            }
           } else {
-            db.attendanceDao().updateStudentAttendanceStatus(
-              studentId = studentId,
-              status = status,
-              markedBy = markedBy
-            )
+            // Find in repository to get student details
+            val repoRecord = repository.attendanceRecords.value.find { it.studentId == studentId }
+            if (repoRecord != null) {
+              db.attendanceDao().insertRecord(
+                AttendanceEntity(
+                  id = repoRecord.id,
+                  studentId = studentId,
+                  studentName = repoRecord.studentName,
+                  rollNo = repoRecord.rollNo,
+                  className = repoRecord.className,
+                  date = repoRecord.date,
+                  status = status,
+                  markedBy = markedBy,
+                  notes = notes.ifBlank { repoRecord.notes }
+                )
+              )
+            }
           }
         }
       }
     }
   }
 
+  /**
+   * Fast 1-tap roll-call action to mark all students in the given class as Full-Day (FD).
+   */
   fun markAllFullDay(
     className: String = _selectedClassForAttendance.value,
     markedBy: String = "Prof. Sarah Jenkins (Class Teacher)"
-  ) {
+  ): Job {
     // 1. Update in-memory repository
     repository.markAllAttendance(AttendanceStatus.FULL_DAY, className, markedBy)
 
     // 2. Persist in Room Database
-    viewModelScope.launch {
-      runtimeDatabase?.let { db ->
+    return viewModelScope.launch {
+      _databaseFlow.value?.let { db ->
         withContext(Dispatchers.IO) {
           db.attendanceDao().markAllClassAttendance(
             className = className,
@@ -219,5 +267,13 @@ class SchoolViewModel(
 
   fun markAllPresent() {
     markAllFullDay(_selectedClassForAttendance.value)
+  }
+
+  fun resetDatabaseToDefaults() {
+    viewModelScope.launch(Dispatchers.IO) {
+      _databaseFlow.value?.let { db ->
+        AppDatabase.populateInitialData(db)
+      }
+    }
   }
 }

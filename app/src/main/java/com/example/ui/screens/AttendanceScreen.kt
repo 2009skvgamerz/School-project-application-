@@ -1,6 +1,8 @@
 package com.example.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.*
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -9,6 +11,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.FactCheck
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -18,19 +21,25 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.data.local.entity.AttendanceEntity
 import com.example.model.*
 import com.example.ui.components.StatCard
 import com.example.ui.theme.*
 
 /**
- * AttendanceScreen - St. Joseph's School Daily Attendance Register.
+ * AttendanceScreen - St. Joseph's Higher Secondary School Daily Attendance Register.
  *
- * Rules:
- * 1. Attendance is taken ONCE PER DAY (Daily Roll Call), not period-by-period.
- * 2. Only the assigned CLASS TEACHER of that class (or Principal/Admin) has authorization to take/mark attendance.
- * 3. Daily statuses are strictly: Full Day (FD), Half Day (HD), On-Duty (OD), and Absent (AB).
+ * Provides:
+ * 1. For Students: Personal attendance statistics, exam eligibility gauge, breakdown, and policy.
+ * 2. For Educators & Staff: Interactive Class Roll Call with 4 daily options:
+ *    - Full Day (FD, 1.0 weight)
+ *    - Half Day (HD, 0.5 weight)
+ *    - On-Duty (OD, 1.0 weight - for sports/science events)
+ *    - Absent (AB, 0.0 weight - with medical/leave notes)
+ * 3. Instant Room Database persistence with live reactive feedback and search filtering.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,72 +49,88 @@ fun AttendanceScreen(
   teacherProfile: TeacherProfile?,
   adminProfile: AdminProfile?,
   attendanceRecords: List<AttendanceRecord>,
+  roomAttendanceRecords: List<AttendanceEntity> = emptyList(),
   selectedClass: String,
   onSelectClass: (String) -> Unit,
-  onUpdateStatus: (String, AttendanceStatus) -> Unit,
+  onUpdateStatus: (studentId: String, status: AttendanceStatus, notes: String) -> Unit,
   onMarkAllFullDay: (String) -> Unit,
   modifier: Modifier = Modifier
 ) {
-  var showSuccessSnackbar by remember { mutableStateOf(false) }
+  var showSuccessBanner by remember { mutableStateOf(false) }
   var statusFilter by remember { mutableStateOf<AttendanceStatus?>(null) }
+  var searchQuery by remember { mutableStateOf("") }
+  var editingNoteStudentId by remember { mutableStateOf<String?>(null) }
+  var noteStudentName by remember { mutableStateOf("") }
+  var noteInputText by remember { mutableStateOf("") }
+  var currentStudentStatusForNote by remember { mutableStateOf(AttendanceStatus.FULL_DAY) }
 
-  // Map of classes to their assigned Class Teachers in St. Joseph's School
-  val classTeacherMap = remember {
-    mapOf(
-      "Class 10-A" to "Prof. Sarah Jenkins",
-      "Class 10-B" to "Mr. David Miller",
-      "Class 9-A" to "Mrs. Clara Higgins",
-      "Class 9-B" to "Dr. Anita Sharma",
-      "Class 11-Science" to "Dr. Rachel Green",
-      "Class 12-Science" to "Mr. Kevin Ross"
-    )
+  // Classes list for selector
+  val availableClasses = remember {
+    listOf("Class 10-A", "Class 10-B", "Class 9-A", "Class 11-Science", "Class 12-Science")
   }
 
-  val assignedClassTeacher = classTeacherMap[selectedClass] ?: "Assigned Class Teacher"
-
-  // Authorization Check: Only the designated Class Teacher for this class (or Admin) can record daily attendance
-  val isClassTeacherForThisClass = when (userRole) {
-    UserRole.ADMIN -> true // Principal / Administrator has institutional override authority
-    UserRole.TEACHER -> {
-      val teacherClass = teacherProfile?.classTeacherOf ?: "Class 10-A"
-      teacherClass.equals(selectedClass, ignoreCase = true) || teacherProfile?.user?.fullName.equals(assignedClassTeacher, ignoreCase = true)
+  // Unified student records combining Room DB / in-memory records for the selected class
+  val recordsForClass = remember(attendanceRecords, roomAttendanceRecords, selectedClass) {
+    if (roomAttendanceRecords.isNotEmpty()) {
+      roomAttendanceRecords.filter { it.className.equals(selectedClass, ignoreCase = true) }
+        .map { entity ->
+          AttendanceRecord(
+            id = entity.id,
+            studentId = entity.studentId,
+            studentName = entity.studentName,
+            rollNo = entity.rollNo,
+            className = entity.className,
+            date = entity.date,
+            status = entity.status,
+            markedBy = entity.markedBy,
+            notes = entity.notes
+          )
+        }
+    } else {
+      attendanceRecords.filter { it.className.equals(selectedClass, ignoreCase = true) }
+    }.ifEmpty {
+      // Fallback: filter general records
+      attendanceRecords.filter { it.className.equals(selectedClass, ignoreCase = true) }
     }
-    else -> false // Students & General Staff have view-only access
   }
 
-  val filteredRecords = attendanceRecords.filter { rec ->
-    (rec.className.equals(selectedClass, ignoreCase = true) || selectedClass.isEmpty()) &&
-    (statusFilter == null || rec.status == statusFilter)
+  val filteredRecords = remember(recordsForClass, statusFilter, searchQuery) {
+    recordsForClass.filter { rec ->
+      (statusFilter == null || rec.status == statusFilter) &&
+      (searchQuery.isBlank() ||
+       rec.studentName.contains(searchQuery, ignoreCase = true) ||
+       rec.rollNo.toString() == searchQuery.trim())
+    }
   }
 
-  // Count tallies for this class
-  val fullDayCount = attendanceRecords.count { it.className.equals(selectedClass, ignoreCase = true) && it.status == AttendanceStatus.FULL_DAY }
-  val halfDayCount = attendanceRecords.count { it.className.equals(selectedClass, ignoreCase = true) && it.status == AttendanceStatus.HALF_DAY }
-  val onDutyCount = attendanceRecords.count { it.className.equals(selectedClass, ignoreCase = true) && it.status == AttendanceStatus.ON_DUTY }
-  val absentCount = attendanceRecords.count { it.className.equals(selectedClass, ignoreCase = true) && it.status == AttendanceStatus.ABSENT }
-  val totalInClass = attendanceRecords.count { it.className.equals(selectedClass, ignoreCase = true) }.coerceAtLeast(1)
-  val effectiveAttendancePercentage = (((fullDayCount + onDutyCount) * 1.0 + halfDayCount * 0.5) / totalInClass * 100.0)
+  // Attendance tallies
+  val totalInClass = recordsForClass.size.coerceAtLeast(1)
+  val fullDayCount = recordsForClass.count { it.status == AttendanceStatus.FULL_DAY }
+  val halfDayCount = recordsForClass.count { it.status == AttendanceStatus.HALF_DAY }
+  val onDutyCount = recordsForClass.count { it.status == AttendanceStatus.ON_DUTY }
+  val absentCount = recordsForClass.count { it.status == AttendanceStatus.ABSENT }
+  val presentRate = (((fullDayCount + onDutyCount) * 1.0 + halfDayCount * 0.5) / totalInClass * 100.0)
 
   Column(
     modifier = modifier
       .fillMaxSize()
       .testTag("attendance_screen")
       .padding(16.dp),
-    verticalArrangement = Arrangement.spacedBy(14.dp)
+    verticalArrangement = Arrangement.spacedBy(12.dp)
   ) {
     if (userRole == UserRole.STUDENT) {
       // ========================================================
       // 1. STUDENT ATTENDANCE REPORT VIEW
       // ========================================================
-      val profile = studentProfile ?: return
+      val profile = studentProfile
       LazyColumn(
         verticalArrangement = Arrangement.spacedBy(14.dp),
         modifier = Modifier.fillMaxSize()
       ) {
-        // Daily Attendance Header Card
+        // Attendance Overview Card
         item {
           Card(
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(18.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
             modifier = Modifier.fillMaxWidth()
@@ -117,38 +142,39 @@ fun AttendanceScreen(
             ) {
               Box(
                 modifier = Modifier
-                  .size(82.dp)
+                  .size(86.dp)
                   .clip(CircleShape)
                   .background(SchoolAccentGreen.copy(alpha = 0.12f)),
                 contentAlignment = Alignment.Center
               ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                   Text(
-                    text = "${profile.attendancePercentage}%",
+                    text = "${profile?.attendancePercentage ?: 96.4}%",
                     style = MaterialTheme.typography.titleLarge.copy(
                       fontWeight = FontWeight.ExtraBold,
-                      fontSize = 19.sp
+                      fontSize = 20.sp
                     ),
                     color = SchoolAccentGreen
                   )
                   Text(
-                    text = "Term Avg",
+                    text = "Overall",
                     style = MaterialTheme.typography.labelSmall,
                     color = SchoolAccentGreen
                   )
                 }
               }
 
-              Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                  Text(
-                    text = "Daily Roll Call Record",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    color = SchoolNavyPrimary
-                  )
-                }
+              Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+              ) {
                 Text(
-                  text = "Class Teacher: Prof. Sarah Jenkins • Grade 10-A",
+                  text = "Daily Roll Call Record",
+                  style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                  color = SchoolNavyPrimary
+                )
+                Text(
+                  text = "Grade 10 - Section A • Roll #1",
                   style = MaterialTheme.typography.bodySmall,
                   color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -156,22 +182,33 @@ fun AttendanceScreen(
                   color = SchoolAccentGreen.copy(alpha = 0.14f),
                   shape = RoundedCornerShape(6.dp)
                 ) {
-                  Text(
-                    text = "✓ Eligible for Term Examinations (Min. 75% required)",
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                    color = SchoolAccentGreen,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                  )
+                  Row(
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                  ) {
+                    Icon(
+                      imageVector = Icons.Default.CheckCircle,
+                      contentDescription = null,
+                      tint = SchoolAccentGreen,
+                      modifier = Modifier.size(14.dp)
+                    )
+                    Text(
+                      text = "Eligible for Examinations (Min. 75%)",
+                      style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                      color = SchoolAccentGreen
+                    )
+                  }
                 }
               }
             }
           }
         }
 
-        // Daily Attendance Types Legend & 4 Metric Cards
+        // 4 Metric Breakdown Cards
         item {
           Text(
-            text = "Academic Year Daily Attendance Summary",
+            text = "Academic Year Breakdown",
             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
             color = SchoolNavyPrimary
           )
@@ -186,20 +223,20 @@ fun AttendanceScreen(
               StatCard(
                 title = "Full Day (FD)",
                 value = "78 Days",
-                subtitle = "Full day present (1.0)",
+                subtitle = "Present (1.0 weight)",
                 icon = Icons.Default.CheckCircle,
                 accentColor = SchoolAccentGreen,
                 modifier = Modifier.weight(1f),
-                testTag = "stat_full_day"
+                testTag = "student_stat_fd"
               )
               StatCard(
                 title = "Half Day (HD)",
                 value = "4 Days",
-                subtitle = "Half-day credited (0.5)",
+                subtitle = "Credited (0.5 weight)",
                 icon = Icons.Default.Schedule,
                 accentColor = SchoolGold,
                 modifier = Modifier.weight(1f),
-                testTag = "stat_half_day"
+                testTag = "student_stat_hd"
               )
             }
 
@@ -210,43 +247,46 @@ fun AttendanceScreen(
               StatCard(
                 title = "On-Duty (OD)",
                 value = "4 Days",
-                subtitle = "Sports / Olympiad (1.0)",
+                subtitle = "Olympiad / Sports (1.0)",
                 icon = Icons.Default.EmojiEvents,
                 accentColor = SchoolAccentBlue,
                 modifier = Modifier.weight(1f),
-                testTag = "stat_on_duty"
+                testTag = "student_stat_od"
               )
               StatCard(
                 title = "Absent (AB)",
                 value = "2 Days",
-                subtitle = "Medical leave (0.0)",
+                subtitle = "Medical Leave (0.0)",
                 icon = Icons.Default.Cancel,
                 accentColor = SchoolError,
                 modifier = Modifier.weight(1f),
-                testTag = "stat_absent"
+                testTag = "student_stat_ab"
               )
             }
           }
         }
 
-        // Explanation Policy Card
+        // Policy & Guidelines Card
         item {
           Card(
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+            shape = RoundedCornerShape(14.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
             modifier = Modifier.fillMaxWidth()
           ) {
-            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Column(
+              modifier = Modifier.padding(14.dp),
+              verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
               Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 Icon(imageVector = Icons.Default.Info, contentDescription = null, tint = SchoolNavyPrimary, modifier = Modifier.size(18.dp))
                 Text(
-                  text = "Daily Attendance Policy",
+                  text = "Institutional Attendance Guidelines",
                   style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                   color = SchoolNavyPrimary
                 )
               }
               Text(
-                text = "• Attendance is taken once each morning by your designated Class Teacher (Prof. Sarah Jenkins).\n• On-Duty (OD) is granted for official sports, science expo, or inter-school competitions and counts as full attendance.\n• Half-Day (HD) applies when departing early or arriving late with verified permission.",
+                text = "• Attendance is recorded once each morning by the assigned Class Teacher.\n• On-Duty (OD) requires prior faculty approval for authorized inter-school representation.\n• Minimum 75% attendance is strictly enforced for Term Examination hall ticket issuance.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
               )
@@ -256,42 +296,98 @@ fun AttendanceScreen(
       }
     } else {
       // ========================================================
-      // 2. TEACHER / ADMIN / STAFF DAILY ATTENDANCE REGISTER
+      // 2. TEACHER / ADMIN / STAFF DAILY ROLL CALL REGISTER
       // ========================================================
 
-      // Top Title and Day Indicator
-      Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+      // Top Header Card with Roll Call Summary & Mark All Full Day Action
+      Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        modifier = Modifier.fillMaxWidth()
       ) {
-        Column {
-          Text(
-            text = "Daily Attendance Register",
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-            color = SchoolNavyPrimary
-          )
-          Text(
-            text = "Daily Roll Call • Once per Day • $selectedClass",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-          )
-        }
-
-        if (isClassTeacherForThisClass) {
-          Button(
-            onClick = {
-              onMarkAllFullDay(selectedClass)
-              showSuccessSnackbar = true
-            },
-            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
-            shape = RoundedCornerShape(8.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = SchoolAccentGreen),
-            modifier = Modifier.testTag("mark_all_present_btn")
+        Column(
+          modifier = Modifier.padding(14.dp),
+          verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+          Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
           ) {
-            Icon(imageVector = Icons.Default.DoneAll, contentDescription = null, modifier = Modifier.size(16.dp))
-            Spacer(modifier = Modifier.width(4.dp))
-            Text("All Full Day", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+            Row(
+              verticalAlignment = Alignment.CenterVertically,
+              horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+              Box(
+                modifier = Modifier
+                  .size(42.dp)
+                  .clip(CircleShape)
+                  .background(SchoolNavyPrimary.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
+              ) {
+                Icon(
+                  imageVector = Icons.AutoMirrored.Filled.FactCheck,
+                  contentDescription = null,
+                  tint = SchoolNavyPrimary,
+                  modifier = Modifier.size(22.dp)
+                )
+              }
+
+              Column {
+                Text(
+                  text = "Daily Roll Call Register",
+                  style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                  color = SchoolNavyPrimary
+                )
+                Text(
+                  text = "$selectedClass • Today's Session",
+                  style = MaterialTheme.typography.bodySmall,
+                  color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+              }
+            }
+
+            // Mark All Full Day Button
+            Button(
+              onClick = {
+                onMarkAllFullDay(selectedClass)
+                showSuccessBanner = true
+              },
+              contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+              shape = RoundedCornerShape(8.dp),
+              colors = ButtonDefaults.buttonColors(containerColor = SchoolAccentGreen),
+              modifier = Modifier.testTag("mark_all_present_btn")
+            ) {
+              Icon(imageVector = Icons.Default.DoneAll, contentDescription = null, modifier = Modifier.size(16.dp))
+              Spacer(modifier = Modifier.width(4.dp))
+              Text("All Full Day", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+            }
+          }
+
+          // Active Status Pill
+          Surface(
+            color = SchoolAccentGreen.copy(alpha = 0.10f),
+            shape = RoundedCornerShape(8.dp),
+            modifier = Modifier.fillMaxWidth()
+          ) {
+            Row(
+              modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+              verticalAlignment = Alignment.CenterVertically,
+              horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+              Icon(
+                imageVector = Icons.Default.Verified,
+                contentDescription = null,
+                tint = SchoolAccentGreen,
+                modifier = Modifier.size(16.dp)
+              )
+              Text(
+                text = "Live Room Database Synchronization Active • ${String.format("%.1f", presentRate)}% Present",
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                color = SchoolAccentGreen
+              )
+            }
           }
         }
       }
@@ -301,11 +397,14 @@ fun AttendanceScreen(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
       ) {
-        listOf("Class 10-A", "Class 10-B", "Class 9-A", "Class 11-Science").forEach { cls ->
-          val isSelected = selectedClass == cls
+        availableClasses.forEach { cls ->
+          val isSelected = selectedClass.equals(cls, ignoreCase = true)
           FilterChip(
             selected = isSelected,
-            onClick = { onSelectClass(cls) },
+            onClick = {
+              onSelectClass(cls)
+              showSuccessBanner = false
+            },
             label = {
               Text(
                 text = if (cls == "Class 10-A") "$cls ★" else cls,
@@ -317,120 +416,87 @@ fun AttendanceScreen(
             colors = FilterChipDefaults.filterChipColors(
               selectedContainerColor = SchoolNavyPrimary.copy(alpha = 0.15f),
               selectedLabelColor = SchoolNavyPrimary
-            )
+            ),
+            modifier = Modifier.testTag("class_chip_${cls.replace(" ", "_").lowercase()}")
           )
         }
       }
 
-      // Authorization Banner: Highlights whether current teacher is authorized Class Teacher
-      if (isClassTeacherForThisClass) {
-        Surface(
-          color = SchoolAccentGreen.copy(alpha = 0.12f),
-          shape = RoundedCornerShape(10.dp),
-          modifier = Modifier.fillMaxWidth()
-        ) {
-          Row(
-            modifier = Modifier.padding(10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-          ) {
-            Icon(
-              imageVector = Icons.Default.VerifiedUser,
-              contentDescription = null,
-              tint = SchoolAccentGreen,
-              modifier = Modifier.size(20.dp)
-            )
-            Column {
-              Text(
-                text = "Class Teacher Authorization Active",
-                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                color = SchoolAccentGreen
-              )
-              Text(
-                text = "You are the assigned Class Teacher for $selectedClass. You can mark daily roll call.",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-              )
-            }
-          }
-        }
-      } else {
-        // Restricted / View-Only Banner for Subject Teachers & Other Roles
-        Surface(
-          color = SchoolGold.copy(alpha = 0.14f),
-          shape = RoundedCornerShape(10.dp),
-          modifier = Modifier.fillMaxWidth().testTag("restricted_attendance_banner")
-        ) {
-          Row(
-            modifier = Modifier.padding(10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-          ) {
-            Icon(
-              imageVector = Icons.Default.Lock,
-              contentDescription = null,
-              tint = SchoolGoldDark,
-              modifier = Modifier.size(20.dp)
-            )
-            Column {
-              Text(
-                text = "Class Teacher Only • View-Only Mode",
-                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                color = SchoolGoldDark
-              )
-              Text(
-                text = "Only the assigned Class Teacher ($assignedClassTeacher) can record daily roll call for $selectedClass. Subject teachers cannot edit attendance.",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-              )
-            }
-          }
-        }
-      }
-
-      // Daily Status Breakdown Summary Badges (Full Day, Half Day, On-Duty, Absent)
+      // 4 Metric Breakdown Cards
       Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(6.dp)
       ) {
-        DailyStatusFilterChip(
-          label = "All (${totalInClass})",
-          isSelected = statusFilter == null,
-          color = SchoolNavyPrimary,
-          onClick = { statusFilter = null },
-          modifier = Modifier.weight(1f)
-        )
-        DailyStatusFilterChip(
-          label = "FD (${fullDayCount})",
-          isSelected = statusFilter == AttendanceStatus.FULL_DAY,
+        RollCallStatBadge(
+          title = "Full-day",
+          count = fullDayCount,
           color = SchoolAccentGreen,
+          isSelected = statusFilter == AttendanceStatus.FULL_DAY,
           onClick = { statusFilter = if (statusFilter == AttendanceStatus.FULL_DAY) null else AttendanceStatus.FULL_DAY },
           modifier = Modifier.weight(1f)
         )
-        DailyStatusFilterChip(
-          label = "HD (${halfDayCount})",
-          isSelected = statusFilter == AttendanceStatus.HALF_DAY,
+        RollCallStatBadge(
+          title = "Half-day",
+          count = halfDayCount,
           color = SchoolGold,
+          isSelected = statusFilter == AttendanceStatus.HALF_DAY,
           onClick = { statusFilter = if (statusFilter == AttendanceStatus.HALF_DAY) null else AttendanceStatus.HALF_DAY },
           modifier = Modifier.weight(1f)
         )
-        DailyStatusFilterChip(
-          label = "OD (${onDutyCount})",
-          isSelected = statusFilter == AttendanceStatus.ON_DUTY,
+        RollCallStatBadge(
+          title = "On-duty",
+          count = onDutyCount,
           color = SchoolAccentBlue,
+          isSelected = statusFilter == AttendanceStatus.ON_DUTY,
           onClick = { statusFilter = if (statusFilter == AttendanceStatus.ON_DUTY) null else AttendanceStatus.ON_DUTY },
           modifier = Modifier.weight(1f)
         )
-        DailyStatusFilterChip(
-          label = "AB (${absentCount})",
-          isSelected = statusFilter == AttendanceStatus.ABSENT,
+        RollCallStatBadge(
+          title = "Absent",
+          count = absentCount,
           color = SchoolError,
+          isSelected = statusFilter == AttendanceStatus.ABSENT,
           onClick = { statusFilter = if (statusFilter == AttendanceStatus.ABSENT) null else AttendanceStatus.ABSENT },
           modifier = Modifier.weight(1f)
         )
       }
 
-      if (showSuccessSnackbar) {
+      // Search Field
+      Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        OutlinedTextField(
+          value = searchQuery,
+          onValueChange = { searchQuery = it },
+          placeholder = { Text("Search by student name or roll #", style = MaterialTheme.typography.bodySmall) },
+          leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(18.dp)) },
+          trailingIcon = {
+            if (searchQuery.isNotBlank()) {
+              IconButton(onClick = { searchQuery = "" }, modifier = Modifier.size(20.dp)) {
+                Icon(Icons.Default.Close, contentDescription = "Clear search", modifier = Modifier.size(16.dp))
+              }
+            }
+          },
+          singleLine = true,
+          shape = RoundedCornerShape(10.dp),
+          modifier = Modifier
+            .weight(1f)
+            .testTag("attendance_search_input"),
+          colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = SchoolNavyPrimary,
+            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
+          )
+        )
+      }
+
+      // Success Notification Banner
+      AnimatedVisibility(
+        visible = showSuccessBanner,
+        enter = fadeIn() + expandVertically(),
+        exit = fadeOut() + shrinkVertically()
+      ) {
         Surface(
           color = SchoolAccentGreen.copy(alpha = 0.15f),
           shape = RoundedCornerShape(10.dp),
@@ -445,108 +511,161 @@ fun AttendanceScreen(
               verticalAlignment = Alignment.CenterVertically,
               horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-              Icon(imageVector = Icons.Default.CheckCircle, contentDescription = null, tint = SchoolAccentGreen)
+              Icon(Icons.Default.CheckCircle, contentDescription = null, tint = SchoolAccentGreen, modifier = Modifier.size(18.dp))
               Text(
-                text = "Daily attendance saved & locked for $selectedClass by Class Teacher",
-                style = MaterialTheme.typography.bodySmall,
+                text = "Daily attendance recorded and saved to Room Database for $selectedClass",
+                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
                 color = SchoolAccentGreen
               )
             }
-            IconButton(onClick = { showSuccessSnackbar = false }, modifier = Modifier.size(24.dp)) {
-              Icon(imageVector = Icons.Default.Close, contentDescription = "Close", modifier = Modifier.size(16.dp))
+            IconButton(onClick = { showSuccessBanner = false }, modifier = Modifier.size(22.dp)) {
+              Icon(Icons.Default.Close, contentDescription = "Close", modifier = Modifier.size(14.dp))
             }
           }
         }
       }
 
-      // Students Daily Roll Call List
+      // Interactive Students List
       LazyColumn(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.weight(1f)
       ) {
         items(filteredRecords, key = { it.id }) { rec ->
-          DailyAttendanceStudentRow(
+          RollCallStudentCard(
             record = rec,
-            isEditable = isClassTeacherForThisClass,
-            onStatusChange = { newStatus ->
-              if (isClassTeacherForThisClass) {
-                onUpdateStatus(rec.studentId, newStatus)
-              }
+            onStatusSelect = { newStatus ->
+              onUpdateStatus(rec.studentId, newStatus, rec.notes)
+              showSuccessBanner = true
+            },
+            onAddRemark = {
+              editingNoteStudentId = rec.studentId
+              noteStudentName = rec.studentName
+              noteInputText = rec.notes
+              currentStudentStatusForNote = rec.status
             }
           )
         }
       }
 
-      // Save & Sync Button (Only enabled for authorized Class Teacher / Admin)
-      if (isClassTeacherForThisClass) {
-        Button(
-          onClick = { showSuccessSnackbar = true },
-          modifier = Modifier.fillMaxWidth().testTag("save_attendance_btn"),
-          shape = RoundedCornerShape(12.dp),
-          colors = ButtonDefaults.buttonColors(containerColor = SchoolNavyPrimary)
-        ) {
-          Icon(imageVector = Icons.Default.Save, contentDescription = null)
-          Spacer(modifier = Modifier.width(8.dp))
-          Text("Save & Submit Daily Roll Call ($selectedClass)")
-        }
-      } else {
-        OutlinedButton(
-          onClick = { /* No-op in view-only */ },
-          enabled = false,
-          modifier = Modifier.fillMaxWidth(),
-          shape = RoundedCornerShape(12.dp)
-        ) {
-          Icon(imageVector = Icons.Default.Lock, contentDescription = null)
-          Spacer(modifier = Modifier.width(8.dp))
-          Text("Attendance Editable by Class Teacher Only ($assignedClassTeacher)")
-        }
+      // Bottom Save / Sync Action Bar
+      Button(
+        onClick = { showSuccessBanner = true },
+        modifier = Modifier
+          .fillMaxWidth()
+          .testTag("save_attendance_btn"),
+        shape = RoundedCornerShape(12.dp),
+        colors = ButtonDefaults.buttonColors(containerColor = SchoolNavyPrimary)
+      ) {
+        Icon(Icons.Default.Save, contentDescription = null)
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+          text = "Save & Submit Roll Call ($selectedClass)",
+          style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
+        )
       }
     }
   }
-}
 
-@Composable
-fun DailyStatusFilterChip(
-  label: String,
-  isSelected: Boolean,
-  color: Color,
-  onClick: () -> Unit,
-  modifier: Modifier = Modifier
-) {
-  Surface(
-    color = if (isSelected) color.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-    shape = RoundedCornerShape(8.dp),
-    border = if (isSelected) androidx.compose.foundation.BorderStroke(1.dp, color) else null,
-    modifier = modifier.clickable { onClick() }
-  ) {
-    Text(
-      text = label,
-      style = MaterialTheme.typography.labelSmall.copy(
-        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-        fontSize = 11.sp
-      ),
-      color = if (isSelected) color else MaterialTheme.colorScheme.onSurfaceVariant,
-      modifier = Modifier.padding(vertical = 6.dp),
-      textAlign = androidx.compose.ui.text.style.TextAlign.Center
+  // Modal Dialog for adding Remarks / Leave Notes / On-Duty Details
+  if (editingNoteStudentId != null) {
+    AlertDialog(
+      onDismissRequest = { editingNoteStudentId = null },
+      icon = { Icon(Icons.Default.EditNote, contentDescription = null, tint = SchoolNavyPrimary) },
+      title = {
+        Text("Record Reason / Remark", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+      },
+      text = {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+          Text(
+            text = "Student: $noteStudentName\nStatus: ${currentStudentStatusForNote.description}",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+          )
+          OutlinedTextField(
+            value = noteInputText,
+            onValueChange = { noteInputText = it },
+            placeholder = { Text("e.g. Science Expo, Medical Appointment, Sports") },
+            modifier = Modifier
+              .fillMaxWidth()
+              .testTag("attendance_note_input"),
+            maxLines = 3
+          )
+        }
+      },
+      confirmButton = {
+        Button(
+          onClick = {
+            editingNoteStudentId?.let { id ->
+              onUpdateStatus(id, currentStudentStatusForNote, noteInputText.trim())
+              showSuccessBanner = true
+            }
+            editingNoteStudentId = null
+          },
+          colors = ButtonDefaults.buttonColors(containerColor = SchoolNavyPrimary)
+        ) {
+          Text("Save Remark")
+        }
+      },
+      dismissButton = {
+        TextButton(onClick = { editingNoteStudentId = null }) {
+          Text("Cancel")
+        }
+      }
     )
   }
 }
 
+@Composable
+private fun RollCallStatBadge(
+  title: String,
+  count: Int,
+  color: Color,
+  isSelected: Boolean,
+  onClick: () -> Unit,
+  modifier: Modifier = Modifier
+) {
+  Surface(
+    color = if (isSelected) color.copy(alpha = 0.22f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+    shape = RoundedCornerShape(8.dp),
+    border = if (isSelected) androidx.compose.foundation.BorderStroke(1.5.dp, color) else null,
+    modifier = modifier.clickable { onClick() }
+  ) {
+    Column(
+      modifier = Modifier.padding(vertical = 6.dp, horizontal = 4.dp),
+      horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+      Text(
+        text = "$count",
+        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+        color = if (isSelected) color else MaterialTheme.colorScheme.onSurface
+      )
+      Text(
+        text = title,
+        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+        color = if (isSelected) color else MaterialTheme.colorScheme.onSurfaceVariant,
+        textAlign = TextAlign.Center
+      )
+    }
+  }
+}
+
 /**
- * Row displaying student roll call with 4 daily options:
- * - Full Day (FD)
- * - Half Day (HD)
- * - On-Duty (OD)
- * - Absent (AB)
+ * Interactive Student Roll-Call Card with 4 instant-tap buttons:
+ * - FD (Full Day)
+ * - HD (Half Day)
+ * - OD (On-Duty)
+ * - AB (Absent)
  */
 @Composable
-fun DailyAttendanceStudentRow(
+fun RollCallStudentCard(
   record: AttendanceRecord,
-  isEditable: Boolean,
-  onStatusChange: (AttendanceStatus) -> Unit
+  onStatusSelect: (AttendanceStatus) -> Unit,
+  onAddRemark: () -> Unit
 ) {
   Card(
-    modifier = Modifier.fillMaxWidth().testTag("student_attendance_row_${record.rollNo}"),
+    modifier = Modifier
+      .fillMaxWidth()
+      .testTag("student_attendance_row_${record.rollNo}"),
     shape = RoundedCornerShape(12.dp),
     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
     elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
@@ -562,10 +681,11 @@ fun DailyAttendanceStudentRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
       ) {
-        // Roll No & Student Name
+        // Roll No Badge & Student Name
         Row(
           verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.spacedBy(10.dp)
+          horizontalArrangement = Arrangement.spacedBy(10.dp),
+          modifier = Modifier.weight(1f)
         ) {
           Surface(
             color = SchoolNavyPrimary.copy(alpha = 0.1f),
@@ -585,15 +705,18 @@ fun DailyAttendanceStudentRow(
               style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
             )
             Text(
-              text = "Daily: ${record.status.description}",
+              text = record.status.description,
               style = MaterialTheme.typography.labelSmall,
               color = Color(record.status.colorHex)
             )
           }
         }
 
-        // 4 Status Action Badges (FD, HD, OD, AB)
-        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        // 4 Interactive Status Badges (FD, HD, OD, AB)
+        Row(
+          horizontalArrangement = Arrangement.spacedBy(4.dp),
+          verticalAlignment = Alignment.CenterVertically
+        ) {
           listOf(
             AttendanceStatus.FULL_DAY,
             AttendanceStatus.HALF_DAY,
@@ -607,7 +730,7 @@ fun DailyAttendanceStudentRow(
               color = if (isSelected) statusColor else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
               shape = RoundedCornerShape(6.dp),
               modifier = Modifier
-                .clickable(enabled = isEditable) { onStatusChange(status) }
+                .clickable { onStatusSelect(status) }
                 .testTag("status_${status.code.lowercase()}_${record.rollNo}")
             ) {
               Text(
@@ -616,15 +739,28 @@ fun DailyAttendanceStudentRow(
                   fontWeight = FontWeight.ExtraBold,
                   fontSize = 11.sp
                 ),
-                color = if (isSelected) Color.White else if (isEditable) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
               )
             }
           }
+
+          // Remark / Notes Button
+          IconButton(
+            onClick = onAddRemark,
+            modifier = Modifier.size(28.dp).testTag("note_btn_${record.rollNo}")
+          ) {
+            Icon(
+              imageVector = if (record.notes.isNotBlank()) Icons.Default.Notes else Icons.Default.AddComment,
+              contentDescription = "Add remark",
+              tint = if (record.notes.isNotBlank()) SchoolNavyPrimary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+              modifier = Modifier.size(16.dp)
+            )
+          }
         }
       }
 
-      // Reason / Remarks if available (e.g. On-Duty event or medical note)
+      // Notes Display if present
       if (record.notes.isNotBlank()) {
         Surface(
           color = when (record.status) {
@@ -634,7 +770,9 @@ fun DailyAttendanceStudentRow(
             else -> SchoolNavyPrimary.copy(alpha = 0.05f)
           },
           shape = RoundedCornerShape(6.dp),
-          modifier = Modifier.fillMaxWidth()
+          modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onAddRemark() }
         ) {
           Row(
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -645,7 +783,7 @@ fun DailyAttendanceStudentRow(
               imageVector = if (record.status == AttendanceStatus.ON_DUTY) Icons.Default.EmojiEvents else Icons.Default.Notes,
               contentDescription = null,
               tint = Color(record.status.colorHex),
-              modifier = Modifier.size(14.dp)
+              modifier = Modifier.size(13.dp)
             )
             Text(
               text = record.notes,

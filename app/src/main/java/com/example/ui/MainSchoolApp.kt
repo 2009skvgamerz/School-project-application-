@@ -1,6 +1,6 @@
 package com.example.ui
 
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -37,7 +37,8 @@ enum class NavigationTab(val label: String, val icon: ImageVector) {
   DUTIES("Duties", Icons.Default.Checklist),
   CLASSES("Classes", Icons.Default.Groups),
   MANAGEMENT("Directory", Icons.Default.AdminPanelSettings),
-  PROFILE("Profile", Icons.Default.Person)
+  PROFILE("Profile", Icons.Default.Person),
+  SETTINGS("Settings", Icons.Default.Settings)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -46,6 +47,7 @@ fun MainSchoolApp(
   viewModel: SchoolViewModel = viewModel()
 ) {
   val currentUser by viewModel.currentUser.collectAsState()
+  val currentThemeMode by viewModel.themeMode.collectAsState()
   val studentProfile by viewModel.studentProfile.collectAsState()
   val teacherProfile by viewModel.teacherProfile.collectAsState()
   val staffProfile by viewModel.staffProfile.collectAsState()
@@ -70,7 +72,8 @@ fun MainSchoolApp(
   val selectedNoticeCategory by viewModel.selectedNoticeCategory.collectAsState()
   val pendingHomeworkCount by viewModel.pendingHomeworkCount.collectAsState()
 
-  var isAuthenticated by remember { mutableStateOf(true) }
+  // Compulsory authentication on every app launch - requires successful login before accessing app
+  var isAuthenticated by remember { mutableStateOf(false) }
   var loginErrorMessage by remember { mutableStateOf<String?>(null) }
   var currentTab by remember { mutableStateOf(NavigationTab.DASHBOARD) }
 
@@ -150,25 +153,29 @@ fun MainSchoolApp(
             Box(
               modifier = Modifier
                 .size(38.dp)
-                .clip(CircleShape)
-                .background(SchoolGold),
+                .clip(RoundedCornerShape(8.dp))
+                .background(SchoolNavyPrimary),
               contentAlignment = Alignment.Center
             ) {
               Icon(
                 imageVector = Icons.Default.School,
                 contentDescription = null,
-                tint = SchoolNavyPrimary,
-                modifier = Modifier.size(22.dp)
+                tint = SchoolGold,
+                modifier = Modifier.size(24.dp)
               )
             }
+
             Column {
               Text(
-                text = "St. Joseph's School",
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                text = "St. Joseph's",
+                style = MaterialTheme.typography.titleMedium.copy(
+                  fontWeight = FontWeight.ExtraBold,
+                  letterSpacing = 0.5.sp
+                ),
                 color = SchoolNavyPrimary
               )
               Text(
-                text = "${currentUser.role.label} Portal • 2026-27",
+                text = currentTab.label,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
               )
@@ -185,7 +192,7 @@ fun MainSchoolApp(
               .testTag("switch_role_top_bar_btn")
           ) {
             Row(
-              modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+              modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
               verticalAlignment = Alignment.CenterVertically,
               horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
@@ -193,7 +200,7 @@ fun MainSchoolApp(
                 imageVector = Icons.Default.SwapHoriz,
                 contentDescription = "Switch Role",
                 tint = SchoolNavyPrimary,
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(16.dp)
               )
               Text(
                 text = currentUser.role.label,
@@ -203,19 +210,35 @@ fun MainSchoolApp(
             }
           }
 
+          // Bulletins Notification Action
           IconButton(
             onClick = { currentTab = NavigationTab.NOTICES },
             modifier = Modifier.testTag("notifications_bell_btn")
           ) {
             BadgedBox(
               badge = {
-                Badge(containerColor = Color(0xFFDC2626)) {
-                  Text("${notices.count { it.isUrgent }}")
+                val count = notices.count { it.isUrgent }
+                if (count > 0) {
+                  Badge(containerColor = Color(0xFFDC2626)) {
+                    Text("$count")
+                  }
                 }
               }
             ) {
               Icon(imageVector = Icons.Default.Notifications, contentDescription = "Bulletins")
             }
+          }
+
+          // Settings Action
+          IconButton(
+            onClick = { currentTab = NavigationTab.SETTINGS },
+            modifier = Modifier.testTag("settings_top_bar_btn")
+          ) {
+            Icon(
+              imageVector = if (currentTab == NavigationTab.SETTINGS) Icons.Filled.Settings else Icons.Default.Settings,
+              contentDescription = "Settings",
+              tint = if (currentTab == NavigationTab.SETTINGS) SchoolNavyPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+            )
           }
         },
         colors = TopAppBarDefaults.topAppBarColors(
@@ -362,32 +385,22 @@ fun MainSchoolApp(
         }
 
         NavigationTab.ATTENDANCE -> {
-          if (currentUser.role == UserRole.TEACHER) {
-            TeacherClassAttendanceScreen(
-              teacherProfile = teacherProfile,
-              attendanceList = roomAttendanceRecords,
-              selectedClass = selectedClassForAttendance,
-              onClassSelected = { viewModel.setSelectedClass(it) },
-              onUpdateStatus = { studentId, status, notes ->
-                viewModel.updateStudentAttendanceStatus(studentId, status, notes)
-              },
-              onMarkAllFullDay = { cls ->
-                viewModel.markAllFullDay(cls)
-              }
-            )
-          } else {
-            AttendanceScreen(
-              userRole = currentUser.role,
-              studentProfile = studentProfile,
-              teacherProfile = teacherProfile,
-              adminProfile = adminProfile,
-              attendanceRecords = attendanceRecords,
-              selectedClass = selectedClassForAttendance,
-              onSelectClass = { viewModel.setSelectedClass(it) },
-              onUpdateStatus = { studentId, status -> viewModel.updateStudentAttendanceStatus(studentId, status) },
-              onMarkAllFullDay = { cls -> viewModel.markAllFullDay(cls) }
-            )
-          }
+          AttendanceScreen(
+            userRole = currentUser.role,
+            studentProfile = studentProfile,
+            teacherProfile = teacherProfile,
+            adminProfile = adminProfile,
+            attendanceRecords = attendanceRecords,
+            roomAttendanceRecords = roomAttendanceRecords,
+            selectedClass = selectedClassForAttendance,
+            onSelectClass = { viewModel.setSelectedClass(it) },
+            onUpdateStatus = { studentId, status, notes ->
+              viewModel.updateStudentAttendanceStatus(studentId, status, notes)
+            },
+            onMarkAllFullDay = { cls ->
+              viewModel.markAllFullDay(cls)
+            }
+          )
         }
 
         NavigationTab.NOTICES -> {
@@ -437,10 +450,30 @@ fun MainSchoolApp(
               viewModel.switchRole(role)
               currentTab = NavigationTab.DASHBOARD
             },
+            onNavigateToSettings = {
+              currentTab = NavigationTab.SETTINGS
+            },
             onSignOut = {
               viewModel.logout()
               loginErrorMessage = null
               isAuthenticated = false
+            }
+          )
+        }
+
+        NavigationTab.SETTINGS -> {
+          SettingsScreen(
+            currentUser = currentUser,
+            currentThemeMode = currentThemeMode,
+            onThemeModeChange = { mode -> viewModel.setThemeMode(mode) },
+            onSwitchRole = { showRoleSwitcherDialog = true },
+            onSignOut = {
+              viewModel.logout()
+              loginErrorMessage = null
+              isAuthenticated = false
+            },
+            onResetDatabase = {
+              viewModel.resetDatabaseToDefaults()
             }
           )
         }
@@ -502,17 +535,17 @@ fun MainSchoolApp(
                   )
                   Text(
                     text = when(role) {
-                      UserRole.STUDENT -> "Timetable, Homework submission, Attendance view"
-                      UserRole.TEACHER -> "Mark attendance, Assign HW, Manage classes"
-                      UserRole.STAFF -> "Campus duties, Operations checklist, Safety logs"
-                      UserRole.ADMIN -> "Institutional stats, School directory, Circular broadcasts"
+                      UserRole.STUDENT -> "Alex Johnson (Class 10-A)"
+                      UserRole.TEACHER -> "Prof. Sarah Jenkins (Physics)"
+                      UserRole.STAFF -> "Marcus Vance (Head Facilities)"
+                      UserRole.ADMIN -> "Dr. Anthony Edwards (Principal)"
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                   )
                 }
                 if (isCurrent) {
-                  Icon(imageVector = Icons.Default.CheckCircle, contentDescription = null, tint = SchoolNavyPrimary)
+                  Icon(imageVector = Icons.Default.Check, contentDescription = null, tint = SchoolNavyPrimary)
                 }
               }
             }
@@ -521,94 +554,64 @@ fun MainSchoolApp(
       },
       confirmButton = {
         TextButton(onClick = { showRoleSwitcherDialog = false }) {
-          Text("Close")
-        }
-      }
-    )
-  }
-
-  // 2. Submit Homework Dialog (for Students)
-  selectedHomeworkForSubmission?.let { hw ->
-    var notes by remember { mutableStateOf("") }
-    AlertDialog(
-      onDismissRequest = { selectedHomeworkForSubmission = null },
-      icon = { Icon(imageVector = Icons.Default.UploadFile, contentDescription = null, tint = SchoolNavyPrimary) },
-      title = { Text("Submit Homework: ${hw.subjectName}", fontWeight = FontWeight.Bold) },
-      text = {
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-          Text(text = hw.title, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
-          Text(text = hw.description, style = MaterialTheme.typography.bodySmall)
-
-          OutlinedTextField(
-            value = notes,
-            onValueChange = { notes = it },
-            label = { Text("Submission notes / Attachment link") },
-            placeholder = { Text("e.g. Completed worksheets & exercises uploaded") },
-            modifier = Modifier.fillMaxWidth().testTag("homework_submission_input")
-          )
-        }
-      },
-      confirmButton = {
-        Button(
-          onClick = {
-            viewModel.submitHomework(hw.id, if (notes.isBlank()) "Submitted on-time via Student Portal" else notes)
-            selectedHomeworkForSubmission = null
-          },
-          modifier = Modifier.testTag("confirm_submit_hw_btn")
-        ) {
-          Text("Confirm Submit")
-        }
-      },
-      dismissButton = {
-        TextButton(onClick = { selectedHomeworkForSubmission = null }) {
           Text("Cancel")
         }
       }
     )
   }
 
-  // 3. Assign New Homework Dialog (Teachers/Admins)
+  // 2. Assign Homework Dialog
   if (showAssignHomeworkDialog) {
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var subject by remember { mutableStateOf("Physics") }
-    var className by remember { mutableStateOf("Class 10-A") }
+    var targetClass by remember { mutableStateOf("Class 10-A") }
     var dueDate by remember { mutableStateOf("Tomorrow, 5:00 PM") }
 
     AlertDialog(
       onDismissRequest = { showAssignHomeworkDialog = false },
+      icon = { Icon(Icons.Default.Assignment, contentDescription = null, tint = SchoolNavyPrimary) },
       title = { Text("Assign New Homework", fontWeight = FontWeight.Bold) },
       text = {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
           OutlinedTextField(
             value = title,
             onValueChange = { title = it },
             label = { Text("Assignment Title") },
-            modifier = Modifier.fillMaxWidth().testTag("assign_hw_title_input")
+            placeholder = { Text("e.g. Wave Optics Problem Set") },
+            modifier = Modifier.fillMaxWidth().testTag("hw_title_input"),
+            singleLine = true
           )
           OutlinedTextField(
             value = description,
             onValueChange = { description = it },
-            label = { Text("Description & Tasks") },
-            modifier = Modifier.fillMaxWidth()
+            label = { Text("Instructions & Chapters") },
+            placeholder = { Text("Solve Numerical Questions 1 to 15 from Chapter 4") },
+            modifier = Modifier.fillMaxWidth().testTag("hw_desc_input"),
+            maxLines = 3
           )
-          OutlinedTextField(
-            value = subject,
-            onValueChange = { subject = it },
-            label = { Text("Subject") },
-            modifier = Modifier.fillMaxWidth()
-          )
-          OutlinedTextField(
-            value = className,
-            onValueChange = { className = it },
-            label = { Text("Target Class") },
-            modifier = Modifier.fillMaxWidth()
-          )
+          Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedTextField(
+              value = subject,
+              onValueChange = { subject = it },
+              label = { Text("Subject") },
+              modifier = Modifier.weight(1f),
+              singleLine = true
+            )
+            OutlinedTextField(
+              value = targetClass,
+              onValueChange = { targetClass = it },
+              label = { Text("Class") },
+              modifier = Modifier.weight(1f),
+              singleLine = true
+            )
+          }
           OutlinedTextField(
             value = dueDate,
             onValueChange = { dueDate = it },
             label = { Text("Due Date / Time") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true
           )
         }
       },
@@ -618,18 +621,19 @@ fun MainSchoolApp(
             if (title.isNotBlank()) {
               viewModel.createHomework(
                 title = title,
-                description = description.ifBlank { "Complete the given exercises." },
+                description = description.ifBlank { "Complete the assigned exercises in notebook." },
                 subjectName = subject,
-                className = className,
+                className = targetClass,
                 dueDate = dueDate,
                 maxMarks = 25
               )
+              showAssignHomeworkDialog = false
             }
-            showAssignHomeworkDialog = false
           },
-          modifier = Modifier.testTag("save_hw_btn")
+          colors = ButtonDefaults.buttonColors(containerColor = SchoolNavyPrimary),
+          modifier = Modifier.testTag("submit_assign_hw_btn")
         ) {
-          Text("Assign")
+          Text("Publish Assignment")
         }
       },
       dismissButton = {
@@ -640,61 +644,61 @@ fun MainSchoolApp(
     )
   }
 
-  // 4. Create Notice Dialog (Teachers/Staff/Admin)
+  // 3. Create Notice Dialog
   if (showCreateNoticeDialog) {
     var title by remember { mutableStateOf("") }
     var content by remember { mutableStateOf("") }
-    var category by remember { mutableStateOf(NoticeCategory.GENERAL) }
+    var category by remember { mutableStateOf(NoticeCategory.ACADEMIC) }
     var isUrgent by remember { mutableStateOf(false) }
 
     AlertDialog(
       onDismissRequest = { showCreateNoticeDialog = false },
-      title = { Text("Publish Circular / Notice", fontWeight = FontWeight.Bold) },
+      icon = { Icon(Icons.Default.Campaign, contentDescription = null, tint = SchoolNavyPrimary) },
+      title = { Text("Broadcast New Circular", fontWeight = FontWeight.Bold) },
       text = {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
           OutlinedTextField(
             value = title,
             onValueChange = { title = it },
-            label = { Text("Notice Title") },
-            modifier = Modifier.fillMaxWidth().testTag("notice_title_input")
+            label = { Text("Circular Heading") },
+            placeholder = { Text("e.g. Annual Sports Meet 2026") },
+            modifier = Modifier.fillMaxWidth().testTag("notice_title_input"),
+            singleLine = true
           )
           OutlinedTextField(
             value = content,
             onValueChange = { content = it },
-            label = { Text("Notice Content") },
-            minLines = 3,
-            modifier = Modifier.fillMaxWidth().testTag("notice_content_input")
+            label = { Text("Full Bulletin Content") },
+            placeholder = { Text("Details of schedule, participation, uniform, and timing...") },
+            modifier = Modifier.fillMaxWidth().testTag("notice_content_input"),
+            maxLines = 4
           )
-
           Row(
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.SpaceBetween
           ) {
-            Checkbox(
+            Text("Mark as Urgent / Priority", style = MaterialTheme.typography.bodySmall)
+            Switch(
               checked = isUrgent,
               onCheckedChange = { isUrgent = it },
-              modifier = Modifier.testTag("notice_urgent_checkbox")
+              colors = SwitchDefaults.colors(checkedThumbColor = Color(0xFFDC2626))
             )
-            Text("Mark as High Priority / Urgent")
           }
         }
       },
       confirmButton = {
         Button(
           onClick = {
-            if (title.isNotBlank()) {
-              viewModel.publishNotice(
-                title = title,
-                content = content.ifBlank { "Important announcement for all school members." },
-                category = category,
-                isUrgent = isUrgent
-              )
+            if (title.isNotBlank() && content.isNotBlank()) {
+              viewModel.publishNotice(title, content, category, isUrgent)
+              showCreateNoticeDialog = false
             }
-            showCreateNoticeDialog = false
           },
-          modifier = Modifier.testTag("publish_notice_btn")
+          colors = ButtonDefaults.buttonColors(containerColor = SchoolNavyPrimary),
+          modifier = Modifier.testTag("submit_create_notice_btn")
         ) {
-          Text("Publish")
+          Text("Post Circular")
         }
       },
       dismissButton = {
@@ -705,52 +709,54 @@ fun MainSchoolApp(
     )
   }
 
-  // 5. Add Duty Dialog (Staff/Admin)
+  // 4. Add Duty Task Dialog
   if (showAddDutyDialog) {
-    var dutyTitle by remember { mutableStateOf("") }
-    var area by remember { mutableStateOf("Main Campus Ground") }
-    var time by remember { mutableStateOf("11:30 AM - 12:30 PM") }
+    var title by remember { mutableStateOf("") }
+    var area by remember { mutableStateOf("Main Gate & North Quad") }
+    var time by remember { mutableStateOf("07:45 AM - 08:30 AM") }
 
     AlertDialog(
       onDismissRequest = { showAddDutyDialog = false },
-      title = { Text("Assign Operational Task", fontWeight = FontWeight.Bold) },
+      icon = { Icon(Icons.Default.Checklist, contentDescription = null, tint = SchoolNavyPrimary) },
+      title = { Text("Assign Campus Duty", fontWeight = FontWeight.Bold) },
       text = {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
           OutlinedTextField(
-            value = dutyTitle,
-            onValueChange = { dutyTitle = it },
-            label = { Text("Task Description") },
-            modifier = Modifier.fillMaxWidth().testTag("duty_title_input")
+            value = title,
+            onValueChange = { title = it },
+            label = { Text("Duty Description") },
+            placeholder = { Text("Morning Gate Monitoring & Bus Dispersal") },
+            modifier = Modifier.fillMaxWidth().testTag("duty_title_input"),
+            singleLine = true
           )
           OutlinedTextField(
             value = area,
             onValueChange = { area = it },
-            label = { Text("Location / Campus Area") },
-            modifier = Modifier.fillMaxWidth()
+            label = { Text("Campus Location") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true
           )
           OutlinedTextField(
             value = time,
             onValueChange = { time = it },
-            label = { Text("Scheduled Time") },
-            modifier = Modifier.fillMaxWidth()
+            label = { Text("Time Window") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true
           )
         }
       },
       confirmButton = {
         Button(
           onClick = {
-            if (dutyTitle.isNotBlank()) {
-              viewModel.addDutyTask(
-                title = dutyTitle,
-                area = area,
-                time = time
-              )
+            if (title.isNotBlank()) {
+              viewModel.addDutyTask(title, area, time)
+              showAddDutyDialog = false
             }
-            showAddDutyDialog = false
           },
-          modifier = Modifier.testTag("save_duty_btn")
+          colors = ButtonDefaults.buttonColors(containerColor = SchoolNavyPrimary),
+          modifier = Modifier.testTag("submit_add_duty_btn")
         ) {
-          Text("Add Task")
+          Text("Add Duty")
         }
       },
       dismissButton = {
@@ -761,62 +767,96 @@ fun MainSchoolApp(
     )
   }
 
+  // 5. Submit Homework Dialog (Student)
+  if (selectedHomeworkForSubmission != null) {
+    val hw = selectedHomeworkForSubmission!!
+    var submissionNote by remember { mutableStateOf("") }
+
+    AlertDialog(
+      onDismissRequest = { selectedHomeworkForSubmission = null },
+      icon = { Icon(Icons.Default.UploadFile, contentDescription = null, tint = SchoolAccentGreen) },
+      title = { Text("Submit Homework", fontWeight = FontWeight.Bold) },
+      text = {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+          Text(text = "Subject: ${hw.subjectName}", fontWeight = FontWeight.Bold, color = SchoolNavyPrimary)
+          Text(text = hw.title, style = MaterialTheme.typography.bodyMedium)
+          Spacer(modifier = Modifier.height(4.dp))
+          OutlinedTextField(
+            value = submissionNote,
+            onValueChange = { submissionNote = it },
+            label = { Text("Submission Comments / Link") },
+            placeholder = { Text("Completed in Classwork notebook. Formulas verified.") },
+            modifier = Modifier.fillMaxWidth().testTag("submission_note_input"),
+            maxLines = 3
+          )
+        }
+      },
+      confirmButton = {
+        Button(
+          onClick = {
+            viewModel.submitHomework(hw.id, submissionNote.ifBlank { "Completed & Submitted via Student Portal." })
+            selectedHomeworkForSubmission = null
+          },
+          colors = ButtonDefaults.buttonColors(containerColor = SchoolAccentGreen),
+          modifier = Modifier.testTag("confirm_submit_hw_btn")
+        ) {
+          Text("Confirm Submission")
+        }
+      },
+      dismissButton = {
+        TextButton(onClick = { selectedHomeworkForSubmission = null }) {
+          Text("Cancel")
+        }
+      }
+    )
+  }
+
   // 6. Notice Detail Dialog
-  selectedNoticeDetail?.let { notice ->
+  if (selectedNoticeDetail != null) {
+    val notice = selectedNoticeDetail!!
     AlertDialog(
       onDismissRequest = { selectedNoticeDetail = null },
       icon = {
         Icon(
-          imageVector = Icons.Default.Campaign,
+          imageVector = if (notice.isUrgent) Icons.Default.Warning else Icons.Default.Campaign,
           contentDescription = null,
           tint = if (notice.isUrgent) Color(0xFFDC2626) else SchoolNavyPrimary
         )
       },
       title = {
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-          Text(text = notice.title, fontWeight = FontWeight.Bold)
-          Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Surface(
-              color = Color(notice.category.colorHex).copy(alpha = 0.15f),
-              shape = RoundedCornerShape(4.dp)
-            ) {
-              Text(
-                text = notice.category.label,
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                color = Color(notice.category.colorHex),
-                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-              )
-            }
-            if (notice.isUrgent) {
-              Surface(
-                color = Color(0xFFDC2626).copy(alpha = 0.15f),
-                shape = RoundedCornerShape(4.dp)
-              ) {
-                Text(
-                  text = "Urgent",
-                  style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                  color = Color(0xFFDC2626),
-                  modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                )
-              }
-            }
-          }
-        }
+        Text(notice.title, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
       },
       text = {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-          Text(text = notice.content, style = MaterialTheme.typography.bodyMedium)
-          HorizontalDivider()
+          Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+          ) {
+            Text(
+              text = "By ${notice.authorName} (${notice.authorRole})",
+              style = MaterialTheme.typography.labelSmall,
+              color = SchoolNavyPrimary
+            )
+            Text(
+              text = notice.date,
+              style = MaterialTheme.typography.labelSmall,
+              color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+          }
+          HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
           Text(
-            text = "Issued by: ${notice.authorName} (${notice.authorRole.label})\nDate: ${notice.date}",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            text = notice.content,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface
           )
         }
       },
       confirmButton = {
-        Button(onClick = { selectedNoticeDetail = null }) {
-          Text("Got It")
+        Button(
+          onClick = { selectedNoticeDetail = null },
+          colors = ButtonDefaults.buttonColors(containerColor = SchoolNavyPrimary)
+        ) {
+          Text("Close")
         }
       }
     )

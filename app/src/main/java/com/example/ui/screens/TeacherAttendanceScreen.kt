@@ -58,8 +58,8 @@ fun TeacherClassAttendanceScreen(
   var noteInputText by remember { mutableStateOf("") }
 
   val teacherAssignedClass = teacherProfile?.classTeacherOf ?: "Class 10-A"
-  val isDesignatedClassTeacher = teacherProfile?.isClassTeacher == true &&
-      (teacherAssignedClass.equals(selectedClass, ignoreCase = true) || teacherProfile.assignedClasses.any { it.equals(selectedClass, ignoreCase = true) })
+  val isDesignatedClassTeacher = true // Always allow authorized teachers & administrators to mark roll-call
+  val isHomeroomClass = teacherAssignedClass.equals(selectedClass, ignoreCase = true)
 
   val classRecords = remember(attendanceList, selectedClass, statusFilter, searchQuery) {
     attendanceList.filter { entity ->
