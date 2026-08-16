@@ -13,7 +13,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Make gradlew executable
+      - name: Make gradlew executable (if present)
         run: chmod +x ./gradlew || true
 
       - name: Set up JDK 17
@@ -27,6 +27,18 @@ jobs:
         with:
           api-level: 33
           build-tools: '33.0.0'
+
+      - name: Install system Gradle (if wrapper is missing)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gradle
+
+      - name: Generate Gradle wrapper if missing
+        run: |
+          if [ ! -f ./gradlew ]; then
+            gradle wrapper || true
+          fi
+          chmod +x ./gradlew || true
 
       - name: Build Debug APK
         run: ./gradlew assembleDebug --no-daemon
