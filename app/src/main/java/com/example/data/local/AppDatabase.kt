@@ -93,6 +93,13 @@ abstract class AppDatabase : RoomDatabase() {
 
       // 1. Initial Student Entities across multiple classes
       val initialStudents = listOf(
+        // Class 12-A (Keerthivasan's class)
+        StudentEntity("std_1201", "SJ-2024-1201", "Keerthivasan", "keerthivasan.s@stjosephs.edu", "Class 12", "A", 1, "S. Sundar", "+91 98450 78912", "O+", 96.5),
+        StudentEntity("std_1202", "SJ-2024-1202", "Kavya Sundaram", "k.sundaram@stjosephs.edu", "Class 12", "A", 2, "R. Sundaram", "+91 98450 78913", "A+", 95.0),
+        StudentEntity("std_1203", "SJ-2024-1203", "Varun Raghavan", "v.raghavan@stjosephs.edu", "Class 12", "A", 3, "T. Raghavan", "+91 98450 78914", "B+", 91.5),
+        StudentEntity("std_1204", "SJ-2024-1204", "Ananya Iyer", "a.iyer@stjosephs.edu", "Class 12", "A", 4, "G. Iyer", "+91 98450 78915", "O+", 98.0),
+        StudentEntity("std_1205", "SJ-2024-1205", "Rohan Verma", "r.verma@stjosephs.edu", "Class 12", "A", 5, "M. Verma", "+91 98450 78916", "AB+", 93.2),
+        StudentEntity("std_1206", "SJ-2024-1206", "Sneha Nair", "s.nair@stjosephs.edu", "Class 12", "A", 6, "K. Nair", "+91 98450 78917", "A+", 94.7),
         // Class 10-A
         StudentEntity("std_101", "SJ-2024-1001", "Alex Johnson", "alex.j@stjosephs.edu", "Class 10", "A", 1, "Robert Johnson", "+91 98450 11223", "O+", 96.4),
         StudentEntity("std_102", "SJ-2024-1002", "Bella Collins", "b.collins@stjosephs.edu", "Class 10", "A", 2, "Arthur Collins", "+91 98450 11224", "A+", 92.0),
@@ -133,11 +140,11 @@ abstract class AppDatabase : RoomDatabase() {
           email = "s.jenkins@stjosephs.edu",
           phone = "+91 98765 43210",
           department = "Physical & Chemical Sciences",
-          assignedClasses = listOf("Class 10-A", "Class 10-B", "Class 9-A", "Class 11-Science"),
+          assignedClasses = listOf("Class 12-A", "Class 10-A", "Class 10-B", "Class 9-A", "Class 11-Science"),
           subjectsTaught = listOf("Physics", "Science Lab", "General Science"),
           qualification = "M.Sc. Physics, B.Ed (Gold Medalist)",
           isClassTeacher = true,
-          classTeacherOf = "Class 10-A"
+          classTeacherOf = "Class 12-A"
         ),
         TeacherEntity(
           id = "tch_202",
@@ -146,7 +153,7 @@ abstract class AppDatabase : RoomDatabase() {
           email = "d.miller@stjosephs.edu",
           phone = "+91 98765 43211",
           department = "Mathematical Sciences",
-          assignedClasses = listOf("Class 10-A", "Class 10-B", "Class 12-Science"),
+          assignedClasses = listOf("Class 12-A", "Class 10-A", "Class 10-B", "Class 12-Science"),
           subjectsTaught = listOf("Mathematics", "Applied Calculus"),
           qualification = "M.Sc. Mathematics, B.Ed",
           isClassTeacher = true,
@@ -159,7 +166,7 @@ abstract class AppDatabase : RoomDatabase() {
           email = "c.higgins@stjosephs.edu",
           phone = "+91 98765 43212",
           department = "Humanities & Languages",
-          assignedClasses = listOf("Class 9-A", "Class 10-A"),
+          assignedClasses = listOf("Class 12-A", "Class 9-A", "Class 10-A"),
           subjectsTaught = listOf("English Literature", "Creative Writing"),
           qualification = "M.A. English Literature",
           isClassTeacher = true,
@@ -170,6 +177,13 @@ abstract class AppDatabase : RoomDatabase() {
 
       // 3. Initial Attendance Entities (Daily Roll Call across classes)
       val initialAttendance = listOf(
+        // Class 12-A (Keerthivasan's class)
+        AttendanceEntity("att_1201", "std_1201", "Keerthivasan", 1, "Class 12-A", "Today", AttendanceStatus.FULL_DAY, "Prof. Sarah Jenkins (Class Teacher)"),
+        AttendanceEntity("att_1202", "std_1202", "Kavya Sundaram", 2, "Class 12-A", "Today", AttendanceStatus.FULL_DAY, "Prof. Sarah Jenkins (Class Teacher)"),
+        AttendanceEntity("att_1203", "std_1203", "Varun Raghavan", 3, "Class 12-A", "Today", AttendanceStatus.HALF_DAY, "Prof. Sarah Jenkins (Class Teacher)", "Departed 12:30 PM (Medical appointment)"),
+        AttendanceEntity("att_1204", "std_1204", "Ananya Iyer", 4, "Class 12-A", "Today", AttendanceStatus.ON_DUTY, "Prof. Sarah Jenkins (Class Teacher)", "Inter-School Science Olympiad (OD Approved)"),
+        AttendanceEntity("att_1205", "std_1205", "Rohan Verma", 5, "Class 12-A", "Today", AttendanceStatus.FULL_DAY, "Prof. Sarah Jenkins (Class Teacher)"),
+        AttendanceEntity("att_1206", "std_1206", "Sneha Nair", 6, "Class 12-A", "Today", AttendanceStatus.FULL_DAY, "Prof. Sarah Jenkins (Class Teacher)"),
         // Class 10-A
         AttendanceEntity("att_1", "std_101", "Alex Johnson", 1, "Class 10-A", "Today", AttendanceStatus.FULL_DAY, "Prof. Sarah Jenkins (Class Teacher)"),
         AttendanceEntity("att_2", "std_102", "Bella Collins", 2, "Class 10-A", "Today", AttendanceStatus.FULL_DAY, "Prof. Sarah Jenkins (Class Teacher)"),

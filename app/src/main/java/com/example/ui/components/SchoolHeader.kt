@@ -29,6 +29,8 @@ import com.example.ui.theme.*
 @Composable
 fun SchoolTopBar(
   user: User?,
+  unreadNotificationCount: Int = 0,
+  networkState: com.example.util.NetworkState? = null,
   onNotificationsClick: () -> Unit = {},
   onProfileClick: () -> Unit = {}
 ) {
@@ -64,14 +66,42 @@ fun SchoolTopBar(
         }
 
         Column {
-          Text(
-            text = "ST. JOSEPH'S SCHOOL",
-            style = MaterialTheme.typography.titleMedium.copy(
-              fontWeight = FontWeight.Bold,
-              letterSpacing = 0.5.sp
-            ),
-            color = Color.White
-          )
+          Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+          ) {
+            Text(
+              text = "ST. JOSEPH'S SCHOOL",
+              style = MaterialTheme.typography.titleMedium.copy(
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.5.sp
+              ),
+              color = Color.White
+            )
+            if (networkState is com.example.util.NetworkState.Offline) {
+              Surface(
+                color = Color(0xFFDC2626),
+                shape = RoundedCornerShape(4.dp)
+              ) {
+                Row(
+                  modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
+                  verticalAlignment = Alignment.CenterVertically,
+                  horizontalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                  Icon(
+                    imageVector = Icons.Default.CloudOff,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(10.dp)
+                  )
+                  Text(
+                    text = "OFFLINE",
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 7.5.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                  )
+                }
+              }
+            }
+          }
           Text(
             text = "SHINE AND LET SHINE",
             style = MaterialTheme.typography.labelSmall.copy(
@@ -92,6 +122,50 @@ fun SchoolTopBar(
         }
 
         IconButton(
+          onClick = onNotificationsClick,
+          modifier = Modifier.testTag("top_bar_notifications_btn")
+        ) {
+          Box(
+            modifier = Modifier
+              .size(36.dp)
+              .clip(CircleShape)
+              .background(Color.White.copy(alpha = 0.2f)),
+            contentAlignment = Alignment.Center
+          ) {
+            if (unreadNotificationCount > 0) {
+              BadgedBox(
+                badge = {
+                  Badge(
+                    containerColor = Color(0xFFDC2626),
+                    contentColor = Color.White,
+                    modifier = Modifier.offset(x = (-4).dp, y = 4.dp)
+                  ) {
+                    Text(
+                      text = if (unreadNotificationCount > 9) "9+" else "$unreadNotificationCount",
+                      style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp)
+                    )
+                  }
+                }
+              ) {
+                Icon(
+                  imageVector = Icons.Default.Notifications,
+                  contentDescription = "Notifications ($unreadNotificationCount unread)",
+                  tint = Color.White,
+                  modifier = Modifier.size(20.dp)
+                )
+              }
+            } else {
+              Icon(
+                imageVector = Icons.Outlined.Notifications,
+                contentDescription = "Notifications",
+                tint = Color.White,
+                modifier = Modifier.size(20.dp)
+              )
+            }
+          }
+        }
+
+        IconButton(
           onClick = onProfileClick,
           modifier = Modifier.testTag("top_bar_profile_btn")
         ) {
@@ -105,7 +179,8 @@ fun SchoolTopBar(
             Icon(
               imageVector = Icons.Default.AccountCircle,
               contentDescription = "User Profile",
-              tint = Color.White
+              tint = Color.White,
+              modifier = Modifier.size(22.dp)
             )
           }
         }
@@ -194,6 +269,7 @@ fun WelcomeGreetingBanner(
               UserRole.TEACHER -> Icons.Default.MenuBook
               UserRole.STAFF -> Icons.Default.Engineering
               UserRole.ADMIN -> Icons.Default.AdminPanelSettings
+              UserRole.DEVELOPER -> Icons.Default.Terminal
             },
             contentDescription = null,
             tint = Color.White,

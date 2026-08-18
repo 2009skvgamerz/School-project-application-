@@ -62,4 +62,7 @@ interface AttendanceDao {
 
   @Query("DELETE FROM attendance_records WHERE class_name = :className AND date = :date")
   suspend fun deleteRecordsByClassAndDate(className: String, date: String)
+
+  @Query("SELECT COUNT(*) FROM attendance_records")
+  suspend fun getAttendanceCount(): Int
 }

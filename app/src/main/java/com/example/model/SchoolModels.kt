@@ -4,7 +4,8 @@ enum class UserRole(val displayName: String, val badgeColor: Long) {
   STUDENT("Student", 0xFF2563EB),
   TEACHER("Teacher", 0xFF059669),
   STAFF("Staff", 0xFF7C3AED),
-  ADMIN("Administrator", 0xFFD97706);
+  ADMIN("Administrator", 0xFFD97706),
+  DEVELOPER("Developer / Root", 0xFF10B981);
 
   val label: String get() = displayName
 }
@@ -81,6 +82,38 @@ data class AdminProfile(
 ) {
   val adminId: String get() = employeeId
 }
+
+data class DeveloperProfile(
+  val user: User,
+  val devId: String = "DEV-ROOT-007",
+  val accessLevel: String = "Level 5 - God Mode (Full Master Write)",
+  val terminalStatus: String = "ROOT ACTIVE",
+  val environment: String = "St. Joseph's Cloud Core Engine v4.2.0-PRO",
+  val systemPermissions: List<String> = listOf(
+    "Live User & Profile Override",
+    "Universal Entity Mutation",
+    "Global Heads-Up Broadcaster",
+    "Attendance & Grade Override",
+    "Timetable & Roster Master",
+    "Database Reset & Seeding"
+  )
+) {
+  val developerId: String get() = devId
+}
+
+data class SystemUserRecord(
+  val id: String,
+  val username: String,
+  val fullName: String,
+  val email: String,
+  val role: UserRole,
+  val phone: String = "+91 98450 00000",
+  val designation: String = "",
+  val identifier: String = "", // Admission No or Employee ID
+  val departmentOrGrade: String = "",
+  val sectionOrRoom: String = "",
+  val extraNotes: String = ""
+)
 
 data class SchoolClass(
   val id: String,
@@ -239,4 +272,26 @@ data class DutyTask(
   val status: DutyStatus,
   val assignedTo: String,
   val priority: DutyPriority = DutyPriority.MEDIUM
+)
+
+enum class NotificationType(val label: String, val colorHex: Long) {
+  ALL("All", 0xFF0F3875),
+  ACADEMIC("Academic", 0xFF2563EB),
+  ATTENDANCE("Attendance", 0xFF059669),
+  HOMEWORK("Homework", 0xFFD97706),
+  NOTICE("Notice", 0xFFDC2626),
+  EXAM("Exam", 0xFF7C3AED),
+  FEE("Fee & Admin", 0xFF0891B2),
+  EVENT("Event", 0xFFE11D48)
+}
+
+data class AppNotification(
+  val id: String,
+  val title: String,
+  val message: String,
+  val timeAgo: String,
+  val type: NotificationType,
+  val isRead: Boolean = false,
+  val actionRoute: String? = null,
+  val isUrgent: Boolean = false
 )

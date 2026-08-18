@@ -1,8 +1,8 @@
 package com.example.ui.auth
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -22,17 +22,20 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
@@ -66,6 +69,7 @@ fun LoginScreen(
   initialRole: UserRole = UserRole.STUDENT,
   errorMessage: String? = null,
   isLoading: Boolean = false,
+  networkState: com.example.util.NetworkState? = null,
   schoolName: String = "St. Joseph's School",
   schoolMotto: String = "Shine and Let Shine"
 ) {
@@ -80,6 +84,8 @@ fun LoginScreen(
   var rememberMe by remember { mutableStateOf(true) }
   var localValidationError by remember { mutableStateOf<String?>(null) }
   var showForgotPasswordDialog by remember { mutableStateOf(false) }
+  var secretDevTapCount by remember { mutableStateOf(0) }
+  var showSecretDevUnlockedSnackbar by remember { mutableStateOf(false) }
 
   val focusManager = LocalFocusManager.current
 
@@ -91,6 +97,7 @@ fun LoginScreen(
       UserRole.TEACHER -> "teacher01"
       UserRole.STAFF -> "staff01"
       UserRole.ADMIN -> "admin01"
+      UserRole.DEVELOPER -> "dev"
     }
     localValidationError = null
   }
@@ -151,9 +158,20 @@ fun LoginScreen(
           horizontalAlignment = Alignment.CenterHorizontally,
           verticalArrangement = Arrangement.Center
         ) {
-          // School Logo Avatar with White Ring & Gold Border
+          // School Logo Avatar with White Ring & Gold Border (5-Tap secret developer trigger)
           Surface(
-            modifier = Modifier.size(72.dp),
+            modifier = Modifier
+              .size(72.dp)
+              .clickable {
+                secretDevTapCount++
+                if (secretDevTapCount >= 5) {
+                  secretDevTapCount = 0
+                  selectedRole = UserRole.DEVELOPER
+                  emailOrUsername = "dev"
+                  password = com.example.data.SchoolRepository.DEMO_PASSWORD
+                  showSecretDevUnlockedSnackbar = true
+                }
+              },
             shape = CircleShape,
             color = Color.White,
             shadowElevation = 6.dp
@@ -247,6 +265,7 @@ fun LoginScreen(
                 UserRole.TEACHER -> RoleTeacherColor.copy(alpha = 0.12f)
                 UserRole.STAFF -> RoleStaffColor.copy(alpha = 0.12f)
                 UserRole.ADMIN -> RoleAdminColor.copy(alpha = 0.12f)
+                UserRole.DEVELOPER -> Color(0xFF10B981).copy(alpha = 0.15f)
               },
               shape = RoundedCornerShape(10.dp)
             ) {
@@ -256,6 +275,7 @@ fun LoginScreen(
                   UserRole.TEACHER -> Icons.Default.MenuBook
                   UserRole.STAFF -> Icons.Default.Engineering
                   UserRole.ADMIN -> Icons.Default.AdminPanelSettings
+                  UserRole.DEVELOPER -> Icons.Default.Terminal
                 },
                 contentDescription = selectedRole.label,
                 tint = when (selectedRole) {
@@ -263,9 +283,40 @@ fun LoginScreen(
                   UserRole.TEACHER -> RoleTeacherColor
                   UserRole.STAFF -> RoleStaffColor
                   UserRole.ADMIN -> RoleAdminColor
+                  UserRole.DEVELOPER -> Color(0xFF10B981)
                 },
                 modifier = Modifier.padding(8.dp).size(22.dp)
               )
+            }
+          }
+
+          // Offline notice if disconnected
+          if (networkState is com.example.util.NetworkState.Offline) {
+            Surface(
+              color = Color(0xFFFEF2F2),
+              shape = RoundedCornerShape(10.dp),
+              border = CardDefaults.outlinedCardBorder().copy(
+                brush = androidx.compose.ui.graphics.SolidColor(Color(0xFFFCA5A5))
+              ),
+              modifier = Modifier.fillMaxWidth().testTag("login_offline_notice")
+            ) {
+              Row(
+                modifier = Modifier.padding(10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+              ) {
+                Icon(
+                  imageVector = Icons.Default.CloudOff,
+                  contentDescription = null,
+                  tint = Color(0xFFDC2626),
+                  modifier = Modifier.size(18.dp)
+                )
+                Text(
+                  text = "Offline Mode: Offline local authentication active. Quick role logins available.",
+                  style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                  color = Color(0xFF991B1B)
+                )
+              }
             }
           }
 
@@ -281,13 +332,14 @@ fun LoginScreen(
               modifier = Modifier.fillMaxWidth(),
               horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-              UserRole.values().forEach { role ->
+              UserRole.values().filter { it != UserRole.DEVELOPER }.forEach { role ->
                 val isSelected = selectedRole == role
                 val chipColor = when (role) {
                   UserRole.STUDENT -> RoleStudentColor
                   UserRole.TEACHER -> RoleTeacherColor
                   UserRole.STAFF -> RoleStaffColor
                   UserRole.ADMIN -> RoleAdminColor
+                  UserRole.DEVELOPER -> Color(0xFF10B981)
                 }
 
                 FilterChip(
@@ -298,7 +350,7 @@ fun LoginScreen(
                       text = role.displayName,
                       style = MaterialTheme.typography.labelSmall.copy(
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                        fontSize = 11.sp
+                        fontSize = 10.5.sp
                       )
                     )
                   },
@@ -605,8 +657,17 @@ fun LoginScreen(
           )
         }
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(16.dp))
       }
+    }
+
+    // 12. INSPIRATIONAL QUOTE LOADING OVERLAY
+    AnimatedVisibility(
+      visible = isLoading,
+      enter = fadeIn(animationSpec = tween(250)),
+      exit = fadeOut(animationSpec = tween(250))
+    ) {
+      LoginQuoteLoadingOverlay(selectedRole = selectedRole)
     }
   }
 
@@ -665,5 +726,200 @@ fun LoginScreen(
         }
       }
     )
+  }
+}
+
+/**
+ * Inspiring loading overlay shown during authentication with the school spirit quote:
+ * "If I not who will make my school shine"
+ */
+@Composable
+fun LoginQuoteLoadingOverlay(
+  selectedRole: UserRole,
+  modifier: Modifier = Modifier
+) {
+  val infiniteTransition = rememberInfiniteTransition(label = "pulse_and_glow")
+  
+  val glowScale by infiniteTransition.animateFloat(
+    initialValue = 0.94f,
+    targetValue = 1.06f,
+    animationSpec = infiniteRepeatable(
+      animation = tween(1200, easing = FastOutSlowInEasing),
+      repeatMode = RepeatMode.Reverse
+    ),
+    label = "glow_scale"
+  )
+
+  val shimmerAlpha by infiniteTransition.animateFloat(
+    initialValue = 0.7f,
+    targetValue = 1.0f,
+    animationSpec = infiniteRepeatable(
+      animation = tween(900, easing = LinearEasing),
+      repeatMode = RepeatMode.Reverse
+    ),
+    label = "shimmer_alpha"
+  )
+
+  Box(
+    modifier = modifier
+      .fillMaxSize()
+      .background(
+        brush = Brush.verticalGradient(
+          colors = listOf(
+            Color(0xF206142A),
+            Color(0xF50F2C59),
+            Color(0xF7081A36)
+          )
+        )
+      )
+      .clickable(enabled = false) {} // Absorb touches
+      .testTag("login_loading_overlay"),
+    contentAlignment = Alignment.Center
+  ) {
+    Card(
+      shape = RoundedCornerShape(24.dp),
+      colors = CardDefaults.cardColors(
+        containerColor = Color(0xFF0F264A).copy(alpha = 0.95f)
+      ),
+      border = CardDefaults.outlinedCardBorder().copy(
+        brush = Brush.linearGradient(
+          listOf(SchoolGold.copy(alpha = 0.8f), SchoolGoldLight.copy(alpha = 0.3f))
+        )
+      ),
+      elevation = CardDefaults.cardElevation(defaultElevation = 16.dp),
+      modifier = Modifier
+        .fillMaxWidth(0.9f)
+        .padding(16.dp)
+    ) {
+      Column(
+        modifier = Modifier
+          .fillMaxWidth()
+          .padding(horizontal = 24.dp, vertical = 28.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(18.dp)
+      ) {
+        // Glowing School Star / Crest
+        Box(
+          contentAlignment = Alignment.Center,
+          modifier = Modifier.size(80.dp)
+        ) {
+          // Outer halo
+          Box(
+            modifier = Modifier
+              .size(80.dp)
+              .scale(glowScale)
+              .clip(CircleShape)
+              .background(SchoolGold.copy(alpha = 0.15f))
+          )
+          // Progress Ring
+          CircularProgressIndicator(
+            modifier = Modifier.size(68.dp),
+            color = SchoolGold,
+            strokeWidth = 3.5.dp,
+            trackColor = Color.White.copy(alpha = 0.15f)
+          )
+          // Center Emblem
+          Box(
+            modifier = Modifier
+              .size(46.dp)
+              .clip(CircleShape)
+              .background(SchoolNavyPrimary),
+            contentAlignment = Alignment.Center
+          ) {
+            Icon(
+              imageVector = Icons.Default.School,
+              contentDescription = null,
+              tint = SchoolGold,
+              modifier = Modifier.size(26.dp)
+            )
+          }
+        }
+
+        // Quote Section
+        Column(
+          horizontalAlignment = Alignment.CenterHorizontally,
+          verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+          // Golden Quote icon
+          Icon(
+            imageVector = Icons.Default.AutoAwesome,
+            contentDescription = null,
+            tint = SchoolGold.copy(alpha = shimmerAlpha),
+            modifier = Modifier.size(22.dp)
+          )
+
+          // THE QUOTE
+          Text(
+            text = "“If I not who will make my school shine”",
+            style = MaterialTheme.typography.titleMedium.copy(
+              fontWeight = FontWeight.Bold,
+              fontStyle = FontStyle.Italic,
+              lineHeight = 26.sp,
+              letterSpacing = 0.3.sp
+            ),
+            color = Color.White,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+              .fillMaxWidth()
+              .testTag("login_quote_text")
+          )
+
+          Text(
+            text = "— St. Joseph's School Motto & Pride",
+            style = MaterialTheme.typography.labelSmall.copy(
+              letterSpacing = 1.sp,
+              fontWeight = FontWeight.SemiBold
+            ),
+            color = SchoolGoldLight,
+            textAlign = TextAlign.Center
+          )
+        }
+
+        HorizontalDivider(
+          color = Color.White.copy(alpha = 0.12f),
+          modifier = Modifier.padding(horizontal = 12.dp)
+        )
+
+        // Loading Status Text & Role Indicator
+        Column(
+          horizontalAlignment = Alignment.CenterHorizontally,
+          verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+          Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+          ) {
+            Text(
+              text = "Signing in as ${selectedRole.displayName}",
+              style = MaterialTheme.typography.labelMedium.copy(
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+              )
+            )
+            Surface(
+              color = SchoolGold.copy(alpha = 0.2f),
+              shape = RoundedCornerShape(4.dp)
+            ) {
+              Text(
+                text = "PORTAL ACCESS",
+                style = MaterialTheme.typography.labelSmall.copy(
+                  fontSize = 8.sp,
+                  fontWeight = FontWeight.ExtraBold,
+                  color = SchoolGoldLight
+                ),
+                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+              )
+            }
+          }
+
+          Text(
+            text = "Verifying credentials & preparing your dashboard...",
+            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.5.sp),
+            color = Color.White.copy(alpha = 0.75f),
+            textAlign = TextAlign.Center
+          )
+        }
+      }
+    }
   }
 }

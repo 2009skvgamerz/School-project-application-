@@ -4,6 +4,8 @@ import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -20,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.launch
 import com.example.model.*
 import com.example.ui.auth.LoginScreen
 import com.example.ui.components.*
@@ -62,9 +65,30 @@ fun MainSchoolApp(
   val attendanceRecords by viewModel.attendanceRecords.collectAsState()
   val roomAttendanceRecords by viewModel.roomAttendanceRecords.collectAsState()
 
+  val notifications by viewModel.notifications.collectAsState()
+  val unreadNotificationsCount by viewModel.unreadNotificationsCount.collectAsState()
+  val isRefreshing by viewModel.isRefreshing.collectAsState()
+  val deepLinkRoute by viewModel.deepLinkRoute.collectAsState()
+  val networkState by viewModel.networkState.collectAsState()
+  val isSimulatedOffline by viewModel.isSimulatedOffline.collectAsState()
+  val refreshFeedbackMessage by viewModel.refreshFeedbackMessage.collectAsState()
+
+  val snackbarHostState = remember { SnackbarHostState() }
+
   val context = androidx.compose.ui.platform.LocalContext.current
   LaunchedEffect(Unit) {
     viewModel.initializeWithContext(context)
+  }
+
+  // Refresh feedback snackbar handler
+  LaunchedEffect(refreshFeedbackMessage) {
+    refreshFeedbackMessage?.let { msg ->
+      snackbarHostState.showSnackbar(
+        message = msg,
+        duration = SnackbarDuration.Short
+      )
+      viewModel.clearRefreshFeedbackMessage()
+    }
   }
 
   val selectedDay by viewModel.selectedDay.collectAsState()
@@ -74,27 +98,61 @@ fun MainSchoolApp(
 
   // Compulsory authentication on every app launch - requires successful login before accessing app
   var isAuthenticated by remember { mutableStateOf(false) }
+  var isLoggingIn by remember { mutableStateOf(false) }
   var loginErrorMessage by remember { mutableStateOf<String?>(null) }
   var currentTab by remember { mutableStateOf(NavigationTab.DASHBOARD) }
+  val coroutineScope = rememberCoroutineScope()
+
+  // Deep Link listener from system notification pop-ups outside app
+  LaunchedEffect(deepLinkRoute) {
+    deepLinkRoute?.let { route ->
+      when (route.lowercase()) {
+        "homework", "hw" -> currentTab = NavigationTab.HOMEWORK
+        "attendance", "att" -> currentTab = NavigationTab.ATTENDANCE
+        "timetable", "schedule" -> currentTab = NavigationTab.TIMETABLE
+        "notices", "bulletin", "bulletins", "circular" -> currentTab = NavigationTab.NOTICES
+        "profile" -> currentTab = NavigationTab.PROFILE
+        "classes" -> currentTab = NavigationTab.CLASSES
+        "duties" -> currentTab = NavigationTab.DUTIES
+        else -> currentTab = NavigationTab.DASHBOARD
+      }
+      viewModel.clearDeepLinkRoute()
+    }
+  }
 
   if (!isAuthenticated) {
     LoginScreen(
       errorMessage = loginErrorMessage,
+      isLoading = isLoggingIn,
+      networkState = networkState,
       onLogin = { username, password, _ ->
-        val result = viewModel.login(username, password)
-        result.onSuccess {
+        coroutineScope.launch {
+          isLoggingIn = true
           loginErrorMessage = null
-          isAuthenticated = true
-          currentTab = NavigationTab.DASHBOARD
-        }.onFailure { error ->
-          loginErrorMessage = error.message ?: "Authentication failed. Please check your credentials."
+          kotlinx.coroutines.delay(1300) // Display inspirational school quote and verify
+          val result = viewModel.login(username, password)
+          result.onSuccess {
+            loginErrorMessage = null
+            isAuthenticated = true
+            currentTab = NavigationTab.DASHBOARD
+            isLoggingIn = false
+          }.onFailure { error ->
+            loginErrorMessage = error.message ?: "Authentication failed. Please check your credentials."
+            isLoggingIn = false
+          }
         }
       },
       onQuickRoleLogin = { role ->
-        viewModel.switchRole(role)
-        loginErrorMessage = null
-        isAuthenticated = true
-        currentTab = NavigationTab.DASHBOARD
+        coroutineScope.launch {
+          isLoggingIn = true
+          loginErrorMessage = null
+          kotlinx.coroutines.delay(1100) // Display inspirational school quote and switch role
+          viewModel.switchRole(role)
+          loginErrorMessage = null
+          isAuthenticated = true
+          currentTab = NavigationTab.DASHBOARD
+          isLoggingIn = false
+        }
       }
     )
     return
@@ -102,9 +160,11 @@ fun MainSchoolApp(
 
   // Dialog States
   var showRoleSwitcherDialog by remember { mutableStateOf(false) }
+  var showDeveloperConsoleSheet by remember { mutableStateOf(false) }
   var showAssignHomeworkDialog by remember { mutableStateOf(false) }
   var showCreateNoticeDialog by remember { mutableStateOf(false) }
   var showAddDutyDialog by remember { mutableStateOf(false) }
+  var showNotificationCenterSheet by remember { mutableStateOf(false) }
   var selectedHomeworkForSubmission by remember { mutableStateOf<Homework?>(null) }
   var selectedNoticeDetail by remember { mutableStateOf<Notice?>(null) }
 
@@ -140,112 +200,157 @@ fun MainSchoolApp(
       NavigationTab.NOTICES,
       NavigationTab.PROFILE
     )
+    UserRole.DEVELOPER -> listOf(
+      NavigationTab.DASHBOARD,
+      NavigationTab.MANAGEMENT,
+      NavigationTab.ATTENDANCE,
+      NavigationTab.HOMEWORK,
+      NavigationTab.NOTICES,
+      NavigationTab.PROFILE
+    )
   }
 
   Scaffold(
+    snackbarHost = { SnackbarHost(snackbarHostState) },
     topBar = {
-      TopAppBar(
-        title = {
-          Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-          ) {
-            Box(
-              modifier = Modifier
-                .size(38.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(SchoolNavyPrimary),
-              contentAlignment = Alignment.Center
-            ) {
-              Icon(
-                imageVector = Icons.Default.School,
-                contentDescription = null,
-                tint = SchoolGold,
-                modifier = Modifier.size(24.dp)
-              )
-            }
-
-            Column {
-              Text(
-                text = "St. Joseph's",
-                style = MaterialTheme.typography.titleMedium.copy(
-                  fontWeight = FontWeight.ExtraBold,
-                  letterSpacing = 0.5.sp
-                ),
-                color = SchoolNavyPrimary
-              )
-              Text(
-                text = currentTab.label,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-              )
-            }
-          }
-        },
-        actions = {
-          // Switch Role Quick Button
-          Surface(
-            color = SchoolNavyPrimary.copy(alpha = 0.08f),
-            shape = RoundedCornerShape(10.dp),
-            modifier = Modifier
-              .clickable { showRoleSwitcherDialog = true }
-              .testTag("switch_role_top_bar_btn")
-          ) {
+      Column(modifier = Modifier.fillMaxWidth()) {
+        TopAppBar(
+          title = {
             Row(
-              modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
               verticalAlignment = Alignment.CenterVertically,
-              horizontalArrangement = Arrangement.spacedBy(4.dp)
+              horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-              Icon(
-                imageVector = Icons.Default.SwapHoriz,
-                contentDescription = "Switch Role",
-                tint = SchoolNavyPrimary,
-                modifier = Modifier.size(16.dp)
-              )
-              Text(
-                text = currentUser.role.label,
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                color = SchoolNavyPrimary
-              )
-            }
-          }
+              Box(
+                modifier = Modifier
+                  .size(38.dp)
+                  .clip(RoundedCornerShape(8.dp))
+                  .background(SchoolNavyPrimary),
+                contentAlignment = Alignment.Center
+              ) {
+                Icon(
+                  imageVector = Icons.Default.School,
+                  contentDescription = null,
+                  tint = SchoolGold,
+                  modifier = Modifier.size(24.dp)
+                )
+              }
 
-          // Bulletins Notification Action
-          IconButton(
-            onClick = { currentTab = NavigationTab.NOTICES },
-            modifier = Modifier.testTag("notifications_bell_btn")
-          ) {
-            BadgedBox(
-              badge = {
-                val count = notices.count { it.isUrgent }
-                if (count > 0) {
-                  Badge(containerColor = Color(0xFFDC2626)) {
-                    Text("$count")
+              Column {
+                Row(
+                  verticalAlignment = Alignment.CenterVertically,
+                  horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                  Text(
+                    text = "St. Joseph's",
+                    style = MaterialTheme.typography.titleMedium.copy(
+                      fontWeight = FontWeight.ExtraBold,
+                      letterSpacing = 0.5.sp
+                    ),
+                    color = SchoolNavyPrimary
+                  )
+                  com.example.ui.components.NetworkStatusBarBadge(
+                    networkState = networkState,
+                    modifier = Modifier.testTag("top_bar_network_status_badge")
+                  )
+                }
+                Text(
+                  text = currentTab.label,
+                  style = MaterialTheme.typography.labelSmall,
+                  color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+              }
+            }
+          },
+          actions = {
+            // Switch Role Quick Button
+            Surface(
+              color = if (currentUser.role == UserRole.DEVELOPER) Color(0xFF10B981).copy(alpha = 0.15f) else SchoolNavyPrimary.copy(alpha = 0.08f),
+              shape = RoundedCornerShape(10.dp),
+              modifier = Modifier
+                .clickable { showRoleSwitcherDialog = true }
+                .testTag("switch_role_top_bar_btn")
+            ) {
+              Row(
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+              ) {
+                Icon(
+                  imageVector = if (currentUser.role == UserRole.DEVELOPER) Icons.Default.Terminal else Icons.Default.SwapHoriz,
+                  contentDescription = "Switch Role",
+                  tint = if (currentUser.role == UserRole.DEVELOPER) Color(0xFF059669) else SchoolNavyPrimary,
+                  modifier = Modifier.size(16.dp)
+                )
+                Text(
+                  text = currentUser.role.label,
+                  style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                  color = if (currentUser.role == UserRole.DEVELOPER) Color(0xFF059669) else SchoolNavyPrimary
+                )
+              }
+            }
+
+            // Developer God Mode Terminal Action (Only visible when Developer God Mode is Active)
+            if (currentUser.role == UserRole.DEVELOPER) {
+              IconButton(
+                onClick = { showDeveloperConsoleSheet = true },
+                modifier = Modifier.testTag("dev_terminal_top_bar_btn")
+              ) {
+                Icon(
+                  imageVector = Icons.Default.Terminal,
+                  contentDescription = "Developer God Mode Terminal",
+                  tint = Color(0xFF10B981)
+                )
+              }
+            }
+
+            // School Notification Center Action
+            IconButton(
+              onClick = { showNotificationCenterSheet = true },
+              modifier = Modifier.testTag("notifications_bell_btn")
+            ) {
+              BadgedBox(
+                badge = {
+                  if (unreadNotificationsCount > 0) {
+                    Badge(containerColor = Color(0xFFDC2626)) {
+                      Text(if (unreadNotificationsCount > 9) "9+" else "$unreadNotificationsCount")
+                    }
                   }
                 }
+              ) {
+                Icon(
+                  imageVector = if (unreadNotificationsCount > 0) Icons.Default.Notifications else Icons.Default.NotificationsNone,
+                  contentDescription = "Notifications ($unreadNotificationsCount unread)",
+                  tint = if (unreadNotificationsCount > 0) Color(0xFFDC2626) else MaterialTheme.colorScheme.onSurfaceVariant
+                )
               }
-            ) {
-              Icon(imageVector = Icons.Default.Notifications, contentDescription = "Bulletins")
             }
-          }
 
-          // Settings Action
-          IconButton(
-            onClick = { currentTab = NavigationTab.SETTINGS },
-            modifier = Modifier.testTag("settings_top_bar_btn")
-          ) {
-            Icon(
-              imageVector = if (currentTab == NavigationTab.SETTINGS) Icons.Filled.Settings else Icons.Default.Settings,
-              contentDescription = "Settings",
-              tint = if (currentTab == NavigationTab.SETTINGS) SchoolNavyPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-            )
-          }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
-          containerColor = MaterialTheme.colorScheme.surface,
-          titleContentColor = MaterialTheme.colorScheme.onSurface
+            // Settings Action
+            IconButton(
+              onClick = { currentTab = NavigationTab.SETTINGS },
+              modifier = Modifier.testTag("settings_top_bar_btn")
+            ) {
+              Icon(
+                imageVector = if (currentTab == NavigationTab.SETTINGS) Icons.Filled.Settings else Icons.Default.Settings,
+                contentDescription = "Settings",
+                tint = if (currentTab == NavigationTab.SETTINGS) SchoolNavyPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+              )
+            }
+          },
+          colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+            titleContentColor = MaterialTheme.colorScheme.onSurface
+          )
         )
-      )
+
+        // Real-Time Animated Network Status Banner (Offline / Online / Reconnecting)
+        com.example.ui.components.NetworkStatusBanner(
+          networkState = networkState,
+          onRetryConnection = { viewModel.retryNetworkConnection() },
+          onToggleSimulatedOffline = { viewModel.setSimulatedOffline(it) },
+          isSimulated = isSimulatedOffline
+        )
+      }
     },
     bottomBar = {
       NavigationBar(
@@ -309,7 +414,23 @@ fun MainSchoolApp(
                   onNavigateToHomework = { currentTab = NavigationTab.HOMEWORK },
                   onNavigateToAttendance = { currentTab = NavigationTab.ATTENDANCE },
                   onNavigateToNotices = { currentTab = NavigationTab.NOTICES },
-                  onNoticeClick = { selectedNoticeDetail = it }
+                  onNoticeClick = { selectedNoticeDetail = it },
+                  onOpenNotificationCenter = { showNotificationCenterSheet = true },
+                  onTriggerPopUpAlert = {
+                    viewModel.sendTestNotification(
+                      context = context,
+                      title = "Physics Laboratory Session (Class 12-A)",
+                      message = "Electromagnetic induction experiments start at 10:15 AM in Lab 1.",
+                      type = NotificationType.ACADEMIC,
+                      actionRoute = "timetable",
+                      isUrgent = true,
+                      showSystemPopUp = true
+                    )
+                  },
+                  networkState = networkState,
+                  onRetryConnection = { viewModel.retryNetworkConnection() },
+                  isRefreshing = isRefreshing,
+                  onRefresh = { viewModel.refreshData() }
                 )
               }
             }
@@ -363,6 +484,20 @@ fun MainSchoolApp(
                 )
               }
             }
+
+            UserRole.DEVELOPER -> {
+              DeveloperDashboardScreen(
+                viewModel = viewModel,
+                onNavigateToNotices = { currentTab = NavigationTab.NOTICES },
+                onNavigateToHomework = { currentTab = NavigationTab.HOMEWORK },
+                onNavigateToAttendance = { currentTab = NavigationTab.ATTENDANCE },
+                onNavigateToManagement = { currentTab = NavigationTab.MANAGEMENT },
+                onRoleSwitched = { role ->
+                  viewModel.switchRole(role)
+                  currentTab = NavigationTab.DASHBOARD
+                }
+              )
+            }
           }
         }
 
@@ -410,7 +545,9 @@ fun MainSchoolApp(
             onSelectCategory = { viewModel.setSelectedCategory(it) },
             onNoticeClick = { selectedNoticeDetail = it },
             onOpenCreateNoticeDialog = { showCreateNoticeDialog = true },
-            canCreateNotice = currentUser.role != UserRole.STUDENT
+            canCreateNotice = currentUser.role != UserRole.STUDENT,
+            isRefreshing = isRefreshing,
+            onRefresh = { viewModel.refreshData() }
           )
         }
 
@@ -436,7 +573,7 @@ fun MainSchoolApp(
         }
 
         NavigationTab.MANAGEMENT -> {
-          ManagementScreen(classes = schoolClasses)
+          ManagementScreen(classes = schoolClasses, viewModel = viewModel)
         }
 
         NavigationTab.PROFILE -> {
@@ -452,6 +589,9 @@ fun MainSchoolApp(
             },
             onNavigateToSettings = {
               currentTab = NavigationTab.SETTINGS
+            },
+            onOpenNotificationCenter = {
+              showNotificationCenterSheet = true
             },
             onSignOut = {
               viewModel.logout()
@@ -474,7 +614,14 @@ fun MainSchoolApp(
             },
             onResetDatabase = {
               viewModel.resetDatabaseToDefaults()
-            }
+            },
+            onOpenNotificationCenter = {
+              showNotificationCenterSheet = true
+            },
+            networkState = networkState,
+            isSimulatedOffline = isSimulatedOffline,
+            onToggleSimulatedOffline = { viewModel.setSimulatedOffline(it) },
+            onRetryConnection = { viewModel.retryNetworkConnection() }
           )
         }
       }
@@ -498,7 +645,9 @@ fun MainSchoolApp(
           )
           Spacer(modifier = Modifier.height(4.dp))
 
-          UserRole.values().forEach { role ->
+          val allowedRoles = UserRole.values().filter { it != UserRole.DEVELOPER }
+
+          allowedRoles.forEach { role ->
             val isCurrent = currentUser.role == role
             Surface(
               shape = RoundedCornerShape(12.dp),
@@ -523,6 +672,7 @@ fun MainSchoolApp(
                     UserRole.TEACHER -> Icons.Default.MenuBook
                     UserRole.STAFF -> Icons.Default.Engineering
                     UserRole.ADMIN -> Icons.Default.AdminPanelSettings
+                    UserRole.DEVELOPER -> Icons.Default.Terminal
                   },
                   contentDescription = null,
                   tint = if (isCurrent) SchoolNavyPrimary else MaterialTheme.colorScheme.onSurfaceVariant
@@ -535,10 +685,11 @@ fun MainSchoolApp(
                   )
                   Text(
                     text = when(role) {
-                      UserRole.STUDENT -> "Alex Johnson (Class 10-A)"
+                      UserRole.STUDENT -> "Keerthivasan (Class 12-A)"
                       UserRole.TEACHER -> "Prof. Sarah Jenkins (Physics)"
                       UserRole.STAFF -> "Marcus Vance (Head Facilities)"
-                      UserRole.ADMIN -> "Dr. Anthony Edwards (Principal)"
+                      UserRole.ADMIN -> "Dr. Arthur Pendelton (Principal)"
+                      UserRole.DEVELOPER -> "Alex Rivera (Root God Mode Master)"
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -625,7 +776,8 @@ fun MainSchoolApp(
                 subjectName = subject,
                 className = targetClass,
                 dueDate = dueDate,
-                maxMarks = 25
+                maxMarks = 25,
+                context = context
               )
               showAssignHomeworkDialog = false
             }
@@ -656,7 +808,87 @@ fun MainSchoolApp(
       icon = { Icon(Icons.Default.Campaign, contentDescription = null, tint = SchoolNavyPrimary) },
       title = { Text("Broadcast New Circular", fontWeight = FontWeight.Bold) },
       text = {
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(
+          modifier = Modifier.fillMaxWidth(),
+          verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+          // Info banner about automatic heads-up notification
+          Surface(
+            color = Color(0xFFEFF6FF),
+            shape = RoundedCornerShape(8.dp),
+            border = CardDefaults.outlinedCardBorder().copy(
+              brush = androidx.compose.ui.graphics.SolidColor(Color(0xFF93C5FD))
+            ),
+            modifier = Modifier.fillMaxWidth()
+          ) {
+            Row(
+              modifier = Modifier.padding(8.dp),
+              verticalAlignment = Alignment.CenterVertically,
+              horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+              Icon(
+                imageVector = Icons.Default.NotificationsActive,
+                contentDescription = null,
+                tint = SchoolNavyPrimary,
+                modifier = Modifier.size(16.dp)
+              )
+              Text(
+                text = "Publishing will immediately trigger a system-level heads-up notification outside the app.",
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                color = SchoolNavyPrimary
+              )
+            }
+          }
+
+          // Category Chips
+          Text(text = "Select Category", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
+          LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            modifier = Modifier.fillMaxWidth()
+          ) {
+            items(NoticeCategory.values().filter { it != NoticeCategory.ALL }) { cat ->
+              FilterChip(
+                selected = category == cat,
+                onClick = { category = cat },
+                label = { Text(cat.label, style = MaterialTheme.typography.labelSmall) },
+                leadingIcon = {
+                  Surface(
+                    color = Color(cat.colorHex),
+                    shape = RoundedCornerShape(4.dp),
+                    modifier = Modifier.size(8.dp)
+                  ) {}
+                }
+              )
+            }
+          }
+
+          // Quick Templates for easy demonstration
+          Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically
+          ) {
+            Text("Templates:", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            SuggestionChip(
+              onClick = {
+                title = "Science Expo 2026 Registration"
+                content = "All student project exhibits for the Science & Technology Expo must be submitted to the STEM department by Friday 4:00 PM."
+                category = NoticeCategory.EVENT
+                isUrgent = false
+              },
+              label = { Text("Expo", fontSize = 10.sp) }
+            )
+            SuggestionChip(
+              onClick = {
+                title = "Rain Holiday Announcement"
+                content = "Due to heavy weather advisory, the school will remain closed tomorrow. Online revision classes will be held as per regular schedule."
+                category = NoticeCategory.GENERAL
+                isUrgent = true
+              },
+              label = { Text("Emergency", fontSize = 10.sp) }
+            )
+          }
+
           OutlinedTextField(
             value = title,
             onValueChange = { title = it },
@@ -678,11 +910,15 @@ fun MainSchoolApp(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
           ) {
-            Text("Mark as Urgent / Priority", style = MaterialTheme.typography.bodySmall)
+            Column {
+              Text("Mark as Urgent / Priority", style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold))
+              Text("Shows emergency red badge & max alert priority", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
             Switch(
               checked = isUrgent,
               onCheckedChange = { isUrgent = it },
-              colors = SwitchDefaults.colors(checkedThumbColor = Color(0xFFDC2626))
+              colors = SwitchDefaults.colors(checkedThumbColor = Color(0xFFDC2626)),
+              modifier = Modifier.testTag("notice_urgent_switch")
             )
           }
         }
@@ -691,14 +927,22 @@ fun MainSchoolApp(
         Button(
           onClick = {
             if (title.isNotBlank() && content.isNotBlank()) {
-              viewModel.publishNotice(title, content, category, isUrgent)
+              viewModel.publishNotice(
+                title = title,
+                content = content,
+                category = category,
+                isUrgent = isUrgent,
+                context = context
+              )
               showCreateNoticeDialog = false
             }
           },
           colors = ButtonDefaults.buttonColors(containerColor = SchoolNavyPrimary),
           modifier = Modifier.testTag("submit_create_notice_btn")
         ) {
-          Text("Post Circular")
+          Icon(imageVector = Icons.Default.Campaign, contentDescription = null, modifier = Modifier.size(16.dp))
+          Spacer(modifier = Modifier.width(4.dp))
+          Text("Post & Broadcast")
         }
       },
       dismissButton = {
@@ -858,6 +1102,81 @@ fun MainSchoolApp(
         ) {
           Text("Close")
         }
+      }
+    )
+  }
+
+  // 7. Notification Center Bottom Sheet
+  if (showNotificationCenterSheet) {
+    NotificationCenterSheet(
+      notifications = notifications,
+      onDismiss = { showNotificationCenterSheet = false },
+      onMarkAsRead = { notifId ->
+        viewModel.markNotificationAsRead(notifId)
+      },
+      onMarkAllAsRead = {
+        viewModel.markAllNotificationsAsRead()
+      },
+      onDeleteNotification = { notifId ->
+        viewModel.deleteNotification(notifId)
+      },
+      onSendTestNotification = {
+        viewModel.sendTestNotification(
+          context = context,
+          showSystemPopUp = true
+        )
+      },
+      onTriggerImmediatePopUp = { title, msg, type, route ->
+        viewModel.sendTestNotification(
+          context = context,
+          title = title,
+          message = msg,
+          type = type,
+          actionRoute = route,
+          isUrgent = true,
+          showSystemPopUp = true
+        )
+      },
+      onTriggerDelayedPopUp = { delaySecs, title, msg, type, route ->
+        viewModel.triggerDelayedSystemPopUp(
+          context = context,
+          delaySeconds = delaySecs,
+          title = title,
+          message = msg,
+          type = type,
+          actionRoute = route
+        )
+      },
+      onNavigateToRoute = { route ->
+        showNotificationCenterSheet = false
+        when (route.lowercase()) {
+          "homework", "hw" -> currentTab = NavigationTab.HOMEWORK
+          "attendance", "att" -> currentTab = NavigationTab.ATTENDANCE
+          "timetable", "schedule" -> currentTab = NavigationTab.TIMETABLE
+          "notices", "bulletin", "bulletins", "circular" -> currentTab = NavigationTab.NOTICES
+          "profile" -> currentTab = NavigationTab.PROFILE
+          "classes" -> currentTab = NavigationTab.CLASSES
+          "duties" -> currentTab = NavigationTab.DUTIES
+          else -> currentTab = NavigationTab.DASHBOARD
+        }
+      }
+    )
+  }
+
+  // 8. Developer Console Modal Sheet
+  val isDevConsoleOpenByVm by viewModel.isDeveloperConsoleOpen.collectAsState()
+  if (showDeveloperConsoleSheet || isDevConsoleOpenByVm) {
+    DeveloperConsoleSheet(
+      viewModel = viewModel,
+      onDismiss = {
+        showDeveloperConsoleSheet = false
+        viewModel.closeDeveloperConsole()
+      },
+      onSwitchToRole = { role ->
+        showDeveloperConsoleSheet = false
+        viewModel.closeDeveloperConsole()
+        viewModel.switchRole(role)
+        currentTab = NavigationTab.DASHBOARD
       }
     )
   }

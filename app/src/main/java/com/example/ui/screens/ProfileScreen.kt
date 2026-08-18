@@ -30,6 +30,7 @@ fun ProfileScreen(
   onSwitchRole: (UserRole) -> Unit,
   modifier: Modifier = Modifier,
   onNavigateToSettings: (() -> Unit)? = null,
+  onOpenNotificationCenter: (() -> Unit)? = null,
   onSignOut: (() -> Unit)? = null
 ) {
   LazyColumn(
@@ -95,15 +96,16 @@ fun ProfileScreen(
                   UserRole.TEACHER -> Icons.Default.MenuBook
                   UserRole.STAFF -> Icons.Default.Engineering
                   UserRole.ADMIN -> Icons.Default.AdminPanelSettings
+                  UserRole.DEVELOPER -> Icons.Default.Terminal
                 },
                 contentDescription = null,
-                tint = SchoolNavyPrimary,
+                tint = if (currentUser.role == UserRole.DEVELOPER) Color(0xFF059669) else SchoolNavyPrimary,
                 modifier = Modifier.size(16.dp)
               )
               Text(
                 text = "${currentUser.role.label} Account",
                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                color = SchoolNavyPrimary
+                color = if (currentUser.role == UserRole.DEVELOPER) Color(0xFF059669) else SchoolNavyPrimary
               )
             }
           }
@@ -161,7 +163,7 @@ fun ProfileScreen(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(6.dp)
           ) {
-            UserRole.values().forEach { role ->
+            UserRole.values().filter { it != UserRole.DEVELOPER }.forEach { role ->
               val isSelected = currentUser.role == role
               OutlinedButton(
                 onClick = { onSwitchRole(role) },
@@ -281,6 +283,88 @@ fun ProfileScreen(
                 ProfileInfoRow(label = "Office Location", value = p.officeLocation)
                 ProfileInfoRow(label = "Institutional Permissions", value = p.systemPermissions.joinToString(" • "))
               }
+            }
+          }
+        }
+      }
+      UserRole.DEVELOPER -> {
+        item {
+          Card(
+            shape = RoundedCornerShape(14.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF0F172A)),
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF10B981).copy(alpha = 0.5f))
+          ) {
+            Column(
+              modifier = Modifier.padding(16.dp),
+              verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+              Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+              ) {
+                Icon(Icons.Default.Terminal, contentDescription = null, tint = Color(0xFF10B981))
+                Text("Developer Root & God Mode Identity", color = Color(0xFF10B981), fontWeight = FontWeight.Bold)
+              }
+              ProfileInfoRow(label = "Security Level", value = "Level 5 (God Mode)")
+              ProfileInfoRow(label = "Write Scope", value = "Universal Master Override")
+              ProfileInfoRow(label = "Core Engine", value = "Kotlin Compose + Room DB")
+              ProfileInfoRow(label = "Terminal ID", value = "DEV-ROOT-007")
+            }
+          }
+        }
+      }
+    }
+
+    // 3.5 Notification Preferences & External Pop-Up Controls
+    if (onOpenNotificationCenter != null) {
+      item {
+        Card(
+          shape = RoundedCornerShape(14.dp),
+          colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
+          modifier = Modifier.fillMaxWidth().testTag("profile_notification_settings_card")
+        ) {
+          Row(
+            modifier = Modifier
+              .fillMaxWidth()
+              .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+          ) {
+            Box(
+              modifier = Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(SchoolNavyPrimary.copy(alpha = 0.12f)),
+              contentAlignment = Alignment.Center
+            ) {
+              Icon(
+                imageVector = Icons.Default.NotificationsActive,
+                contentDescription = null,
+                tint = SchoolNavyPrimary,
+                modifier = Modifier.size(22.dp)
+              )
+            }
+
+            Column(modifier = Modifier.weight(1f)) {
+              Text(
+                text = "System Pop-Up Alerts",
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                color = SchoolNavyPrimary
+              )
+              Text(
+                text = "Configure heads-up windows outside the app",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+              )
+            }
+
+            Button(
+              onClick = onOpenNotificationCenter,
+              shape = RoundedCornerShape(8.dp),
+              contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+              colors = ButtonDefaults.buttonColors(containerColor = SchoolNavyPrimary)
+            ) {
+              Text("Manage", style = MaterialTheme.typography.labelSmall)
             }
           }
         }

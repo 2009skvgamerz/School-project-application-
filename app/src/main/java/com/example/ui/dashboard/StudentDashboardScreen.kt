@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,6 +25,7 @@ import com.example.model.*
 import com.example.ui.components.*
 import com.example.ui.theme.*
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StudentDashboardScreen(
   profile: StudentProfile,
@@ -36,22 +38,33 @@ fun StudentDashboardScreen(
   onNavigateToAttendance: () -> Unit,
   onNavigateToNotices: () -> Unit,
   onNoticeClick: (Notice) -> Unit,
+  onOpenNotificationCenter: () -> Unit = {},
+  onTriggerPopUpAlert: () -> Unit = {},
+  networkState: com.example.util.NetworkState? = null,
+  onRetryConnection: (() -> Unit)? = null,
+  isRefreshing: Boolean = false,
+  onRefresh: () -> Unit = {},
   modifier: Modifier = Modifier
 ) {
-  LazyColumn(
-    modifier = modifier
-      .fillMaxSize()
-      .testTag("student_dashboard_screen"),
-    contentPadding = PaddingValues(16.dp),
-    verticalArrangement = Arrangement.spacedBy(16.dp)
+  PullToRefreshBox(
+    isRefreshing = isRefreshing,
+    onRefresh = onRefresh,
+    modifier = modifier.fillMaxSize().testTag("student_dashboard_pull_refresh")
   ) {
-    // 1. Welcome Greeting Banner
-    item {
-      WelcomeGreetingBanner(
-        user = profile.user,
-        subtitle = "Class ${profile.grade}-${profile.section} • Roll #${profile.rollNo} • ${profile.houseName}"
-      )
-    }
+    LazyColumn(
+      modifier = Modifier
+        .fillMaxSize()
+        .testTag("student_dashboard_screen"),
+      contentPadding = PaddingValues(16.dp),
+      verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+      // 1. Welcome Greeting Banner
+      item {
+        WelcomeGreetingBanner(
+          user = profile.user,
+          subtitle = "Class ${profile.grade}-${profile.section} • Roll #${profile.rollNo} • ${profile.houseName}"
+        )
+      }
 
     // 2. Key Academic Metric Cards
     item {
@@ -125,6 +138,145 @@ fun StudentDashboardScreen(
               color = Color(0xFF7C3AED),
               onClick = onNavigateToNotices
             )
+          }
+        }
+      }
+    }
+
+    // 3.4 Offline Mode Notice Banner (Appears when offline)
+    if (networkState is com.example.util.NetworkState.Offline) {
+      item {
+        Card(
+          shape = RoundedCornerShape(14.dp),
+          colors = CardDefaults.cardColors(containerColor = Color(0xFFFEF2F2)),
+          border = CardDefaults.outlinedCardBorder().copy(
+            brush = androidx.compose.ui.graphics.SolidColor(Color(0xFFF87171))
+          ),
+          modifier = Modifier.fillMaxWidth().testTag("dashboard_offline_banner_card")
+        ) {
+          Row(
+            modifier = Modifier.padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+          ) {
+            Box(
+              modifier = Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(Color(0xFFDC2626).copy(alpha = 0.15f)),
+              contentAlignment = Alignment.Center
+            ) {
+              Icon(
+                imageVector = Icons.Default.CloudOff,
+                contentDescription = null,
+                tint = Color(0xFFDC2626),
+                modifier = Modifier.size(22.dp)
+              )
+            }
+
+            Column(modifier = Modifier.weight(1f)) {
+              Text(
+                text = "Offline Mode Active",
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                color = Color(0xFF991B1B)
+              )
+              Text(
+                text = "Your timetable, attendance & homework are loaded from local Room Database.",
+                style = MaterialTheme.typography.bodySmall,
+                color = Color(0xFF7F1D1D)
+              )
+            }
+
+            if (onRetryConnection != null) {
+              IconButton(
+                onClick = onRetryConnection,
+                modifier = Modifier.size(32.dp).testTag("dashboard_retry_network_btn")
+              ) {
+                Icon(
+                  imageVector = Icons.Default.Refresh,
+                  contentDescription = "Retry",
+                  tint = Color(0xFFDC2626)
+                )
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // 3.5 System Pop-Up Notification Banner Card (Heads-Up Outside App)
+    item {
+      Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF0F3875).copy(alpha = 0.08f)),
+        border = CardDefaults.outlinedCardBorder().copy(
+          brush = androidx.compose.ui.graphics.SolidColor(SchoolNavyPrimary.copy(alpha = 0.25f))
+        ),
+        modifier = Modifier
+          .fillMaxWidth()
+          .testTag("dashboard_popup_alert_card")
+      ) {
+        Row(
+          modifier = Modifier
+            .fillMaxWidth()
+            .padding(14.dp),
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+          Box(
+            modifier = Modifier
+              .size(44.dp)
+              .clip(CircleShape)
+              .background(SchoolNavyPrimary),
+            contentAlignment = Alignment.Center
+          ) {
+            Icon(
+              imageVector = Icons.Default.OpenInNew,
+              contentDescription = null,
+              tint = Color.White,
+              modifier = Modifier.size(22.dp)
+            )
+          }
+
+          Column(modifier = Modifier.weight(1f)) {
+            Row(
+              verticalAlignment = Alignment.CenterVertically,
+              horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+              Text(
+                text = "Pop-Up Notifications",
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                color = SchoolNavyPrimary
+              )
+              Surface(
+                color = SchoolAccentGreen,
+                shape = RoundedCornerShape(4.dp)
+              ) {
+                Text(
+                  text = "OUTSIDE APP",
+                  style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp, color = Color.White, fontWeight = FontWeight.Bold),
+                  modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                )
+              }
+            }
+            Text(
+              text = "Heads-up alert windows appear over your home screen & other apps.",
+              style = MaterialTheme.typography.bodySmall,
+              color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+          }
+
+          FilledTonalButton(
+            onClick = onOpenNotificationCenter,
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+            shape = RoundedCornerShape(10.dp),
+            colors = ButtonDefaults.filledTonalButtonColors(
+              containerColor = SchoolNavyPrimary,
+              contentColor = Color.White
+            ),
+            modifier = Modifier.testTag("open_popup_center_btn")
+          ) {
+            Text("Open Alert Center", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
           }
         }
       }
@@ -304,6 +456,7 @@ fun StudentDashboardScreen(
     item {
       Spacer(modifier = Modifier.height(16.dp))
     }
+  }
   }
 }
 

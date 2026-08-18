@@ -67,7 +67,7 @@ fun SplashScreen(
       ) {
         Image(
           painter = painterResource(id = R.drawable.school_logo),
-          contentDescription = "St. Joseph's Emblem",
+          contentDescription = "My School Emblem",
           modifier = Modifier
             .fillMaxSize()
             .clip(CircleShape),

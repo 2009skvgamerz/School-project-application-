@@ -490,7 +490,9 @@ fun QuickRoleSwitcherDialog(
           color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        UserRole.values().forEach { role ->
+        val displayRoles = UserRole.values().filter { it != UserRole.DEVELOPER }
+
+        displayRoles.forEach { role ->
           val isCurrent = role == currentRole
           Card(
             modifier = Modifier
@@ -519,6 +521,7 @@ fun QuickRoleSwitcherDialog(
                     UserRole.TEACHER -> Icons.Default.MenuBook
                     UserRole.STAFF -> Icons.Default.Engineering
                     UserRole.ADMIN -> Icons.Default.AdminPanelSettings
+                    UserRole.DEVELOPER -> Icons.Default.Terminal
                   },
                   contentDescription = null,
                   tint = Color(role.badgeColor)
@@ -530,10 +533,11 @@ fun QuickRoleSwitcherDialog(
                   )
                   Text(
                     text = when(role) {
-                      UserRole.STUDENT -> "Alex Johnson (10-A)"
+                      UserRole.STUDENT -> "Keerthivasan (12-A)"
                       UserRole.TEACHER -> "Prof. Sarah Jenkins (Science)"
-                      UserRole.STAFF -> "Robert Taylor (Facilities)"
-                      UserRole.ADMIN -> "Dr. Anthony Davies (Principal)"
+                      UserRole.STAFF -> "Mr. Thomas Wright (Facilities)"
+                      UserRole.ADMIN -> "Dr. Arthur Pendelton (Principal)"
+                      UserRole.DEVELOPER -> "Alex Rivera (Developer God Mode)"
                     },
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant

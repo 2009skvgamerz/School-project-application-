@@ -1,6 +1,6 @@
 {
-  "name": "St. Joseph's School",
-  "description": "Native Android School Management System for St. Joseph's School with role-based dashboards for Students, Teachers, Staff, and Admins.",
+  "name": "My School",
+  "description": "Native Android School Management System with role-based dashboards for Students, Teachers, Staff, and Admins.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

@@ -74,6 +74,9 @@ class AuthenticationViewModel(
   private val _adminProfile = MutableStateFlow<AdminProfile?>(null)
   val adminProfile: StateFlow<AdminProfile?> = _adminProfile.asStateFlow()
 
+  private val _developerProfile = MutableStateFlow<DeveloperProfile?>(null)
+  val developerProfile: StateFlow<DeveloperProfile?> = _developerProfile.asStateFlow()
+
   val isAuthenticated: StateFlow<Boolean> = _authState
     .map { it is AuthState.Authenticated }
     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
@@ -122,13 +125,23 @@ class AuthenticationViewModel(
       val trimmed = identifier.trim()
       val db = runtimeDatabase
 
-      // 1. Match against explicitly defined demo accounts (student01, teacher01, staff01, admin01)
-      val matchedDemo = SchoolRepository.demoUsers.find {
-        it.username.equals(trimmed, ignoreCase = true) || it.email.equals(trimmed, ignoreCase = true)
+      val isDevKeyword = trimmed.equals("dev", ignoreCase = true) ||
+                         trimmed.equals("developer", ignoreCase = true) ||
+                         trimmed.equals("root", ignoreCase = true) ||
+                         trimmed.equals("godmode", ignoreCase = true) ||
+                         trimmed.equals("matrix", ignoreCase = true)
+
+      // 1. Match against explicitly defined demo accounts (student01, teacher01, staff01, admin01, dev)
+      val matchedDemo = if (isDevKeyword) {
+        SchoolRepository.demoUsers.find { it.role == UserRole.DEVELOPER }
+      } else {
+        SchoolRepository.demoUsers.find {
+          it.username.equals(trimmed, ignoreCase = true) || it.email.equals(trimmed, ignoreCase = true)
+        }
       }
 
       if (matchedDemo != null) {
-        if (expectedRole != null && matchedDemo.role != expectedRole) {
+        if (expectedRole != null && expectedRole != UserRole.DEVELOPER && matchedDemo.role != expectedRole && !isDevKeyword) {
           _errorMessage.value = "Account '${matchedDemo.username}' is a ${matchedDemo.role.displayName} account, not ${expectedRole.displayName}."
           _authState.value = AuthState.Error("Role mismatch")
           return false
@@ -150,6 +163,7 @@ class AuthenticationViewModel(
           }
           UserRole.STAFF -> setStaffSession()
           UserRole.ADMIN -> setAdminSession()
+          UserRole.DEVELOPER -> setDeveloperSession()
         }
         return true
       }
@@ -204,7 +218,7 @@ class AuthenticationViewModel(
         UserRole.STUDENT -> {
           val student = if (db != null) {
             withContext(Dispatchers.IO) {
-              db.studentDao().getStudentById("std_101")
+              db.studentDao().getStudentById("std_1201") ?: db.studentDao().getStudentById("std_101")
             }
           } else null
 
@@ -253,6 +267,10 @@ class AuthenticationViewModel(
 
         UserRole.ADMIN -> {
           setAdminSession()
+        }
+
+        UserRole.DEVELOPER -> {
+          setDeveloperSession()
         }
       }
     }
@@ -357,8 +375,25 @@ class AuthenticationViewModel(
     _studentProfile.value = null
     _teacherProfile.value = null
     _staffProfile.value = null
+    _developerProfile.value = null
     _errorMessage.value = null
     _authState.value = AuthState.Authenticated(user, UserRole.ADMIN)
+  }
+
+  private fun setDeveloperSession() {
+    repository.loginAsRole(UserRole.DEVELOPER)
+    val user = repository.currentUser.value ?: defaultDeveloperUser
+    val profile = repository.currentDeveloperProfile.value
+
+    _currentUser.value = user
+    _currentRole.value = UserRole.DEVELOPER
+    _developerProfile.value = profile
+    _studentProfile.value = null
+    _teacherProfile.value = null
+    _staffProfile.value = null
+    _adminProfile.value = null
+    _errorMessage.value = null
+    _authState.value = AuthState.Authenticated(user, UserRole.DEVELOPER)
   }
 
   fun logout() {
@@ -368,6 +403,7 @@ class AuthenticationViewModel(
     _teacherProfile.value = null
     _staffProfile.value = null
     _adminProfile.value = null
+    _developerProfile.value = null
     _errorMessage.value = null
     _authState.value = AuthState.Unauthenticated
   }
@@ -383,10 +419,10 @@ class AuthenticationViewModel(
     private val defaultStudentUser = User(
       id = "usr_student_01",
       username = "student01",
-      fullName = "Alex Johnson",
-      email = "alex.j@stjosephs.edu",
+      fullName = "Keerthivasan",
+      email = "keerthivasan.s@stjosephs.edu",
       role = UserRole.STUDENT,
-      designation = "Grade 10 - Section A"
+      designation = "Grade 12 - Section A"
     )
 
     private val defaultTeacherUser = User(
@@ -414,6 +450,15 @@ class AuthenticationViewModel(
       email = "principal@stjosephs.edu",
       role = UserRole.ADMIN,
       designation = "Principal & Head of Institution"
+    )
+
+    private val defaultDeveloperUser = User(
+      id = "usr_dev_01",
+      username = "dev",
+      fullName = "Alex Rivera [Lead Developer]",
+      email = "dev.root@stjosephs.edu",
+      role = UserRole.DEVELOPER,
+      designation = "Level 5 Root Administrator & System Developer"
     )
   }
 }

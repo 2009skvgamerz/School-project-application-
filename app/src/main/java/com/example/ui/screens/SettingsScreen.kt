@@ -39,6 +39,11 @@ fun SettingsScreen(
   onSwitchRole: () -> Unit,
   onSignOut: () -> Unit,
   onResetDatabase: () -> Unit,
+  onOpenNotificationCenter: (() -> Unit)? = null,
+  networkState: com.example.util.NetworkState = com.example.util.NetworkState.Online(),
+  isSimulatedOffline: Boolean = false,
+  onToggleSimulatedOffline: ((Boolean) -> Unit)? = null,
+  onRetryConnection: (() -> Unit)? = null,
   modifier: Modifier = Modifier
 ) {
   var showResetSuccessBanner by remember { mutableStateOf(false) }
@@ -204,6 +209,177 @@ fun SettingsScreen(
                   colors = RadioButtonDefaults.colors(selectedColor = SchoolNavyPrimary)
                 )
               }
+            }
+          }
+        }
+      }
+    }
+
+    // 2.5 System Pop-Up Alerts & External Notification Center
+    item {
+      SettingsSectionTitle(title = "External System Notifications", icon = Icons.Default.Campaign)
+    }
+
+    item {
+      Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        modifier = Modifier.fillMaxWidth().testTag("settings_popup_card")
+      ) {
+        Column(
+          modifier = Modifier.padding(16.dp),
+          verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+          Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+          ) {
+            Box(
+              modifier = Modifier
+                .size(44.dp)
+                .clip(CircleShape)
+                .background(SchoolNavyPrimary.copy(alpha = 0.12f)),
+              contentAlignment = Alignment.Center
+            ) {
+              Icon(
+                imageVector = Icons.Default.OpenInNew,
+                contentDescription = null,
+                tint = SchoolNavyPrimary,
+                modifier = Modifier.size(24.dp)
+              )
+            }
+
+            Column(modifier = Modifier.weight(1f)) {
+              Text(
+                text = "Heads-Up Pop-Up Windows",
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                color = SchoolNavyPrimary
+              )
+              Text(
+                text = "Receive floating pop-up windows outside this app with deep-link navigation.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+              )
+            }
+          }
+
+          if (onOpenNotificationCenter != null) {
+            FilledTonalButton(
+              onClick = onOpenNotificationCenter,
+              modifier = Modifier.fillMaxWidth().testTag("settings_open_popup_center_btn"),
+              shape = RoundedCornerShape(10.dp),
+              colors = ButtonDefaults.filledTonalButtonColors(
+                containerColor = SchoolNavyPrimary,
+                contentColor = Color.White
+              )
+            ) {
+              Icon(imageVector = Icons.Default.FlashOn, contentDescription = null, modifier = Modifier.size(16.dp))
+              Spacer(modifier = Modifier.width(6.dp))
+              Text("Open External Notification Center")
+            }
+          }
+        }
+      }
+    }
+
+    // 2.7 Network Connectivity & Data Sync
+    item {
+      SettingsSectionTitle(title = "Network & Data Sync Status", icon = Icons.Default.Wifi)
+    }
+
+    item {
+      val isOnline = networkState is com.example.util.NetworkState.Online
+      Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        modifier = Modifier.fillMaxWidth().testTag("settings_network_status_card")
+      ) {
+        Column(
+          modifier = Modifier.padding(16.dp),
+          verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+          Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+          ) {
+            Box(
+              modifier = Modifier
+                .size(44.dp)
+                .clip(CircleShape)
+                .background(if (isOnline) SchoolAccentGreen.copy(alpha = 0.12f) else Color(0xFFDC2626).copy(alpha = 0.12f)),
+              contentAlignment = Alignment.Center
+            ) {
+              Icon(
+                imageVector = if (isOnline) Icons.Default.Wifi else Icons.Default.WifiOff,
+                contentDescription = null,
+                tint = if (isOnline) SchoolAccentGreen else Color(0xFFDC2626),
+                modifier = Modifier.size(24.dp)
+              )
+            }
+
+            Column(modifier = Modifier.weight(1f)) {
+              Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+              ) {
+                Text(
+                  text = if (isOnline) "Network Connected" else "Device Offline",
+                  style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                  color = if (isOnline) SchoolNavyPrimary else Color(0xFFDC2626)
+                )
+                com.example.ui.components.NetworkStatusBarBadge(networkState = networkState)
+              }
+              Text(
+                text = if (isOnline) {
+                  val type = (networkState as? com.example.util.NetworkState.Online)?.connectionType ?: "Active"
+                  "Cloud sync active ($type)"
+                } else {
+                  "Local Room DB cache active. Refresh paused."
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+              )
+            }
+
+            if (onRetryConnection != null) {
+              IconButton(
+                onClick = onRetryConnection,
+                modifier = Modifier.testTag("settings_retry_network_btn")
+              ) {
+                Icon(imageVector = Icons.Default.Refresh, contentDescription = "Check Network", tint = SchoolNavyPrimary)
+              }
+            }
+          }
+
+          HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+
+          // Offline Simulation Switch (for easy user testing)
+          if (onToggleSimulatedOffline != null) {
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalArrangement = Arrangement.SpaceBetween,
+              verticalAlignment = Alignment.CenterVertically
+            ) {
+              Column(modifier = Modifier.weight(1f)) {
+                Text(
+                  text = "Simulate Offline Mode",
+                  style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                  color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                  text = "Demonstrate offline banner & local database isolation without disabling Wi-Fi.",
+                  style = MaterialTheme.typography.bodySmall,
+                  color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+              }
+              Spacer(modifier = Modifier.width(8.dp))
+              Switch(
+                checked = isSimulatedOffline,
+                onCheckedChange = { onToggleSimulatedOffline(it) },
+                modifier = Modifier.testTag("settings_offline_simulation_switch")
+              )
             }
           }
         }

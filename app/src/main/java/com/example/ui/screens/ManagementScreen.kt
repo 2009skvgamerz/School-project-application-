@@ -3,6 +3,7 @@ package com.example.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -18,42 +19,39 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.model.SchoolClass
+import com.example.model.SystemUserRecord
 import com.example.model.UserRole
+import com.example.ui.components.EditUserDialog
 import com.example.ui.theme.SchoolNavyPrimary
-
-data class DirectoryMember(
-  val name: String,
-  val role: UserRole,
-  val departmentOrClass: String,
-  val contact: String,
-  val status: String
-)
+import com.example.viewmodel.SchoolViewModel
 
 @Composable
 fun ManagementScreen(
   classes: List<SchoolClass>,
-  modifier: Modifier = Modifier
+  modifier: Modifier = Modifier,
+  viewModel: SchoolViewModel? = null
 ) {
   var searchQuery by remember { mutableStateOf("") }
   var selectedFilterRole by remember { mutableStateOf<UserRole?>(null) }
+  var userToEdit by remember { mutableStateOf<SystemUserRecord?>(null) }
+  var showAddUserDialog by remember { mutableStateOf(false) }
 
-  val sampleMembers = remember {
-    listOf(
-      DirectoryMember("Aarav Sharma", UserRole.STUDENT, "Class 10-A (Roll #14)", "parent.sharma@example.com", "Active"),
-      DirectoryMember("Diya Patel", UserRole.STUDENT, "Class 10-A (Roll #08)", "parent.patel@example.com", "Active"),
-      DirectoryMember("Rohan Gupta", UserRole.STUDENT, "Class 10-A (Roll #22)", "parent.gupta@example.com", "Medical Leave"),
-      DirectoryMember("Prof. Emily Watson", UserRole.TEACHER, "Physics & Science Dept", "e.watson@grandviewacademy.edu", "Active"),
-      DirectoryMember("Dr. Robert Sterling", UserRole.TEACHER, "Mathematics Dept", "r.sterling@grandviewacademy.edu", "Active"),
-      DirectoryMember("Anita Desai", UserRole.TEACHER, "English Literature", "a.desai@grandviewacademy.edu", "Active"),
-      DirectoryMember("Marcus Reynolds", UserRole.STAFF, "Campus Facilities & Safety", "m.reynolds@grandviewacademy.edu", "On Duty"),
-      DirectoryMember("David Miller", UserRole.STAFF, "Transport & Logistics", "d.miller@grandviewacademy.edu", "On Duty"),
-      DirectoryMember("Dr. Arthur Pendelton", UserRole.ADMIN, "Principal & Academic Dean", "principal@grandviewacademy.edu", "Active")
-    )
-  }
+  val systemUsers by viewModel?.systemUsers?.collectAsState() ?: remember { mutableStateOf(emptyList()) }
+  val currentUser by viewModel?.currentUser?.collectAsState() ?: remember { mutableStateOf(null) }
+  val isDeveloper = currentUser?.role == UserRole.DEVELOPER
+  val isAdmin = currentUser?.role == UserRole.ADMIN
 
-  val filteredMembers = sampleMembers.filter { member ->
-    (selectedFilterRole == null || member.role == selectedFilterRole) &&
-    (searchQuery.isBlank() || member.name.contains(searchQuery, ignoreCase = true) || member.departmentOrClass.contains(searchQuery, ignoreCase = true))
+  val displayList = if (systemUsers.isNotEmpty()) {
+    systemUsers.filter { member ->
+      (selectedFilterRole == null || member.role == selectedFilterRole) &&
+      (searchQuery.isBlank() ||
+          member.fullName.contains(searchQuery, ignoreCase = true) ||
+          member.email.contains(searchQuery, ignoreCase = true) ||
+          member.designation.contains(searchQuery, ignoreCase = true) ||
+          member.departmentOrGrade.contains(searchQuery, ignoreCase = true))
+    }
+  } else {
+    emptyList()
   }
 
   Column(
@@ -61,19 +59,50 @@ fun ManagementScreen(
       .fillMaxSize()
       .testTag("management_screen")
       .padding(16.dp),
-    verticalArrangement = Arrangement.spacedBy(16.dp)
+    verticalArrangement = Arrangement.spacedBy(14.dp)
   ) {
-    Text(
-      text = "Institutional Directory & Governance",
-      style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-      color = SchoolNavyPrimary
-    )
+    Row(
+      modifier = Modifier.fillMaxWidth(),
+      horizontalArrangement = Arrangement.SpaceBetween,
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      Column(modifier = Modifier.weight(1f)) {
+        Text(
+          text = "Institutional Directory & Master Records",
+          style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+          color = SchoolNavyPrimary
+        )
+        if (isDeveloper) {
+          Text(
+            text = "⚡ Developer God Mode: Full edit & override permissions active",
+            style = MaterialTheme.typography.labelSmall,
+            color = Color(0xFF059669)
+          )
+        }
+      }
+
+      if (isDeveloper && viewModel != null) {
+        FilledTonalButton(
+          onClick = { showAddUserDialog = true },
+          colors = ButtonDefaults.filledTonalButtonColors(
+            containerColor = Color(0xFF10B981).copy(alpha = 0.2f),
+            contentColor = Color(0xFF059669)
+          ),
+          contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+          modifier = Modifier.testTag("management_add_user_btn")
+        ) {
+          Icon(Icons.Default.PersonAdd, contentDescription = null, modifier = Modifier.size(16.dp))
+          Spacer(modifier = Modifier.width(4.dp))
+          Text("Add User", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+        }
+      }
+    }
 
     // Search bar
     OutlinedTextField(
       value = searchQuery,
       onValueChange = { searchQuery = it },
-      label = { Text("Search by name, class, or department") },
+      label = { Text("Search by name, class, designation, or email") },
       leadingIcon = { Icon(imageVector = Icons.Default.Search, contentDescription = null) },
       trailingIcon = {
         if (searchQuery.isNotEmpty()) {
@@ -87,20 +116,28 @@ fun ManagementScreen(
     )
 
     // Role filter chips
-    Row(
+    val visibleFilterRoles = if (isDeveloper) {
+      UserRole.values().toList()
+    } else {
+      UserRole.values().filter { it != UserRole.DEVELOPER }
+    }
+
+    LazyRow(
       modifier = Modifier.fillMaxWidth(),
       horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-      FilterChip(
-        selected = selectedFilterRole == null,
-        onClick = { selectedFilterRole = null },
-        label = { Text("All (${sampleMembers.size})") }
-      )
-      UserRole.values().forEach { role ->
+      item {
+        FilterChip(
+          selected = selectedFilterRole == null,
+          onClick = { selectedFilterRole = null },
+          label = { Text("All (${systemUsers.size})") }
+        )
+      }
+      items(visibleFilterRoles) { role ->
         FilterChip(
           selected = selectedFilterRole == role,
-          onClick = { selectedFilterRole = role },
-          label = { Text(role.label) }
+          onClick = { selectedFilterRole = if (selectedFilterRole == role) null else role },
+          label = { Text(role.displayName) }
         )
       }
     }
@@ -109,7 +146,7 @@ fun ManagementScreen(
       verticalArrangement = Arrangement.spacedBy(10.dp),
       modifier = Modifier.fillMaxSize()
     ) {
-      items(filteredMembers) { member ->
+      items(displayList, key = { it.id }) { member ->
         Card(
           shape = RoundedCornerShape(12.dp),
           colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -127,14 +164,7 @@ fun ManagementScreen(
               modifier = Modifier
                 .size(44.dp)
                 .clip(CircleShape)
-                .background(
-                  when(member.role) {
-                    UserRole.STUDENT -> Color(0xFF2563EB)
-                    UserRole.TEACHER -> Color(0xFF059669)
-                    UserRole.STAFF -> Color(0xFF7C3AED)
-                    UserRole.ADMIN -> Color(0xFF1E293B)
-                  }.copy(alpha = 0.15f)
-                ),
+                .background(Color(member.role.badgeColor).copy(alpha = 0.18f)),
               contentAlignment = Alignment.Center
             ) {
               Icon(
@@ -143,49 +173,99 @@ fun ManagementScreen(
                   UserRole.TEACHER -> Icons.Default.MenuBook
                   UserRole.STAFF -> Icons.Default.Engineering
                   UserRole.ADMIN -> Icons.Default.AdminPanelSettings
+                  UserRole.DEVELOPER -> Icons.Default.Terminal
                 },
                 contentDescription = null,
-                tint = when(member.role) {
-                  UserRole.STUDENT -> Color(0xFF2563EB)
-                  UserRole.TEACHER -> Color(0xFF059669)
-                  UserRole.STAFF -> Color(0xFF7C3AED)
-                  UserRole.ADMIN -> Color(0xFF1E293B)
-                },
+                tint = Color(member.role.badgeColor),
                 modifier = Modifier.size(22.dp)
               )
             }
 
             Column(modifier = Modifier.weight(1f)) {
+              Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+              ) {
+                Text(
+                  text = member.fullName,
+                  style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
+                )
+                Surface(
+                  color = Color(member.role.badgeColor).copy(alpha = 0.15f),
+                  shape = RoundedCornerShape(4.dp)
+                ) {
+                  Text(
+                    text = member.role.displayName,
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                    color = Color(member.role.badgeColor),
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                  )
+                }
+              }
+
               Text(
-                text = member.name,
-                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
-              )
-              Text(
-                text = member.departmentOrClass,
+                text = "${member.designation.ifBlank { member.departmentOrGrade }} • ${member.email}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
               )
               Text(
-                text = member.contact,
+                text = "ID: ${member.identifier} • Ph: ${member.phone}",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
               )
             }
 
-            Surface(
-              color = MaterialTheme.colorScheme.surfaceVariant,
-              shape = RoundedCornerShape(6.dp)
-            ) {
-              Text(
-                text = member.status,
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                color = SchoolNavyPrimary,
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-              )
+            if (isDeveloper && viewModel != null) {
+              IconButton(
+                onClick = { userToEdit = member },
+                colors = IconButtonDefaults.iconButtonColors(contentColor = Color(0xFF059669)),
+                modifier = Modifier.testTag("management_edit_user_${member.username}")
+              ) {
+                Icon(Icons.Default.Edit, contentDescription = "Edit User", modifier = Modifier.size(20.dp))
+              }
+            } else {
+              Surface(
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                shape = RoundedCornerShape(6.dp)
+              ) {
+                Text(
+                  text = "Active",
+                  style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                  color = SchoolNavyPrimary,
+                  modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                )
+              }
             }
           }
         }
       }
     }
+  }
+
+  // Edit User Dialog
+  if (userToEdit != null && viewModel != null) {
+    EditUserDialog(
+      userRecord = userToEdit,
+      isNewUser = false,
+      onDismiss = { userToEdit = null },
+      onSave = { updated ->
+        viewModel.updateSystemUser(updated)
+      },
+      onDelete = { id ->
+        viewModel.deleteSystemUser(id)
+      }
+    )
+  }
+
+  // Add User Dialog
+  if (showAddUserDialog && viewModel != null) {
+    EditUserDialog(
+      userRecord = null,
+      isNewUser = true,
+      onDismiss = { showAddUserDialog = false },
+      onSave = { newUser ->
+        viewModel.addSystemUser(newUser)
+      }
+    )
   }
 }
