@@ -1,6 +1,9 @@
 package com.example.ui
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -25,6 +28,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 import com.example.model.*
 import com.example.ui.auth.LoginScreen
+import com.example.ui.auth.SplashScreen
 import com.example.ui.components.*
 import com.example.ui.dashboard.*
 import com.example.ui.screens.*
@@ -97,11 +101,17 @@ fun MainSchoolApp(
   val pendingHomeworkCount by viewModel.pendingHomeworkCount.collectAsState()
 
   // Compulsory authentication on every app launch - requires successful login before accessing app
+  var showSplash by remember { mutableStateOf(true) }
   var isAuthenticated by remember { mutableStateOf(false) }
   var isLoggingIn by remember { mutableStateOf(false) }
   var loginErrorMessage by remember { mutableStateOf<String?>(null) }
   var currentTab by remember { mutableStateOf(NavigationTab.DASHBOARD) }
   val coroutineScope = rememberCoroutineScope()
+
+  LaunchedEffect(Unit) {
+    kotlinx.coroutines.delay(1000)
+    showSplash = false
+  }
 
   // Deep Link listener from system notification pop-ups outside app
   LaunchedEffect(deepLinkRoute) {
@@ -120,43 +130,60 @@ fun MainSchoolApp(
     }
   }
 
-  if (!isAuthenticated) {
-    LoginScreen(
-      errorMessage = loginErrorMessage,
-      isLoading = isLoggingIn,
-      networkState = networkState,
-      onLogin = { username, password, _ ->
-        coroutineScope.launch {
-          isLoggingIn = true
-          loginErrorMessage = null
-          kotlinx.coroutines.delay(1300) // Display inspirational school quote and verify
-          val result = viewModel.login(username, password)
-          result.onSuccess {
-            loginErrorMessage = null
-            isAuthenticated = true
-            currentTab = NavigationTab.DASHBOARD
-            isLoggingIn = false
-          }.onFailure { error ->
-            loginErrorMessage = error.message ?: "Authentication failed. Please check your credentials."
-            isLoggingIn = false
-          }
-        }
-      },
-      onQuickRoleLogin = { role ->
-        coroutineScope.launch {
-          isLoggingIn = true
-          loginErrorMessage = null
-          kotlinx.coroutines.delay(1100) // Display inspirational school quote and switch role
-          viewModel.switchRole(role)
-          loginErrorMessage = null
-          isAuthenticated = true
-          currentTab = NavigationTab.DASHBOARD
-          isLoggingIn = false
-        }
+  AnimatedContent(
+    targetState = when {
+      showSplash -> 0
+      !isAuthenticated -> 1
+      else -> 2
+    },
+    transitionSpec = {
+      fadeIn(animationSpec = tween(300, easing = LinearOutSlowInEasing)) togetherWith
+        fadeOut(animationSpec = tween(200, easing = FastOutSlowInEasing))
+    },
+    label = "app_root_state_transition"
+  ) { rootState ->
+    when (rootState) {
+      0 -> {
+        SplashScreen()
       }
-    )
-    return
-  }
+      1 -> {
+        LoginScreen(
+          errorMessage = loginErrorMessage,
+          isLoading = isLoggingIn,
+          networkState = networkState,
+          onLogin = { username, password, _ ->
+            coroutineScope.launch {
+              isLoggingIn = true
+              loginErrorMessage = null
+              kotlinx.coroutines.delay(500)
+              val result = viewModel.login(username, password)
+              result.onSuccess {
+                loginErrorMessage = null
+                isAuthenticated = true
+                currentTab = NavigationTab.DASHBOARD
+                isLoggingIn = false
+              }.onFailure { error ->
+                loginErrorMessage = error.message ?: "Authentication failed. Please check your credentials."
+                isLoggingIn = false
+              }
+            }
+          },
+          onQuickRoleLogin = { role ->
+            coroutineScope.launch {
+              isLoggingIn = true
+              loginErrorMessage = null
+              kotlinx.coroutines.delay(400)
+              viewModel.switchRole(role)
+              loginErrorMessage = null
+              isAuthenticated = true
+              currentTab = NavigationTab.DASHBOARD
+              isLoggingIn = false
+            }
+          }
+        )
+      }
+      2 -> {
+        // Authenticated App Shell
 
   // Dialog States
   var showRoleSwitcherDialog by remember { mutableStateOf(false) }
@@ -398,8 +425,19 @@ fun MainSchoolApp(
         .fillMaxSize()
         .padding(innerPadding)
     ) {
-      when (currentTab) {
-        NavigationTab.DASHBOARD -> {
+      AnimatedContent(
+        targetState = currentTab,
+        transitionSpec = {
+          (fadeIn(animationSpec = tween(220, easing = LinearOutSlowInEasing)) +
+            scaleIn(initialScale = 0.98f, animationSpec = tween(220, easing = FastOutSlowInEasing)))
+            .togetherWith(
+              fadeOut(animationSpec = tween(150, easing = FastOutSlowInEasing))
+            )
+        },
+        label = "tab_animated_content"
+      ) { activeTab ->
+        when (activeTab) {
+          NavigationTab.DASHBOARD -> {
           when (currentUser.role) {
             UserRole.STUDENT -> {
               studentProfile?.let { prof ->
@@ -627,6 +665,7 @@ fun MainSchoolApp(
       }
     }
   }
+}
 
   // DIALOGS & BOTTOM SHEETS
 
@@ -1179,5 +1218,8 @@ fun MainSchoolApp(
         currentTab = NavigationTab.DASHBOARD
       }
     )
+  }
+      }
+    }
   }
 }

@@ -84,8 +84,6 @@ fun LoginScreen(
   var rememberMe by remember { mutableStateOf(true) }
   var localValidationError by remember { mutableStateOf<String?>(null) }
   var showForgotPasswordDialog by remember { mutableStateOf(false) }
-  var secretDevTapCount by remember { mutableStateOf(0) }
-  var showSecretDevUnlockedSnackbar by remember { mutableStateOf(false) }
 
   val focusManager = LocalFocusManager.current
 
@@ -138,17 +136,6 @@ fun LoginScreen(
             )
           )
       ) {
-        // Background illustration
-        Image(
-          painter = painterResource(id = R.drawable.school_banner),
-          contentDescription = "School Campus",
-          modifier = Modifier
-            .fillMaxSize()
-            .clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp)),
-          contentScale = ContentScale.Crop,
-          alpha = 0.30f
-        )
-
         // Overlay Brand Info
         Column(
           modifier = Modifier
@@ -158,20 +145,9 @@ fun LoginScreen(
           horizontalAlignment = Alignment.CenterHorizontally,
           verticalArrangement = Arrangement.Center
         ) {
-          // School Logo Avatar with White Ring & Gold Border (5-Tap secret developer trigger)
+          // School Logo Emblem with White Ring & Gold Border
           Surface(
-            modifier = Modifier
-              .size(72.dp)
-              .clickable {
-                secretDevTapCount++
-                if (secretDevTapCount >= 5) {
-                  secretDevTapCount = 0
-                  selectedRole = UserRole.DEVELOPER
-                  emailOrUsername = "dev"
-                  password = com.example.data.SchoolRepository.DEMO_PASSWORD
-                  showSecretDevUnlockedSnackbar = true
-                }
-              },
+            modifier = Modifier.size(76.dp),
             shape = CircleShape,
             color = Color.White,
             shadowElevation = 6.dp
@@ -179,17 +155,35 @@ fun LoginScreen(
             Box(
               modifier = Modifier
                 .fillMaxSize()
-                .padding(3.dp),
+                .padding(4.dp)
+                .clip(CircleShape)
+                .background(
+                  brush = Brush.radialGradient(
+                    colors = listOf(SchoolNavyPrimary, SchoolNavyDark)
+                  )
+                ),
               contentAlignment = Alignment.Center
             ) {
-              Image(
-                painter = painterResource(id = R.drawable.school_logo),
-                contentDescription = "$schoolName Logo",
-                modifier = Modifier
-                  .fillMaxSize()
-                  .clip(CircleShape),
-                contentScale = ContentScale.Crop
-              )
+              Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+              ) {
+                Icon(
+                  imageVector = Icons.Default.School,
+                  contentDescription = "$schoolName Crest",
+                  tint = SchoolGold,
+                  modifier = Modifier.size(34.dp)
+                )
+                Text(
+                  text = "SJ",
+                  style = MaterialTheme.typography.labelSmall.copy(
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 11.sp,
+                    letterSpacing = 1.sp
+                  ),
+                  color = Color.White
+                )
+              }
             }
           }
 

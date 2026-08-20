@@ -131,7 +131,7 @@ fun HomeworkScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp),
         modifier = Modifier.fillMaxSize()
       ) {
-        items(displayedList) { hw ->
+        items(displayedList, key = { it.id }) { hw ->
           HomeworkCard(
             homework = hw,
             userRole = userRole,

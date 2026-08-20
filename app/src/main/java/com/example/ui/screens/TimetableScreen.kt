@@ -140,7 +140,7 @@ fun TimetableScreen(
         verticalArrangement = Arrangement.spacedBy(10.dp),
         modifier = Modifier.fillMaxSize()
       ) {
-        items(dayEntries) { entry ->
+        items(dayEntries, key = { it.id }) { entry ->
           TimetableRowCard(entry = entry)
         }
       }

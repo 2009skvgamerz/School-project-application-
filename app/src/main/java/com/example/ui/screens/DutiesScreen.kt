@@ -123,7 +123,7 @@ fun DutiesScreen(
         verticalArrangement = Arrangement.spacedBy(10.dp),
         modifier = Modifier.fillMaxSize()
       ) {
-        items(filteredDuties) { duty ->
+        items(filteredDuties, key = { it.id }) { duty ->
           DutyTaskItemCard(
             duty = duty,
             onStatusChange = { newStatus -> onUpdateDutyStatus(duty.id, newStatus) }

@@ -62,14 +62,23 @@ fun StudentIdCard(
                 .size(34.dp)
                 .clip(CircleShape)
                 .background(Color.White)
-                .padding(2.dp)
+                .padding(2.dp),
+              contentAlignment = Alignment.Center
             ) {
-              Image(
-                painter = painterResource(id = R.drawable.school_logo),
-                contentDescription = "School Logo",
-                modifier = Modifier.fillMaxSize().clip(CircleShape),
-                contentScale = ContentScale.Crop
-              )
+              Box(
+                modifier = Modifier
+                  .fillMaxSize()
+                  .clip(CircleShape)
+                  .background(SchoolNavyPrimary),
+                contentAlignment = Alignment.Center
+              ) {
+                Icon(
+                  imageVector = Icons.Default.School,
+                  contentDescription = "School Logo",
+                  tint = SchoolGold,
+                  modifier = Modifier.size(20.dp)
+                )
+              }
             }
             Column {
               Text(
@@ -256,14 +265,23 @@ fun StaffIdCard(
                 .size(34.dp)
                 .clip(CircleShape)
                 .background(Color.White)
-                .padding(2.dp)
+                .padding(2.dp),
+              contentAlignment = Alignment.Center
             ) {
-              Image(
-                painter = painterResource(id = R.drawable.school_logo),
-                contentDescription = "School Logo",
-                modifier = Modifier.fillMaxSize().clip(CircleShape),
-                contentScale = ContentScale.Crop
-              )
+              Box(
+                modifier = Modifier
+                  .fillMaxSize()
+                  .clip(CircleShape)
+                  .background(SchoolNavyPrimary),
+                contentAlignment = Alignment.Center
+              ) {
+                Icon(
+                  imageVector = Icons.Default.School,
+                  contentDescription = "School Logo",
+                  tint = SchoolGold,
+                  modifier = Modifier.size(20.dp)
+                )
+              }
             }
             Column {
               Text(

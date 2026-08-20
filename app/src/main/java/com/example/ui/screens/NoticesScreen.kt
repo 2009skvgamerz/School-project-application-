@@ -145,7 +145,7 @@ fun NoticesScreen(
           verticalArrangement = Arrangement.spacedBy(12.dp),
           modifier = Modifier.fillMaxSize()
         ) {
-          items(filteredNotices) { notice ->
+          items(filteredNotices, key = { it.id }) { notice ->
             NoticeCard(
               notice = notice,
               onNoticeClick = onNoticeClick

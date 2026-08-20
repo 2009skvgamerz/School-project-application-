@@ -1,10 +1,11 @@
 package com.example.ui.auth
 
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.School
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -13,13 +14,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.R
 import com.example.ui.theme.*
 
 @Composable
@@ -63,16 +61,40 @@ fun SplashScreen(
           .scale(scale)
           .clip(CircleShape)
           .background(Color.White)
-          .padding(4.dp)
+          .padding(5.dp),
+        contentAlignment = Alignment.Center
       ) {
-        Image(
-          painter = painterResource(id = R.drawable.school_logo),
-          contentDescription = "My School Emblem",
+        Box(
           modifier = Modifier
             .fillMaxSize()
-            .clip(CircleShape),
-          contentScale = ContentScale.Crop
-        )
+            .clip(CircleShape)
+            .background(
+              brush = Brush.radialGradient(
+                listOf(SchoolNavyPrimary, SchoolNavyDark)
+              )
+            ),
+          contentAlignment = Alignment.Center
+        ) {
+          Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+          ) {
+            Icon(
+              imageVector = Icons.Default.School,
+              contentDescription = "School Emblem",
+              tint = SchoolGold,
+              modifier = Modifier.size(56.dp)
+            )
+            Text(
+              text = "SJ",
+              style = MaterialTheme.typography.titleMedium.copy(
+                fontWeight = FontWeight.ExtraBold,
+                letterSpacing = 2.sp
+              ),
+              color = Color.White
+            )
+          }
+        }
       }
 
       Spacer(modifier = Modifier.height(8.dp))
