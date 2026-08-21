@@ -59,7 +59,7 @@ fun TeacherDashboardScreen(
           Text(
             text = "Teacher Quick Actions",
             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-            color = SchoolNavyPrimary
+            color = MaterialTheme.colorScheme.onSurface
           )
 
           Row(

@@ -1,5 +1,8 @@
 package com.example.ui.screens
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -31,8 +34,6 @@ fun HomeworkScreen(
   val pendingHomeworks = homeworks.filter { it.status == HomeworkStatus.PENDING }
   val completedHomeworks = homeworks.filter { it.status != HomeworkStatus.PENDING }
 
-  val displayedList = if (selectedTab == 0) pendingHomeworks else completedHomeworks
-
   Column(
     modifier = modifier
       .fillMaxSize()
@@ -50,7 +51,7 @@ fun HomeworkScreen(
         Text(
           text = if (userRole == UserRole.STUDENT) "Homework & Assignments" else "Classroom Assignments",
           style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-          color = SchoolNavyPrimary
+          color = MaterialTheme.colorScheme.onSurface
         )
         Text(
           text = "${homeworks.size} assignments listed",
@@ -101,42 +102,75 @@ fun HomeworkScreen(
       )
     }
 
-    // Homework Item List
-    if (displayedList.isEmpty()) {
-      Card(
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        modifier = Modifier.fillMaxWidth()
-      ) {
-        Column(
-          modifier = Modifier.padding(24.dp),
-          horizontalAlignment = Alignment.CenterHorizontally,
-          verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-          Icon(
-            imageVector = Icons.Default.AssignmentTurnedIn,
-            contentDescription = null,
-            tint = SchoolAccentGreen,
-            modifier = Modifier.size(40.dp)
-          )
-          Text(
-            text = if (selectedTab == 0) "No pending homework! Great job!" else "No completed submissions found.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-          )
+    // Homework Item List with Animated Content
+    AnimatedContent(
+      targetState = selectedTab,
+      transitionSpec = {
+        if (targetState > initialState) {
+          (slideInHorizontally(
+            initialOffsetX = { (it * 0.2f).toInt() },
+            animationSpec = tween(280, easing = FastOutSlowInEasing)
+          ) + fadeIn(animationSpec = tween(260)))
+            .togetherWith(
+              slideOutHorizontally(
+                targetOffsetX = { -(it * 0.2f).toInt() },
+                animationSpec = tween(240, easing = FastOutSlowInEasing)
+              ) + fadeOut(animationSpec = tween(200))
+            )
+        } else {
+          (slideInHorizontally(
+            initialOffsetX = { -(it * 0.2f).toInt() },
+            animationSpec = tween(280, easing = FastOutSlowInEasing)
+          ) + fadeIn(animationSpec = tween(260)))
+            .togetherWith(
+              slideOutHorizontally(
+                targetOffsetX = { (it * 0.2f).toInt() },
+                animationSpec = tween(240, easing = FastOutSlowInEasing)
+              ) + fadeOut(animationSpec = tween(200))
+            )
         }
-      }
-    } else {
-      LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier.fillMaxSize()
-      ) {
-        items(displayedList, key = { it.id }) { hw ->
-          HomeworkCard(
-            homework = hw,
-            userRole = userRole,
-            onSubmitClick = { onSubmitHomework(hw) }
-          )
+      },
+      label = "homework_tab_transition",
+      modifier = Modifier.fillMaxSize()
+    ) { currentTabIdx ->
+      val displayedList = if (currentTabIdx == 0) pendingHomeworks else completedHomeworks
+
+      if (displayedList.isEmpty()) {
+        Card(
+          shape = RoundedCornerShape(12.dp),
+          colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+          modifier = Modifier.fillMaxWidth()
+        ) {
+          Column(
+            modifier = Modifier.padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+          ) {
+            Icon(
+              imageVector = Icons.Default.AssignmentTurnedIn,
+              contentDescription = null,
+              tint = SchoolAccentGreen,
+              modifier = Modifier.size(40.dp)
+            )
+            Text(
+              text = if (currentTabIdx == 0) "No pending homework! Great job!" else "No completed submissions found.",
+              style = MaterialTheme.typography.bodyMedium,
+              color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+          }
+        }
+      } else {
+        LazyColumn(
+          verticalArrangement = Arrangement.spacedBy(12.dp),
+          modifier = Modifier.fillMaxSize()
+        ) {
+          items(displayedList, key = { it.id }) { hw ->
+            HomeworkCard(
+              homework = hw,
+              userRole = userRole,
+              onSubmitClick = { onSubmitHomework(hw) }
+            )
+          }
         }
       }
     }
@@ -170,13 +204,13 @@ fun HomeworkCard(
           horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
           Surface(
-            color = SchoolNavyPrimary.copy(alpha = 0.12f),
+            color = MaterialTheme.colorScheme.primaryContainer,
             shape = RoundedCornerShape(6.dp)
           ) {
             Text(
               text = homework.subjectName,
               style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-              color = SchoolNavyPrimary,
+              color = MaterialTheme.colorScheme.onPrimaryContainer,
               modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
             )
           }

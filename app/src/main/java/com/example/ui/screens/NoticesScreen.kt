@@ -1,5 +1,8 @@
 package com.example.ui.screens
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -34,12 +37,6 @@ fun NoticesScreen(
   onRefresh: () -> Unit = {},
   modifier: Modifier = Modifier
 ) {
-  val filteredNotices = if (selectedCategory == null) {
-    notices
-  } else {
-    notices.filter { it.category == selectedCategory }
-  }
-
   PullToRefreshBox(
     isRefreshing = isRefreshing,
     onRefresh = onRefresh,
@@ -62,7 +59,7 @@ fun NoticesScreen(
           Text(
             text = "School Bulletins & Circulars",
             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-            color = SchoolNavyPrimary
+            color = MaterialTheme.colorScheme.onSurface
           )
           Text(
             text = "Official updates, events and emergency circulars",
@@ -115,41 +112,61 @@ fun NoticesScreen(
         }
       }
 
-      // List of Notices
-      if (filteredNotices.isEmpty()) {
-        Card(
-          shape = RoundedCornerShape(12.dp),
-          colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-          modifier = Modifier.fillMaxWidth()
-        ) {
-          Column(
-            modifier = Modifier.padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-          ) {
-            Icon(
-              imageVector = Icons.Default.NotificationsOff,
-              contentDescription = null,
-              tint = MaterialTheme.colorScheme.onSurfaceVariant,
-              modifier = Modifier.size(40.dp)
+      // List of Notices with Animated Transition
+      AnimatedContent(
+        targetState = selectedCategory,
+        transitionSpec = {
+          (fadeIn(animationSpec = tween(260)) +
+            scaleIn(initialScale = 0.97f, animationSpec = tween(260, easing = FastOutSlowInEasing)))
+            .togetherWith(
+              fadeOut(animationSpec = tween(180)) +
+                scaleOut(targetScale = 1.01f, animationSpec = tween(180))
             )
-            Text(
-              text = "No circulars found in this category.",
-              style = MaterialTheme.typography.bodyMedium,
-              color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-          }
+        },
+        label = "notices_filter_animated_transition",
+        modifier = Modifier.fillMaxSize()
+      ) { categoryFilter ->
+        val filteredNotices = if (categoryFilter == null) {
+          notices
+        } else {
+          notices.filter { it.category == categoryFilter }
         }
-      } else {
-        LazyColumn(
-          verticalArrangement = Arrangement.spacedBy(12.dp),
-          modifier = Modifier.fillMaxSize()
-        ) {
-          items(filteredNotices, key = { it.id }) { notice ->
-            NoticeCard(
-              notice = notice,
-              onNoticeClick = onNoticeClick
-            )
+
+        if (filteredNotices.isEmpty()) {
+          Card(
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            modifier = Modifier.fillMaxWidth()
+          ) {
+            Column(
+              modifier = Modifier.padding(24.dp),
+              horizontalAlignment = Alignment.CenterHorizontally,
+              verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+              Icon(
+                imageVector = Icons.Default.NotificationsOff,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(40.dp)
+              )
+              Text(
+                text = "No circulars found in this category.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+              )
+            }
+          }
+        } else {
+          LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.fillMaxSize()
+          ) {
+            items(filteredNotices, key = { it.id }) { notice ->
+              NoticeCard(
+                notice = notice,
+                onNoticeClick = onNoticeClick
+              )
+            }
           }
         }
       }

@@ -98,7 +98,7 @@ fun SettingsScreen(
               Text(
                 text = "St. Joseph's School Portal",
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                color = SchoolNavyPrimary
+                color = MaterialTheme.colorScheme.onSurface
               )
               Text(
                 text = "Academic ERP & Attendance Management",
@@ -239,13 +239,13 @@ fun SettingsScreen(
               modifier = Modifier
                 .size(44.dp)
                 .clip(CircleShape)
-                .background(SchoolNavyPrimary.copy(alpha = 0.12f)),
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
               contentAlignment = Alignment.Center
             ) {
               Icon(
                 imageVector = Icons.Default.OpenInNew,
                 contentDescription = null,
-                tint = SchoolNavyPrimary,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(24.dp)
               )
             }
@@ -254,7 +254,7 @@ fun SettingsScreen(
               Text(
                 text = "Heads-Up Pop-Up Windows",
                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                color = SchoolNavyPrimary
+                color = MaterialTheme.colorScheme.onSurface
               )
               Text(
                 text = "Receive floating pop-up windows outside this app with deep-link navigation.",
@@ -571,11 +571,11 @@ fun SettingsScreen(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
           ) {
-            Icon(imageVector = Icons.Default.HeadsetMic, contentDescription = null, tint = SchoolNavyPrimary, modifier = Modifier.size(18.dp))
+            Icon(imageVector = Icons.Default.HeadsetMic, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
             Text(
               text = "Institutional IT Support Desk",
               style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-              color = SchoolNavyPrimary
+              color = MaterialTheme.colorScheme.onSurface
             )
           }
           Text(
@@ -592,8 +592,9 @@ fun SettingsScreen(
   if (showResetConfirmDialog) {
     AlertDialog(
       onDismissRequest = { showResetConfirmDialog = false },
-      title = { Text("Reset Demo Database?") },
-      text = { Text("This will refresh all student records, roll-call statuses, and assignments with default sample records.") },
+      containerColor = MaterialTheme.colorScheme.surface,
+      title = { Text("Reset Demo Database?", color = MaterialTheme.colorScheme.onSurface) },
+      text = { Text("This will refresh all student records, roll-call statuses, and assignments with default sample records.", color = MaterialTheme.colorScheme.onSurfaceVariant) },
       confirmButton = {
         Button(
           onClick = {
@@ -601,14 +602,17 @@ fun SettingsScreen(
             showResetConfirmDialog = false
             showResetSuccessBanner = true
           },
-          colors = ButtonDefaults.buttonColors(containerColor = SchoolNavyPrimary)
+          colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary
+          )
         ) {
           Text("Reset Data")
         }
       },
       dismissButton = {
         TextButton(onClick = { showResetConfirmDialog = false }) {
-          Text("Cancel")
+          Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
       }
     )
@@ -625,13 +629,13 @@ private fun SettingsSectionTitle(title: String, icon: ImageVector) {
     Icon(
       imageVector = icon,
       contentDescription = null,
-      tint = SchoolNavyPrimary,
+      tint = MaterialTheme.colorScheme.primary,
       modifier = Modifier.size(18.dp)
     )
     Text(
       text = title,
       style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-      color = SchoolNavyPrimary
+      color = MaterialTheme.colorScheme.onSurface
     )
   }
 }

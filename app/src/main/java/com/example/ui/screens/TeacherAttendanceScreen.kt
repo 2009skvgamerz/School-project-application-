@@ -58,8 +58,8 @@ fun TeacherClassAttendanceScreen(
   var noteInputText by remember { mutableStateOf("") }
 
   val teacherAssignedClass = teacherProfile?.classTeacherOf ?: "Class 10-A"
-  val isDesignatedClassTeacher = true // Always allow authorized teachers & administrators to mark roll-call
   val isHomeroomClass = teacherAssignedClass.equals(selectedClass, ignoreCase = true)
+  val isDesignatedClassTeacher = isHomeroomClass && (teacherProfile?.isClassTeacher == true)
 
   val classRecords = remember(attendanceList, selectedClass, statusFilter, searchQuery) {
     attendanceList.filter { entity ->
@@ -109,13 +109,13 @@ fun TeacherClassAttendanceScreen(
               modifier = Modifier
                 .size(44.dp)
                 .clip(CircleShape)
-                .background(SchoolNavyPrimary.copy(alpha = 0.12f)),
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
               contentAlignment = Alignment.Center
             ) {
               Icon(
                 imageVector = Icons.AutoMirrored.Filled.FactCheck,
                 contentDescription = null,
-                tint = SchoolNavyPrimary,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(24.dp)
               )
             }
@@ -124,7 +124,7 @@ fun TeacherClassAttendanceScreen(
               Text(
                 text = "Daily Roll Call Register",
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                color = SchoolNavyPrimary
+                color = MaterialTheme.colorScheme.onSurface
               )
               Text(
                 text = "Class Teacher: ${teacherProfile?.user?.fullName ?: "Prof. Sarah Jenkins"}",
@@ -404,6 +404,22 @@ fun TeacherClassAttendanceScreen(
           style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
         )
       }
+    } else {
+      OutlinedButton(
+        onClick = { },
+        enabled = false,
+        modifier = Modifier
+          .fillMaxWidth()
+          .testTag("teacher_submit_attendance_locked_btn"),
+        shape = RoundedCornerShape(12.dp)
+      ) {
+        Icon(Icons.Default.Lock, contentDescription = null, modifier = Modifier.size(18.dp))
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+          text = "Read-Only View • Maintained by Class Homeroom Teacher",
+          style = MaterialTheme.typography.labelLarge
+        )
+      }
     }
   }
 
@@ -511,13 +527,13 @@ private fun TeacherRollCallRow(
           horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
           Surface(
-            color = SchoolNavyPrimary.copy(alpha = 0.1f),
+            color = MaterialTheme.colorScheme.primaryContainer,
             shape = CircleShape
           ) {
             Text(
               text = "#${record.rollNo}",
               style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-              color = SchoolNavyPrimary,
+              color = MaterialTheme.colorScheme.onPrimaryContainer,
               modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
             )
           }
@@ -525,7 +541,8 @@ private fun TeacherRollCallRow(
           Column {
             Text(
               text = record.studentName,
-              style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
+              style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+              color = MaterialTheme.colorScheme.onSurface
             )
             Text(
               text = "Status: ${record.status.description}",
@@ -612,12 +629,12 @@ private fun TeacherRollCallRow(
             contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
             modifier = Modifier.testTag("add_note_btn_${record.rollNo}")
           ) {
-            Icon(Icons.Default.EditNote, contentDescription = null, modifier = Modifier.size(14.dp), tint = SchoolNavyPrimary)
+            Icon(Icons.Default.EditNote, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
             Spacer(modifier = Modifier.width(2.dp))
             Text(
               text = if (record.notes.isNotBlank()) "Edit Note" else "+ Note",
               style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-              color = SchoolNavyPrimary
+              color = MaterialTheme.colorScheme.primary
             )
           }
         }

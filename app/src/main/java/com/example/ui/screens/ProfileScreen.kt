@@ -146,11 +146,11 @@ fun ProfileScreen(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
           ) {
-            Icon(imageVector = Icons.Default.SwapHoriz, contentDescription = null, tint = SchoolNavyPrimary)
+            Icon(imageVector = Icons.Default.SwapHoriz, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
             Text(
               text = "Switch Active School Portal Role",
               style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-              color = SchoolNavyPrimary
+              color = MaterialTheme.colorScheme.onSurface
             )
           }
           Text(
@@ -194,7 +194,7 @@ fun ProfileScreen(
       Text(
         text = "Academic & Institutional Records",
         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-        color = SchoolNavyPrimary
+        color = MaterialTheme.colorScheme.onSurface
       )
     }
 
@@ -349,7 +349,7 @@ fun ProfileScreen(
               Text(
                 text = "System Pop-Up Alerts",
                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                color = SchoolNavyPrimary
+                color = MaterialTheme.colorScheme.onSurface
               )
               Text(
                 text = "Configure heads-up windows outside the app",
@@ -362,7 +362,10 @@ fun ProfileScreen(
               onClick = onOpenNotificationCenter,
               shape = RoundedCornerShape(8.dp),
               contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-              colors = ButtonDefaults.buttonColors(containerColor = SchoolNavyPrimary)
+              colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+              )
             ) {
               Text("Manage", style = MaterialTheme.typography.labelSmall)
             }
@@ -384,7 +387,7 @@ fun ProfileScreen(
           Text(
             text = "St. Joseph's School Campus",
             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-            color = SchoolNavyPrimary
+            color = MaterialTheme.colorScheme.onSurface
           )
           Text(
             text = "St. Joseph's High School Campus, Museum Road, Bengaluru, Karnataka 560025\nGeneral Enquiries: +91 (080) 2221-4416 • info@stjosephs.edu\nIT Helpdesk: ithelpdesk@stjosephs.edu",

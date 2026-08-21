@@ -70,7 +70,7 @@ fun ManagementScreen(
         Text(
           text = "Institutional Directory & Master Records",
           style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-          color = SchoolNavyPrimary
+          color = MaterialTheme.colorScheme.onSurface
         )
         if (isDeveloper) {
           Text(

@@ -1,5 +1,8 @@
 package com.example.ui.screens
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -29,12 +32,6 @@ fun DutiesScreen(
 ) {
   var selectedTab by remember { mutableStateOf(0) }
 
-  val filteredDuties = when (selectedTab) {
-    0 -> duties
-    1 -> duties.filter { it.status == DutyStatus.PENDING || it.status == DutyStatus.IN_PROGRESS }
-    else -> duties.filter { it.status == DutyStatus.COMPLETED }
-  }
-
   Column(
     modifier = modifier
       .fillMaxSize()
@@ -51,7 +48,7 @@ fun DutiesScreen(
         Text(
           text = "Campus Operations & Duties",
           style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-          color = SchoolNavyPrimary
+          color = MaterialTheme.colorScheme.onSurface
         )
         Text(
           text = "${duties.size} operational tasks assigned today",
@@ -94,40 +91,77 @@ fun DutiesScreen(
       )
     }
 
-    if (filteredDuties.isEmpty()) {
-      Card(
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        modifier = Modifier.fillMaxWidth()
-      ) {
-        Column(
-          modifier = Modifier.padding(24.dp),
-          horizontalAlignment = Alignment.CenterHorizontally,
-          verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-          Icon(
-            imageVector = Icons.Default.DoneAll,
-            contentDescription = null,
-            tint = SchoolNavyPrimary,
-            modifier = Modifier.size(40.dp)
-          )
-          Text(
-            text = "No duty tasks found in this section.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-          )
+    AnimatedContent(
+      targetState = selectedTab,
+      transitionSpec = {
+        if (targetState > initialState) {
+          (slideInHorizontally(
+            initialOffsetX = { (it * 0.2f).toInt() },
+            animationSpec = tween(280, easing = FastOutSlowInEasing)
+          ) + fadeIn(animationSpec = tween(260)))
+            .togetherWith(
+              slideOutHorizontally(
+                targetOffsetX = { -(it * 0.2f).toInt() },
+                animationSpec = tween(240, easing = FastOutSlowInEasing)
+              ) + fadeOut(animationSpec = tween(200))
+            )
+        } else {
+          (slideInHorizontally(
+            initialOffsetX = { -(it * 0.2f).toInt() },
+            animationSpec = tween(280, easing = FastOutSlowInEasing)
+          ) + fadeIn(animationSpec = tween(260)))
+            .togetherWith(
+              slideOutHorizontally(
+                targetOffsetX = { (it * 0.2f).toInt() },
+                animationSpec = tween(240, easing = FastOutSlowInEasing)
+              ) + fadeOut(animationSpec = tween(200))
+            )
         }
+      },
+      label = "duties_tab_animated_transition",
+      modifier = Modifier.fillMaxSize()
+    ) { tabIdx ->
+      val filteredDuties = when (tabIdx) {
+        0 -> duties
+        1 -> duties.filter { it.status == DutyStatus.PENDING || it.status == DutyStatus.IN_PROGRESS }
+        else -> duties.filter { it.status == DutyStatus.COMPLETED }
       }
-    } else {
-      LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-        modifier = Modifier.fillMaxSize()
-      ) {
-        items(filteredDuties, key = { it.id }) { duty ->
-          DutyTaskItemCard(
-            duty = duty,
-            onStatusChange = { newStatus -> onUpdateDutyStatus(duty.id, newStatus) }
-          )
+
+      if (filteredDuties.isEmpty()) {
+        Card(
+          shape = RoundedCornerShape(12.dp),
+          colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+          modifier = Modifier.fillMaxWidth()
+        ) {
+          Column(
+            modifier = Modifier.padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+          ) {
+            Icon(
+              imageVector = Icons.Default.DoneAll,
+              contentDescription = null,
+              tint = SchoolNavyPrimary,
+              modifier = Modifier.size(40.dp)
+            )
+            Text(
+              text = "No duty tasks found in this section.",
+              style = MaterialTheme.typography.bodyMedium,
+              color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+          }
+        }
+      } else {
+        LazyColumn(
+          verticalArrangement = Arrangement.spacedBy(10.dp),
+          modifier = Modifier.fillMaxSize()
+        ) {
+          items(filteredDuties, key = { it.id }) { duty ->
+            DutyTaskItemCard(
+              duty = duty,
+              onStatusChange = { newStatus -> onUpdateDutyStatus(duty.id, newStatus) }
+            )
+          }
         }
       }
     }

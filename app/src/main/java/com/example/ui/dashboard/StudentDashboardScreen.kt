@@ -107,7 +107,7 @@ fun StudentDashboardScreen(
           Text(
             text = "Quick Academics",
             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-            color = SchoolNavyPrimary
+            color = MaterialTheme.colorScheme.onSurface
           )
 
           Row(
@@ -199,84 +199,6 @@ fun StudentDashboardScreen(
                 )
               }
             }
-          }
-        }
-      }
-    }
-
-    // 3.5 System Pop-Up Notification Banner Card (Heads-Up Outside App)
-    item {
-      Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF0F3875).copy(alpha = 0.08f)),
-        border = CardDefaults.outlinedCardBorder().copy(
-          brush = androidx.compose.ui.graphics.SolidColor(SchoolNavyPrimary.copy(alpha = 0.25f))
-        ),
-        modifier = Modifier
-          .fillMaxWidth()
-          .testTag("dashboard_popup_alert_card")
-      ) {
-        Row(
-          modifier = Modifier
-            .fillMaxWidth()
-            .padding(14.dp),
-          verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-          Box(
-            modifier = Modifier
-              .size(44.dp)
-              .clip(CircleShape)
-              .background(SchoolNavyPrimary),
-            contentAlignment = Alignment.Center
-          ) {
-            Icon(
-              imageVector = Icons.Default.OpenInNew,
-              contentDescription = null,
-              tint = Color.White,
-              modifier = Modifier.size(22.dp)
-            )
-          }
-
-          Column(modifier = Modifier.weight(1f)) {
-            Row(
-              verticalAlignment = Alignment.CenterVertically,
-              horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-              Text(
-                text = "Pop-Up Notifications",
-                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                color = SchoolNavyPrimary
-              )
-              Surface(
-                color = SchoolAccentGreen,
-                shape = RoundedCornerShape(4.dp)
-              ) {
-                Text(
-                  text = "OUTSIDE APP",
-                  style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp, color = Color.White, fontWeight = FontWeight.Bold),
-                  modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
-                )
-              }
-            }
-            Text(
-              text = "Heads-up alert windows appear over your home screen & other apps.",
-              style = MaterialTheme.typography.bodySmall,
-              color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-          }
-
-          FilledTonalButton(
-            onClick = onOpenNotificationCenter,
-            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-            shape = RoundedCornerShape(10.dp),
-            colors = ButtonDefaults.filledTonalButtonColors(
-              containerColor = SchoolNavyPrimary,
-              contentColor = Color.White
-            ),
-            modifier = Modifier.testTag("open_popup_center_btn")
-          ) {
-            Text("Open Alert Center", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
           }
         }
       }
@@ -515,7 +437,7 @@ fun TimetableRowCard(
       horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
       Surface(
-        color = SchoolNavyPrimary.copy(alpha = 0.1f),
+        color = MaterialTheme.colorScheme.primaryContainer,
         shape = RoundedCornerShape(8.dp)
       ) {
         Column(
@@ -525,7 +447,7 @@ fun TimetableRowCard(
           Text(
             text = "P${entry.periodNumber}",
             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-            color = SchoolNavyPrimary
+            color = MaterialTheme.colorScheme.onPrimaryContainer
           )
           Text(
             text = entry.startTime.substringBefore(" "),
@@ -555,7 +477,7 @@ fun TimetableRowCard(
         Text(
           text = entry.roomNo,
           style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-          color = SchoolNavyPrimary,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
           modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
         )
       }

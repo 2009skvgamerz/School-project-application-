@@ -89,7 +89,7 @@ fun StaffDashboardScreen(
           Text(
             text = "Campus Operations",
             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-            color = SchoolNavyPrimary
+            color = MaterialTheme.colorScheme.onSurface
           )
 
           Row(

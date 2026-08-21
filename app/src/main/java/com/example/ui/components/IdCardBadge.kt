@@ -199,7 +199,7 @@ fun StudentIdCard(
         Text(
           text = "\"Shine and Let Shine\"",
           style = MaterialTheme.typography.labelSmall.copy(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic),
-          color = SchoolNavyPrimary,
+          color = MaterialTheme.colorScheme.primary,
           fontWeight = FontWeight.SemiBold
         )
 

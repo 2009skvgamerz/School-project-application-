@@ -1,5 +1,8 @@
 package com.example.ui.screens
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -55,7 +58,7 @@ fun TimetableScreen(
           Text(
             text = "Weekly Schedule",
             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-            color = SchoolNavyPrimary
+            color = MaterialTheme.colorScheme.onSurface
           )
           Text(
             text = "Showing schedule for $userRoleName • Academic Year 2026-27",
@@ -65,13 +68,13 @@ fun TimetableScreen(
         }
 
         Surface(
-          color = SchoolNavyPrimary.copy(alpha = 0.12f),
+          color = MaterialTheme.colorScheme.primaryContainer,
           shape = RoundedCornerShape(8.dp)
         ) {
           Text(
             text = "${dayEntries.size} Periods",
             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-            color = SchoolNavyPrimary,
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
           )
         }
@@ -110,38 +113,72 @@ fun TimetableScreen(
       }
     }
 
-    // Period List
-    if (dayEntries.isEmpty()) {
-      Card(
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        modifier = Modifier.fillMaxWidth()
-      ) {
-        Column(
-          modifier = Modifier.padding(24.dp),
-          horizontalAlignment = Alignment.CenterHorizontally,
-          verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-          Icon(
-            imageVector = Icons.Default.EventBusy,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(36.dp)
-          )
-          Text(
-            text = "No periods scheduled for ${selectedDay.fullName}",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-          )
+    // Period List Animated Transition
+    AnimatedContent(
+      targetState = selectedDay,
+      transitionSpec = {
+        val forward = targetState.ordinal > initialState.ordinal
+        if (forward) {
+          (slideInHorizontally(
+            initialOffsetX = { (it * 0.2f).toInt() },
+            animationSpec = tween(280, easing = FastOutSlowInEasing)
+          ) + fadeIn(animationSpec = tween(260)))
+            .togetherWith(
+              slideOutHorizontally(
+                targetOffsetX = { -(it * 0.2f).toInt() },
+                animationSpec = tween(240, easing = FastOutSlowInEasing)
+              ) + fadeOut(animationSpec = tween(200))
+            )
+        } else {
+          (slideInHorizontally(
+            initialOffsetX = { -(it * 0.2f).toInt() },
+            animationSpec = tween(280, easing = FastOutSlowInEasing)
+          ) + fadeIn(animationSpec = tween(260)))
+            .togetherWith(
+              slideOutHorizontally(
+                targetOffsetX = { (it * 0.2f).toInt() },
+                animationSpec = tween(240, easing = FastOutSlowInEasing)
+              ) + fadeOut(animationSpec = tween(200))
+            )
         }
-      }
-    } else {
-      LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-        modifier = Modifier.fillMaxSize()
-      ) {
-        items(dayEntries, key = { it.id }) { entry ->
-          TimetableRowCard(entry = entry)
+      },
+      label = "timetable_day_schedule_transition",
+      modifier = Modifier.fillMaxSize()
+    ) { currentActiveDay ->
+      val activeEntries = timetables.filter { it.day == currentActiveDay }.sortedBy { it.periodNumber }
+
+      if (activeEntries.isEmpty()) {
+        Card(
+          shape = RoundedCornerShape(12.dp),
+          colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+          modifier = Modifier.fillMaxWidth()
+        ) {
+          Column(
+            modifier = Modifier.padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+          ) {
+            Icon(
+              imageVector = Icons.Default.EventBusy,
+              contentDescription = null,
+              tint = MaterialTheme.colorScheme.onSurfaceVariant,
+              modifier = Modifier.size(36.dp)
+            )
+            Text(
+              text = "No periods scheduled for ${currentActiveDay.fullName}",
+              style = MaterialTheme.typography.bodyMedium,
+              color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+          }
+        }
+      } else {
+        LazyColumn(
+          verticalArrangement = Arrangement.spacedBy(10.dp),
+          modifier = Modifier.fillMaxSize()
+        ) {
+          items(activeEntries, key = { it.id }) { entry ->
+            TimetableRowCard(entry = entry)
+          }
         }
       }
     }

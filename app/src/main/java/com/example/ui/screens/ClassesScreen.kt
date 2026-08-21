@@ -39,7 +39,7 @@ fun ClassesScreen(
     Text(
       text = "Academic Classes & Homeroom Rosters",
       style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-      color = SchoolNavyPrimary
+      color = MaterialTheme.colorScheme.onSurface
     )
 
     LazyColumn(
@@ -49,10 +49,14 @@ fun ClassesScreen(
       items(classes) { cls ->
         val fullClassName = "${cls.name}-${cls.section}"
         val isClassTeacherForThis = when (userRole) {
-          UserRole.ADMIN -> true
+          UserRole.ADMIN -> false
           UserRole.TEACHER -> {
             val homeroom = teacherProfile?.classTeacherOf ?: "Class 10-A"
-            homeroom.equals(fullClassName, ignoreCase = true) || teacherProfile?.user?.fullName.equals(cls.classTeacherName, ignoreCase = true)
+            (teacherProfile?.isClassTeacher == true) && (
+              homeroom.equals(fullClassName, ignoreCase = true) ||
+              homeroom.replace("-", " ").equals(fullClassName.replace("-", " "), ignoreCase = true) ||
+              teacherProfile.user.fullName.equals(cls.classTeacherName, ignoreCase = true)
+            )
           }
           else -> false
         }
@@ -77,7 +81,7 @@ fun ClassesScreen(
                   Text(
                     text = "${cls.name} - Section ${cls.section}",
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    color = SchoolNavyPrimary
+                    color = MaterialTheme.colorScheme.onSurface
                   )
                   if (isClassTeacherForThis) {
                     Surface(
@@ -164,7 +168,7 @@ fun ClassesScreen(
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                  text = if (isClassTeacherForThis) "Take Daily Roll Call" else "View Attendance",
+                  text = if (isClassTeacherForThis) "Take Daily Roll Call" else "View (Read-Only)",
                   style = MaterialTheme.typography.labelSmall
                 )
               }

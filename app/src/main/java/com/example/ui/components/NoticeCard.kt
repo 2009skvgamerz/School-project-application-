@@ -116,7 +116,7 @@ fun NoticeCard(
         Text(
           text = "By ${notice.publisherName} (${notice.publisherRole})",
           style = MaterialTheme.typography.labelSmall,
-          color = SchoolNavyPrimary,
+          color = MaterialTheme.colorScheme.primary,
           fontWeight = FontWeight.Medium
         )
 

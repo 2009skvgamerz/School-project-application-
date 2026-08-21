@@ -145,7 +145,7 @@ class ExampleRobolectricTest {
     val studentResult = repository.login("student01", SchoolRepository.DEMO_PASSWORD)
     assertTrue(studentResult.isSuccess)
     assertEquals(UserRole.STUDENT, repository.currentUser.value?.role)
-    assertEquals("Alex Johnson", repository.currentUser.value?.fullName)
+    assertEquals("Keerthivasan", repository.currentUser.value?.fullName)
     assertNotNull(repository.currentStudentProfile.value)
 
     // 2. Verify teacher01
@@ -329,5 +329,31 @@ class ExampleRobolectricTest {
     ).join()
     val allFullDayRecords = appDb.attendanceDao().getAttendanceByClassAndDate("Class 10-A", "Today").first()
     assertTrue(allFullDayRecords.all { it.status == AttendanceStatus.FULL_DAY })
+  }
+
+  @Test
+  fun `verify homeroom teacher assignment and authority for each class`() {
+    val repository = SchoolRepository()
+    val classes = repository.classes.value
+
+    // Verify Class 10-A homeroom teacher is Prof. Sarah Jenkins
+    val class10A = classes.find { it.name == "Class 10" && it.section == "A" }
+    assertNotNull(class10A)
+    assertEquals("Prof. Sarah Jenkins", class10A?.classTeacherName)
+
+    // Verify Class 10-B homeroom teacher is Mr. David Miller
+    val class10B = classes.find { it.name == "Class 10" && it.section == "B" }
+    assertNotNull(class10B)
+    assertEquals("Mr. David Miller", class10B?.classTeacherName)
+
+    // Verify Class 9-A homeroom teacher is Mrs. Clara Higgins
+    val class9A = classes.find { it.name == "Class 9" && it.section == "A" }
+    assertNotNull(class9A)
+    assertEquals("Mrs. Clara Higgins", class9A?.classTeacherName)
+
+    // Verify Class 11-Science homeroom teacher is Dr. Rachel Green
+    val class11Sci = classes.find { it.name == "Class 11" && it.section == "Science" }
+    assertNotNull(class11Sci)
+    assertEquals("Dr. Rachel Green", class11Sci?.classTeacherName)
   }
 }

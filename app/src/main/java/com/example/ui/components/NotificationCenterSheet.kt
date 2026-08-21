@@ -129,7 +129,7 @@ fun NotificationCenterSheet(
               Text(
                 text = "Live Notifications",
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                color = SchoolNavyPrimary
+                color = MaterialTheme.colorScheme.onSurface
               )
               if (unreadCount > 0) {
                 Badge(
@@ -267,13 +267,13 @@ fun NotificationCenterSheet(
                 Icon(
                   imageVector = Icons.Default.OpenInNew,
                   contentDescription = null,
-                  tint = SchoolNavyPrimary,
+                  tint = MaterialTheme.colorScheme.primary,
                   modifier = Modifier.size(16.dp)
                 )
                 Text(
                   text = "Pop-Up Window (Outside App)",
                   style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                  color = SchoolNavyPrimary
+                  color = MaterialTheme.colorScheme.onSurface
                 )
               }
 

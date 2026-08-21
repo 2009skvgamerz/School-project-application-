@@ -1,149 +1,198 @@
-# St. Joseph's Higher Secondary School - Android Management System
+# 🏛️ St. Joseph's Higher Secondary School — Android Management System
 
-A modern, institutional Android application built with **Jetpack Compose**, **Kotlin Coroutines & Flow**, and **Android Room Database** to streamline school operations, classroom attendance tracking, academic timetables, fee management, student notices, and staff workflows.
+[![Android](https://img.shields.io/badge/Platform-Android-3DDC84.svg?logo=android&logoColor=white)](https://developer.android.com)
+[![Kotlin](https://img.shields.io/badge/Language-Kotlin%202.0-7F52FF.svg?logo=kotlin&logoColor=white)](https://kotlinlang.org)
+[![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose%20M3-4285F4.svg?logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
+[![Room Database](https://img.shields.io/badge/Database-Android%20Room%20SQLite-FFCA28.svg?logo=sqlite&logoColor=black)](https://developer.android.com/training/data-storage/room)
+[![Release](https://img.shields.io/badge/Release-v1.1.0-blue.svg)](https://github.com)
 
----
-
-## 🏛️ Application Overview
-
-St. Joseph's School Management System provides a role-tailored experience for the primary stakeholders of an educational institution:
-1. **Students & Parents**: View daily timetables, homework assignments with submission statuses, examination report cards, academic attendance records, and institutional fee payment receipts.
-2. **Teachers & Faculty**: Class Teacher homeroom management, daily attendance roll call register with four institutional statuses, homework assignment publishing, syllabus progress tracking, and student progress reports.
-3. **Operations Staff**: Campus facility maintenance duty rosters, schedule tracking, visitor logs, and issue reporting.
-4. **School Administration & Principal**: Institutional overview, faculty attendance, fee collection metrics, circular announcements, and grade distribution analytics.
+A native Android School ERP and Student Information System built with **Jetpack Compose (Material Design 3)**, **Kotlin Coroutines & Flow**, and **Android Room Database**. Designed specifically for St. Joseph's Higher Secondary School, this platform unifies daily academic operations, digital homeroom roll-calls, student timetables, homework assignments, circulars, fee tracking, and campus duty management into an intuitive, role-tailored mobile experience.
 
 ---
 
-## ✨ Key Features & Modules
+## 🚀 What's New in Release v1.1.0
 
-### 1. 📋 Teacher Daily Roll-Call & Room Database Attendance
-- **Four Daily Attendance Options**:
-  - 🟢 **Full-day (`FD`, 1.0 weight)** — Regular full session presence.
-  - 🟡 **Half-day (`HD`, 0.5 weight)** — Morning or afternoon partial session.
-  - 🔵 **On-duty (`OD`, 1.0 weight)** — Authorized institutional representation (Inter-School Sports, Science Olympiad, Arts Fests).
-  - 🔴 **Absent (`AB`, 0.0 weight)** — Unexcused absence or parent-notified sick leave.
-- **Class Teacher Authorization**: Homeroom teachers (*e.g., Prof. Sarah Jenkins for Class 10-A*) have exclusive permissions to record daily roll calls.
-- **Batch Actions**: One-click **"Mark All Full Day"** and status filters.
-- **Remark & Justification Notes**: Add specific event descriptions for OD/HD/AB notes (*e.g., "State Basketball Championship"*, *"Medical leave"*).
-- **SQLite Persistence**: Directly written to and queried from the Room Database `attendance_records` table.
+> **Previous Release**: `v1.0.0` (Initial Prototype & Core Role Dashboards)  
+> **Current Release**: `v1.1.0` (Dark Mode Accessibility, Homeroom Authorization & Room DB Integration)
 
-### 2. 🔐 Authentication & Session Management (`AuthenticationViewModel`)
-- **Institutional Credential Validation**:
-  - Validates credentials directly against Room SQLite database tables (`students`, `teachers`).
-  - Supports search and login via Admission Number (*e.g., `SJ-2024-1001`*), Employee ID (*e.g., `EMP-0412`*), or institutional email addresses.
-  - Handles administrative and operations staff session initializations.
-- **Reactive Session State**: Manages `AuthState` (`Unauthenticated`, `Authenticating`, `Authenticated`, `Error`) with role-specific profile hydration (`StudentProfile`, `TeacherProfile`, `AdminProfile`, `StaffProfile`).
-
-### 3. 📚 Academic Management & Timetables
-- **Class Schedules**: Daily period-by-period timetable with subject codes, teacher assignments, and classroom room numbers.
-- **Homework & Assignments**: Track pending, submitted, and graded tasks with submission notes and deadline countdowns.
-- **Digital ID Card**: Integrated institutional ID card with QR code badge, blood group, parent emergency contact, and house allocation.
-
-### 4. 📢 Circulars, Notices & Fee Portal
-- **Notice Board**: Categorized bulletins (*Academic, Sports, Examinations, Administrative*) with urgent priority tags.
-- **Fee Management**: Term fee breakdowns, scholarship adjustments, due date warnings, and payment receipt generation.
+### 🌟 Key Highlights & Enhancements
+1. **🌙 Full Dark Mode Contrast & Dynamic Theming**:
+   - Replaced all static dark navy color references with dynamic Material 3 color tokens (`MaterialTheme.colorScheme.onSurface`, `primary`, `onSurfaceVariant`, `primaryContainer`, `surfaceContainer`).
+   - High-contrast, WCAG-compliant legibility across all tabs in both Light and Dark themes.
+2. **🛡️ Strict Homeroom Teacher Roll-Call Access Control**:
+   - Enforced security authorization: **Only the designated Homeroom Class Teacher** (e.g., *Prof. Sarah Jenkins* for Class 10-A) can record or modify student attendance.
+   - Non-homeroom faculty and student views automatically transition into a locked read-only register with clear authorization tooltips.
+3. **📊 4-Tier Attendance Roll Call Model**:
+   - 🟢 **Full-day (`FD`, 1.0 weight)** — Standard presence.
+   - 🟡 **Half-day (`HD`, 0.5 weight)** — Morning/Afternoon session.
+   - 🔵 **On-duty (`OD`, 1.0 weight)** — Authorized school representation (Sports tournaments, Olympiads, Science exhibitions).
+   - 🔴 **Absent (`AB`, 0.0 weight)** — Medical or unexcused leaves with mandatory remarks.
+4. **💾 Reactive Room Database Layer**:
+   - Consolidated SQLite persistence (`AppDatabase.kt`) with DAOs for students, teachers, and attendance logs.
+   - Live synchronization between interactive UI chips, filter tabs, and on-device storage.
+5. **🎓 Exam Eligibility & Academic Tracking**:
+   - Real-time gauge validating the institutional 75% minimum attendance threshold for Term Exam hall tickets.
 
 ---
 
-## 🏗️ Architecture & Tech Stack
+## 🏛️ Role-Based Modules & Feature Breakdown
 
-- **UI Framework**: Modern Jetpack Compose with Material Design 3 (M3).
-- **Language**: 100% Kotlin with strict null-safety and sealed classes.
-- **Architecture**: MVVM (Model-View-ViewModel) + Clean Architecture with reactive Kotlin `StateFlow` and `SharedFlow`.
-- **Database / Local Persistence**:
-  - **Android Room Database** with KSP (`AppDatabase`).
-  - Tables: `students`, `teachers`, `attendance_records`.
-  - Type converters (`Converters.kt`) for `List<String>` and `AttendanceStatus` enums.
-  - Incremental database migration strategy (`MIGRATION_1_2`) and automated seeding callbacks.
-- **Testing**:
-  - JVM Unit and Component testing powered by **Robolectric** (SDK 36).
-  - Roborazzi visual regression testing infrastructure.
+### 👨‍🎓 1. Student Portal
+- **Dashboard Overview**: Quick access to current GPA, attendance percentage, today's schedule, and pending tasks.
+- **Attendance Insights**: Interactive circular attendance meter, breakdown by session weight (FD/HD/OD/AB), and subject-wise attendance progress bars.
+- **Academic Timetable**: Real-time period-by-period daily schedule with room numbers and teacher names.
+- **Homework & Submissions**: View assignment details, due dates, submission statuses, and teacher notes.
+- **Digital ID Card**: Integrated institutional ID card with student photo, barcode/QR badge, blood group, emergency contact, and school house affiliation.
+
+### 👩‍🏫 2. Teacher & Faculty Portal
+- **Homeroom Roll Call**: Fast one-tap attendance register with batch **"All Full Day"** and individual FD/HD/OD/AB selection.
+- **Remarks & Notes**: Add notes for medical leave, extracurricular participation, or administrative remarks.
+- **Class Rosters**: Filter and inspect student rosters across assigned classes and sections.
+- **Assignment Publisher**: Distribute homework, set deadlines, and monitor student submission progress.
+- **Syllabus & Duties**: Track curriculum progress and view assigned campus invigilation duties.
+
+### 🛠️ 3. Operations & Campus Staff Portal
+- **Campus Duty Rosters**: Daily assigned operational duties (Gate supervision, lab maintenance, cafeteria oversight, sports ground setup).
+- **Incident & Facility Reporting**: Log campus maintenance requests with priority flags.
+- **Institutional Directory**: Search faculty and department extensions.
+
+### 👑 4. Principal & Administration Portal
+- **Governance Dashboard**: Institutional attendance averages, staff strength metrics, fee collection summaries, and grade distribution.
+- **School-Wide Circulars**: Publish urgent notices and announcements across specific user cohorts.
+- **Database Administration**: Inspect demo SQLite seeding records and manage global academic configurations.
 
 ---
 
-## 📁 Project Structure
+## 🏗️ Architecture & Technical Stack
+
+```
+                              ┌─────────────────────────────┐
+                              │     Jetpack Compose UI      │
+                              │  (Material 3 Components)   │
+                              └──────────────┬──────────────┘
+                                             │
+                                             ▼
+                              ┌─────────────────────────────┐
+                              │  ViewModels & UI StateFlow  │
+                              │(SchoolViewModel / AuthVM)   │
+                              └──────────────┬──────────────┘
+                                             │
+                                             ▼
+                              ┌─────────────────────────────┐
+                              │      SchoolRepository       │
+                              │ (State orchestration / Cache)│
+                              └──────────────┬──────────────┘
+                                             │
+                                             ▼
+                              ┌─────────────────────────────┐
+                              │     Android Room DB         │
+                              │  (SQLite with KSP & DAOs)   │
+                              └─────────────────────────────┘
+```
+
+| Component | Technology | Description |
+| :--- | :--- | :--- |
+| **Language** | Kotlin 2.0 | Type-safe, coroutine-powered development |
+| **UI System** | Jetpack Compose (M3) | Declarative UI with Dynamic Color & Adaptive Scaffolding |
+| **State Management** | StateFlow & SharedFlow | Reactive, lifecycle-aware architecture |
+| **Local Persistence** | Android Room Database | Type-safe SQLite persistence using KSP compiler |
+| **Dependency Injection**| Constructor Injection | Modular, clean architecture |
+| **Testing** | Robolectric & Roborazzi | JVM component testing and visual regression suites |
+
+---
+
+## 📂 Source Code Structure
 
 ```
 app/src/main/java/com/example/
-├── MainActivity.kt                       # Entry activity with Edge-to-Edge and Theme setup
+├── MainActivity.kt                       # Single-activity container with Edge-to-Edge support
 ├── model/
-│   └── SchoolModels.kt                   # Domain data classes, Enums (AttendanceStatus, UserRole, etc.)
+│   ├── SchoolModels.kt                   # Domain entities, Enums (AttendanceStatus, UserRole, etc.)
+│   └── ThemeMode.kt                      # Theme configuration models (System, Light, Dark)
 ├── data/
-│   ├── SchoolRepository.kt               # Central data provider and repository
+│   ├── SchoolRepository.kt               # Central data provider & business logic
 │   └── local/
-│       ├── AppDatabase.kt                # Room database definition, migrations & callbacks
-│       ├── Converters.kt                 # Room TypeConverters for Enums & Collections
+│       ├── AppDatabase.kt                # Room Database definition, migrations & seeding
+│       ├── Converters.kt                 # Room TypeConverters for Enums & Lists
 │       ├── dao/
-│       │   ├── AttendanceDao.kt          # Attendance table DAO queries & updates
-│       │   ├── StudentDao.kt             # Student table DAO queries
-│       │   └── TeacherDao.kt             # Teacher table DAO queries
+│       │   ├── AttendanceDao.kt          # Daily attendance queries & batch transactions
+│       │   ├── StudentDao.kt             # Student roster and profile data access
+│       │   └── TeacherDao.kt             # Teacher faculty data access
 │       └── entity/
-│           ├── AttendanceEntity.kt       # Attendance SQLite entity
-│           ├── StudentEntity.kt          # Student roster SQLite entity
-│           └── TeacherEntity.kt          # Teacher faculty SQLite entity
+│           ├── AttendanceEntity.kt       # Attendance SQLite table entity
+│           ├── StudentEntity.kt          # Student SQLite table entity
+│           └── TeacherEntity.kt          # Teacher SQLite table entity
 ├── viewmodel/
-│   ├── AuthenticationViewModel.kt        # Room credential validation & session lifecycle
-│   └── SchoolViewModel.kt                # School operations, attendance & academic state
+│   ├── AuthenticationViewModel.kt        # Room credential validation & session state
+│   └── SchoolViewModel.kt                # School operations, attendance & timetable state
 └── ui/
-    ├── MainSchoolApp.kt                  # Top-level scaffold and navigation tabs
+    ├── MainSchoolApp.kt                  # Top-level scaffold, navigation bar, and dialogs
     ├── auth/
-    │   └── LoginScreen.kt                # Role-based login and demo selector screen
+    │   └── LoginScreen.kt                # Institutional login & quick demo selector
     ├── screens/
-    │   ├── TeacherAttendanceScreen.kt    # Dedicated Teacher daily roll call interface
-    │   ├── AttendanceScreen.kt           # Student/Parent/Admin attendance overview
-    │   ├── ClassesScreen.kt              # Timetable and syllabus tracking
-    │   ├── HomeworkScreen.kt             # Homework tasks and submissions
-    │   ├── NoticesScreen.kt              # School announcements and bulletins
-    │   ├── FeesScreen.kt                 # Institutional fee breakdown and receipts
-    │   ├── ManagementScreen.kt           # Staff duty rosters and facility tickets
-    │   └── ProfileScreen.kt              # Profile & Digital ID badge
-    ├── dashboard/
-    │   ├── StudentDashboardScreen.kt     # Student home dashboard
-    │   ├── TeacherDashboardScreen.kt     # Faculty home dashboard
-    │   ├── StaffDashboardScreen.kt       # Operations staff dashboard
-    │   └── AdminDashboardScreen.kt       # Principal / Admin dashboard
-    ├── components/                       # Reusable UI cards, headers, dialogs & badges
-    └── theme/                            # Material 3 Color Schemes, Typography, Shapes
+    │   ├── AttendanceScreen.kt           # Student report & Teacher roll-call register
+    │   ├── TeacherAttendanceScreen.kt    # Dedicated Homeroom Teacher register
+    │   ├── ClassesScreen.kt              # Academic class rosters & section timetables
+    │   ├── HomeworkScreen.kt             # Homework tasks and student submission flow
+    │   ├── TimetableScreen.kt            # Weekly class schedule
+    │   ├── NoticesScreen.kt              # Official circulars & urgent bulletins
+    │   ├── FeesScreen.kt                 # Term fees breakdown and digital receipts
+    │   ├── DutiesScreen.kt               # Operations staff task rosters
+    │   ├── ManagementScreen.kt           # Institutional records & directory
+    │   ├── SettingsScreen.kt             # Dark mode toggles, notifications & DB reset
+    │   └── ProfileScreen.kt              # Digital ID badge & role switcher
+    ├── dashboard/                        # Role-specific home dashboards
+    ├── components/                       # Reusable M3 cards, headers, stat badges & dialogs
+    └── theme/                            # Theme.kt, Color.kt, Type.kt
 ```
 
 ---
 
-## 🚀 Running & Verification
+## 👥 Demo Institutional Accounts
 
-### Build the App
-```bash
-gradle assembleDebug
-```
+> 💡 **Tip**: Tap any quick-switch avatar on the Login Screen or select a role from the **Profile Tab** to immediately preview that stakeholder's dashboard.
 
-### Run Local Unit & Robolectric Tests
+**Default Prototype Password**: `password123`
+
+| Role | Username | Email | Name | Designation / Assignment |
+| :--- | :--- | :--- | :--- | :--- |
+| 👨‍🎓 **Student** | `student01` | `alex.j@stjosephs.edu` | Alex Johnson | Class 10-A, Roll #1, St. Patrick House |
+| 👩‍🏫 **Teacher** | `teacher01` | `s.jenkins@stjosephs.edu` | Prof. Sarah Jenkins | Class Teacher of Class 10-A (Physics & Lab) |
+| 🛠️ **Staff** | `staff01` | `t.wright@stjosephs.edu` | Mr. Thomas Wright | Senior Operations Supervisor |
+| 👑 **Admin** | `admin01` | `principal@stjosephs.edu` | Dr. Arthur Pendelton | Principal & Head of Institution |
+
+---
+
+## 📦 How to Build, Export & Publish
+
+### 1. Pushing Changes to GitHub
+In **Google AI Studio**:
+1. Open the project menu in the top navigation bar or settings sidebar.
+2. Click **Export / Push to GitHub**.
+3. Select or link your target GitHub repository and branch (e.g., `main`).
+4. Commit and push the updated codebase.
+
+### 2. Generating the Release APK / AAB
+1. In the AI Studio settings menu, select **Build APK** or **Generate Release Bundle**.
+2. Alternatively, compile and assemble via Gradle:
+   ```bash
+   # Build Debug APK
+   gradle assembleDebug
+
+   # Build Release APK
+   gradle assembleRelease
+   ```
+3. Locate the generated APK at `app/build/outputs/apk/release/app-release.apk` (or `debug/app-debug.apk`).
+
+### 3. Running Automated Tests
 ```bash
+# Execute local JVM Robolectric tests
 gradle :app:testDebugUnitTest
 ```
 
 ---
 
-## 👥 Demo Institutional Accounts (Science Expo Prototype)
-
-> ℹ️ **Prototype Authentication Notice**: The current demo authentication system is temporary and explicitly configured for the interactive Science Expo demonstration. Unauthorized or unknown usernames are rejected. In future production releases, this authentication layer will be replaced with Firebase Authentication using Google Sign-In and institutional identity federation.
-
-**Default Prototype Password**: `password123`
-
-| Role | Username | Email | Name | Default Assignment / Profile |
-| :--- | :--- | :--- | :--- | :--- |
-| **Student** | `student01` | `alex.j@stjosephs.edu` | Alex Johnson | Class 10-A, Roll #1, St. Patrick House |
-| **Teacher** | `teacher01` | `s.jenkins@stjosephs.edu` | Prof. Sarah Jenkins | Class Teacher of Class 10-A (Physics & Lab) |
-| **Staff** | `staff01` | `t.wright@stjosephs.edu` | Mr. Thomas Wright | Senior Operations Supervisor |
-| **Admin** | `admin01` | `principal@stjosephs.edu` | Dr. Arthur Pendelton | Principal & Head of Institution |
-
----
-
-## 🏗️ Architecture & Cleaned Structure
-
-- **Single Authoritative Room Database**: `AppDatabase.kt` manages all local SQLite tables (`students`, `teachers`, `attendance_records`) with automated seeding and DAOs. Duplicate databases have been removed.
-- **Single Authoritative ViewModel**: `viewmodel/SchoolViewModel.kt` handles all application state, timetable flows, notice publishing, homework management, and attendance updates with Room synchronization. Duplicate ViewModels have been removed.
-- **Isolate Prototype Authentication**: `AuthenticationViewModel.kt` and `SchoolRepository.kt` manage login validation against explicitly authorized demo accounts and Room database entities, rejecting unknown usernames with descriptive error feedback.
-
----
-
-## 📄 License
-Internal Institutional Software for St. Joseph's Higher Secondary School. Built with Google AI Studio.
+## 📄 License & Attribution
+**St. Joseph's Higher Secondary School Management System**  
+*Motto: "Shine and Let Shine"*  
+Designed and engineered using Google AI Studio. All rights reserved.
