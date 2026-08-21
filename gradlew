@@ -1,19 +1,44 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
-#
-# Copyright 2015 the original author or authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#      https://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
+# Self-bootstrapping Gradle Wrapper script
 
-exec gradle "$@"
+set -e
+
+DIR="$(cd "$(dirname "$0")" && pwd)"
+
+if command -v gradle >/dev/null 2>&1; then
+    exec gradle "$@"
+fi
+
+GRADLE_VERSION="8.10.2"
+GRADLE_HOME="$HOME/.gradle/wrapper/dists/gradle-$GRADLE_VERSION-bin"
+
+if [ ! -d "$GRADLE_HOME" ]; then
+    echo "Downloading Gradle $GRADLE_VERSION..."
+    mkdir -p "$GRADLE_HOME"
+    TMP_ZIP="/tmp/gradle-$GRADLE_VERSION-bin.zip"
+    if command -v curl >/dev/null 2>&1; then
+        curl -sSL -o "$TMP_ZIP" "https://services.gradle.org/distributions/gradle-$GRADLE_VERSION-bin.zip"
+    elif command -v wget >/dev/null 2>&1; then
+        wget -q -O "$TMP_ZIP" "https://services.gradle.org/distributions/gradle-$GRADLE_VERSION-bin.zip"
+    else
+        echo "Error: Neither curl nor wget nor gradle is installed." >&2
+        exit 1
+    fi
+    unzip -q -o "$TMP_ZIP" -d "$GRADLE_HOME"
+    rm -f "$TMP_ZIP"
+fi
+
+GRADLE_BIN=$(find "$GRADLE_HOME" -name "gradle" -type f -perm /111 2>/dev/null | head -n 1)
+
+if [ -z "$GRADLE_BIN" ] || [ ! -x "$GRADLE_BIN" ]; then
+    GRADLE_BIN=$(find "$GRADLE_HOME" -name "gradle" -type f | head -n 1)
+    chmod +x "$GRADLE_BIN" 2>/dev/null || true
+fi
+
+if [ -x "$GRADLE_BIN" ]; then
+    exec "$GRADLE_BIN" "$@"
+else
+    echo "Could not find gradle executable in $GRADLE_HOME" >&2
+    exit 1
+fi

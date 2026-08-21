@@ -30,9 +30,12 @@ jobs:
         with:
           gradle-version: '8.10.2'
 
+      - name: Make gradlew executable
+        run: chmod +x gradlew || true
+
       - name: Build Debug & Release APK
         run: |
-          gradle assembleDebug assembleRelease --stacktrace
+          ./gradlew assembleDebug assembleRelease --stacktrace --no-daemon
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
