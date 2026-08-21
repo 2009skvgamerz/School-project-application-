@@ -1,5 +1,3 @@
 <resources>
-    <string name="app_name">My school</string>
-    <string name="school_full_name">St. Joseph\'s School</string>
-    <string name="school_motto">Shine and Let Shine</string>
+    <string name="app_name">St. Joseph\'s</string>
 </resources>

@@ -4,29 +4,7 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <group
-        android:scaleX="1.3"
-        android:scaleY="1.3"
-        android:translateX="-16.2"
-        android:translateY="-16.2">
-        <!-- Graduation Cap Top -->
-        <path
-            android:fillColor="#F59E0B"
-            android:pathData="M54,34 L32,44 L54,54 L76,44 Z" />
-        <!-- Cap Underbody -->
-        <path
-            android:fillColor="#FBBF24"
-            android:pathData="M39,47.2 L39,56 C39,63 54,67 54,67 C54,67 69,63 69,56 L69,47.2 L54,54 Z" />
-        <!-- Cap Tassel -->
-        <path
-            android:fillColor="#FFFFFF"
-            android:pathData="M73,45.5 L73,61 C71.5,61.5 71,63 71,65 C71,67 72,68 73,68 C74,68 75,67 75,65 C75,63 74.5,61.5 73,61 Z" />
-        <!-- Open Book Base -->
-        <path
-            android:fillColor="#FFFFFF"
-            android:pathData="M37,70 C43,67 49,67.5 53,70 L53,78 C49,75.5 43,75 37,78 Z" />
-        <path
-            android:fillColor="#FFFFFF"
-            android:pathData="M71,70 C65,67 59,67.5 55,70 L55,78 C59,75.5 65,75 71,78 Z" />
-    </group>
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,28L24,43v6h60v-6L54,28z M30,53v24h8V53H30z M44,53v24h8V53H44z M58,53v24h8V53H58z M72,53v24h8V53H72z M20,81v6h68v-6H20z" />
 </vector>

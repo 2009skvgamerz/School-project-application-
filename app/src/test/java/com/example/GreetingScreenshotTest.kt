@@ -23,27 +23,26 @@ import org.robolectric.annotation.GraphicsMode
 
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(qualifiers = RobolectricDeviceQualifiers.Pixel8, sdk = [36])
+@Config(qualifiers = RobolectricDeviceQualifiers.Pixel7)
 class GreetingScreenshotTest {
+    @get:Rule
+    val composeTestRule = createComposeRule()
 
-  @get:Rule val composeTestRule = createComposeRule()
-
-  @Test
-  fun greeting_screenshot() {
-    composeTestRule.setContent {
-      StJosephTheme {
-        Surface(modifier = Modifier.fillMaxSize()) {
-          Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(16.dp)) {
-            Text(
-              text = "St. Joseph's School Portal",
-              style = MaterialTheme.typography.titleLarge
-            )
-          }
+    @Test
+    fun greeting_screenshot() {
+        composeTestRule.setContent {
+            StJosephTheme {
+                Surface(modifier = Modifier.fillMaxSize()) {
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "St. Joseph's School Portal",
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                    }
+                }
+            }
         }
-      }
+
+        composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/greeting.png")
     }
-
-    composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/greeting.png")
-  }
 }
-
