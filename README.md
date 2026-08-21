@@ -164,6 +164,40 @@ app/src/main/java/com/example/
 
 ---
 
+## 📦 How to Build, Export & Publish
+
+### 1. Pushing Changes to GitHub
+In **Google AI Studio**:
+1. Open the project menu in the top navigation bar or settings sidebar.
+2. Click **Export / Push to GitHub**.
+3. Select or link your target GitHub repository and branch (e.g., `main`).
+4. Commit and push the updated codebase.
+
+### 2. Generating the Release APK / AAB
+1. In the AI Studio settings menu, select **Build APK** or **Generate Release Bundle**.
+2. Alternatively, compile and assemble via Gradle / CLI:
+   ```bash
+   # Build Debug APK
+   gradle assembleDebug
+
+   # Build Release APK (Unsigned/Signed)
+   gradle assembleRelease
+   ```
+3. Locate the generated APK at `app/build/outputs/apk/release/app-release-unsigned.apk` (or `debug/app-debug.apk`).
+
+### 3. Automated GitHub Actions CI/CD Workflow
+This repository includes `.github/workflows/build.yml` which automatically:
+- Builds both Debug and Release APKs on push / PR to `main` or via `workflow_dispatch`.
+- Archives and uploads the generated APK artifacts (`app-debug-v1.1.0` and `app-release-unsigned-v1.1.0`) directly to GitHub Actions Summary for 1-click download.
+
+### 4. Running Automated Tests
+```bash
+# Execute local JVM Robolectric unit tests
+gradle :app:testDebugUnitTest
+```
+
+---
+
 ## 📄 License & Attribution
 **St. Joseph's Higher Secondary School Management System**  
 *Motto: "Shine and Let Shine"*  
