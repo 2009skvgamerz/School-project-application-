@@ -381,12 +381,12 @@ fun NetworkStatusBarBadge(
   val color = if (isOnline) SchoolAccentGreen else Color(0xFFDC2626)
 
   Surface(
-    color = color.copy(alpha = 0.2f),
-    shape = RoundedCornerShape(8.dp),
+    color = color.copy(alpha = 0.15f),
+    shape = RoundedCornerShape(6.dp),
     modifier = modifier
   ) {
     Row(
-      modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+      modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.5.dp),
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
@@ -399,10 +399,13 @@ fun NetworkStatusBarBadge(
       Text(
         text = if (isOnline) "ONLINE" else "OFFLINE",
         style = MaterialTheme.typography.labelSmall.copy(
-          fontSize = 9.sp,
+          fontSize = 8.5.sp,
           fontWeight = FontWeight.Bold,
-          color = color
-        )
+          color = color,
+          letterSpacing = 0.3.sp
+        ),
+        maxLines = 1,
+        softWrap = false
       )
     }
   }

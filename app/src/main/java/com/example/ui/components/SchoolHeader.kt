@@ -105,7 +105,9 @@ fun SchoolTopBar(
                   )
                   Text(
                     text = "OFFLINE",
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 7.5.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 7.5.sp, color = Color.White, fontWeight = FontWeight.Bold),
+                    maxLines = 1,
+                    softWrap = false
                   )
                 }
               }
@@ -212,7 +214,9 @@ fun RoleBadge(
       text = role.displayName.uppercase(),
       style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
       color = Color.White,
-      modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+      modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+      maxLines = 1,
+      softWrap = false
     )
   }
 }

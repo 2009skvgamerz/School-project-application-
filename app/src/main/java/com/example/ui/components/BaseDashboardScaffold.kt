@@ -281,7 +281,10 @@ fun CommonDashboardTopAppBar(
           )
         }
 
-        Column {
+        Column(
+          modifier = Modifier.weight(1f, fill = false),
+          verticalArrangement = Arrangement.Center
+        ) {
           Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -290,9 +293,12 @@ fun CommonDashboardTopAppBar(
               text = "St. Joseph's",
               style = MaterialTheme.typography.titleMedium.copy(
                 fontWeight = FontWeight.ExtraBold,
-                letterSpacing = 0.5.sp
+                letterSpacing = 0.3.sp
               ),
-              color = SchoolNavyPrimary
+              color = SchoolNavyPrimary,
+              maxLines = 1,
+              overflow = TextOverflow.Ellipsis,
+              modifier = Modifier.weight(1f, fill = false)
             )
             NetworkStatusBarBadge(
               networkState = networkState,
@@ -319,7 +325,7 @@ fun CommonDashboardTopAppBar(
           .testTag("switch_role_top_bar_btn")
       ) {
         Row(
-          modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+          modifier = Modifier.padding(horizontal = 7.dp, vertical = 5.dp),
           verticalAlignment = Alignment.CenterVertically,
           horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
@@ -327,12 +333,14 @@ fun CommonDashboardTopAppBar(
             imageVector = if (currentUser.role == UserRole.DEVELOPER) Icons.Default.Terminal else Icons.Default.SwapHoriz,
             contentDescription = "Switch Role",
             tint = if (currentUser.role == UserRole.DEVELOPER) Color(0xFF059669) else SchoolNavyPrimary,
-            modifier = Modifier.size(16.dp)
+            modifier = Modifier.size(15.dp)
           )
           Text(
             text = currentUser.role.label,
-            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-            color = if (currentUser.role == UserRole.DEVELOPER) Color(0xFF059669) else SchoolNavyPrimary
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 11.sp),
+            color = if (currentUser.role == UserRole.DEVELOPER) Color(0xFF059669) else SchoolNavyPrimary,
+            maxLines = 1,
+            softWrap = false
           )
         }
       }
