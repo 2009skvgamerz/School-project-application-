@@ -10,96 +10,172 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.viewmodel.SchoolViewModel
+import com.example.model.SchoolClass
+import com.example.model.TeacherProfile
+import com.example.model.UserRole
+import com.example.ui.theme.SchoolAccentGreen
+import com.example.ui.theme.SchoolNavyPrimary
 
 @Composable
 fun ClassesScreen(
-    schoolViewModel: SchoolViewModel
+  classes: List<SchoolClass>,
+  onOpenAttendanceForClass: (String) -> Unit,
+  onOpenAssignHomework: () -> Unit,
+  modifier: Modifier = Modifier,
+  userRole: UserRole = UserRole.TEACHER,
+  teacherProfile: TeacherProfile? = null
 ) {
-    val selectedClass by schoolViewModel.selectedClass.collectAsState()
-    val students by schoolViewModel.studentsInSelectedClass.collectAsState()
+  Column(
+    modifier = modifier
+      .fillMaxSize()
+      .testTag("classes_screen")
+      .padding(16.dp),
+    verticalArrangement = Arrangement.spacedBy(16.dp)
+  ) {
+    Text(
+      text = "Academic Classes & Homeroom Rosters",
+      style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+      color = MaterialTheme.colorScheme.onSurface
+    )
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+      verticalArrangement = Arrangement.spacedBy(12.dp),
+      modifier = Modifier.fillMaxSize()
     ) {
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "Class Roster — $selectedClass",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                    Text(
-                        text = "Total Enrolled Students: ${students.size}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-                    )
-                }
-            }
+      items(classes) { cls ->
+        val fullClassName = "${cls.name}-${cls.section}"
+        val isClassTeacherForThis = when (userRole) {
+          UserRole.ADMIN -> false
+          UserRole.TEACHER -> {
+            val homeroom = teacherProfile?.classTeacherOf ?: "Class 10-A"
+            (teacherProfile?.isClassTeacher == true) && (
+              homeroom.equals(fullClassName, ignoreCase = true) ||
+              homeroom.replace("-", " ").equals(fullClassName.replace("-", " "), ignoreCase = true) ||
+              teacherProfile.user.fullName.equals(cls.classTeacherName, ignoreCase = true)
+            )
+          }
+          else -> false
         }
 
-        items(students) { student ->
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        Card(
+          shape = RoundedCornerShape(14.dp),
+          colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+          elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+          modifier = Modifier.fillMaxWidth()
+        ) {
+          Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+          ) {
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalArrangement = Arrangement.SpaceBetween,
+              verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    modifier = Modifier.padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+              Column {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                  Text(
+                    text = "${cls.name} - Section ${cls.section}",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurface
+                  )
+                  if (isClassTeacherForThis) {
                     Surface(
-                        color = MaterialTheme.colorScheme.surfaceVariant,
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.size(40.dp)
+                      color = SchoolAccentGreen.copy(alpha = 0.15f),
+                      shape = RoundedCornerShape(4.dp)
                     ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Text(
-                                text = student.rollNo,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                      Text(
+                        text = "Your Homeroom",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        color = SchoolAccentGreen,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                      )
                     }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = student.name,
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "Parent: ${student.parentContact} • House: ${student.house}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Surface(
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Text(
-                            text = "${student.attendanceRate.toInt()}%",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                        )
-                    }
+                  }
                 }
+                Text(
+                  text = "Room: ${cls.roomNo}  •  Class Teacher: ${cls.classTeacherName}",
+                  style = MaterialTheme.typography.bodySmall,
+                  color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+              }
+
+              Surface(
+                color = SchoolAccentGreen.copy(alpha = 0.15f),
+                shape = RoundedCornerShape(8.dp)
+              ) {
+                Text(
+                  text = "${cls.averageAttendance}% Avg Present",
+                  style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                  color = SchoolAccentGreen,
+                  modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                )
+              }
             }
+
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+              Text(
+                text = "Total Enrolled: ${cls.totalStudents} Students",
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
+              )
+              Text(
+                text = "Floor 2, Academic Block",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+              )
+            }
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalArrangement = Arrangement.End,
+              verticalAlignment = Alignment.CenterVertically
+            ) {
+              OutlinedButton(
+                onClick = onOpenAssignHomework,
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                shape = RoundedCornerShape(8.dp)
+              ) {
+                Icon(imageVector = Icons.Default.PostAdd, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Assign HW", style = MaterialTheme.typography.labelSmall)
+              }
+
+              Spacer(modifier = Modifier.width(8.dp))
+
+              Button(
+                onClick = { onOpenAttendanceForClass(fullClassName) },
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                shape = RoundedCornerShape(8.dp),
+                colors = if (isClassTeacherForThis) {
+                  ButtonDefaults.buttonColors(containerColor = SchoolAccentGreen)
+                } else {
+                  ButtonDefaults.buttonColors(containerColor = SchoolNavyPrimary)
+                }
+              ) {
+                Icon(
+                  imageVector = if (isClassTeacherForThis) Icons.Default.FactCheck else Icons.Default.Visibility,
+                  contentDescription = null,
+                  modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                  text = if (isClassTeacherForThis) "Take Daily Roll Call" else "View (Read-Only)",
+                  style = MaterialTheme.typography.labelSmall
+                )
+              }
+            }
+          }
         }
+      }
     }
+  }
 }

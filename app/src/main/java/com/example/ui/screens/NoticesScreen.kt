@@ -1,110 +1,175 @@
 package com.example.ui.screens
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Campaign
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.viewmodel.SchoolViewModel
+import com.example.model.*
+import com.example.ui.components.NoticeCard
+import com.example.ui.theme.SchoolNavyPrimary
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NoticesScreen(
-    schoolViewModel: SchoolViewModel
+  notices: List<Notice>,
+  selectedCategory: NoticeCategory?,
+  onSelectCategory: (NoticeCategory?) -> Unit,
+  onNoticeClick: (Notice) -> Unit,
+  onOpenCreateNoticeDialog: () -> Unit,
+  canCreateNotice: Boolean,
+  isRefreshing: Boolean = false,
+  onRefresh: () -> Unit = {},
+  modifier: Modifier = Modifier
 ) {
-    val notices = schoolViewModel.getNotices()
-
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+  PullToRefreshBox(
+    isRefreshing = isRefreshing,
+    onRefresh = onRefresh,
+    modifier = modifier.fillMaxSize().testTag("notices_pull_refresh")
+  ) {
+    Column(
+      modifier = Modifier
+        .fillMaxSize()
+        .testTag("notices_screen")
+        .padding(16.dp),
+      verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+      // Header
+      Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        Column {
+          Text(
+            text = "School Bulletins & Circulars",
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onSurface
+          )
+          Text(
+            text = "Official updates, events and emergency circulars",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+          )
+        }
+
+        if (canCreateNotice) {
+          Button(
+            onClick = onOpenCreateNoticeDialog,
+            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+            shape = RoundedCornerShape(8.dp),
+            modifier = Modifier.testTag("create_notice_top_btn")
+          ) {
+            Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+            Spacer(modifier = Modifier.width(4.dp))
+            Text("Publish", style = MaterialTheme.typography.labelSmall)
+          }
+        }
+      }
+
+      // Category Filter Chips
+      LazyRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxWidth()
+      ) {
         item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "Official School Circulars",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                    Text(
-                        text = "Announcements, notifications, and institutional circulars.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-                    )
-                }
-            }
+          FilterChip(
+            selected = selectedCategory == null,
+            onClick = { onSelectCategory(null) },
+            label = { Text("All (${notices.size})") }
+          )
         }
 
-        items(notices) { notice ->
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Surface(
-                            color = if (notice.isUrgent) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.secondaryContainer,
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text(
-                                text = if (notice.isUrgent) "URGENT" else notice.category,
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = if (notice.isUrgent) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSecondaryContainer,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                            )
-                        }
-                        Text(
-                            text = notice.date,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    Text(
-                        text = notice.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-
-                    Spacer(modifier = Modifier.height(6.dp))
-
-                    Text(
-                        text = notice.content,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    Text(
-                        text = "Issued by: ${notice.author}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
+        items(NoticeCategory.values()) { category ->
+          val count = notices.count { it.category == category }
+          FilterChip(
+            selected = selectedCategory == category,
+            onClick = { onSelectCategory(category) },
+            label = { Text("${category.label} ($count)") },
+            leadingIcon = {
+              Surface(
+                color = Color(category.colorHex),
+                shape = RoundedCornerShape(4.dp),
+                modifier = Modifier.size(8.dp)
+              ) {}
             }
+          )
         }
+      }
+
+      // List of Notices with Animated Transition
+      AnimatedContent(
+        targetState = selectedCategory,
+        transitionSpec = {
+          (fadeIn(animationSpec = tween(260)) +
+            scaleIn(initialScale = 0.97f, animationSpec = tween(260, easing = FastOutSlowInEasing)))
+            .togetherWith(
+              fadeOut(animationSpec = tween(180)) +
+                scaleOut(targetScale = 1.01f, animationSpec = tween(180))
+            )
+        },
+        label = "notices_filter_animated_transition",
+        modifier = Modifier.fillMaxSize()
+      ) { categoryFilter ->
+        val filteredNotices = if (categoryFilter == null) {
+          notices
+        } else {
+          notices.filter { it.category == categoryFilter }
+        }
+
+        if (filteredNotices.isEmpty()) {
+          Card(
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            modifier = Modifier.fillMaxWidth()
+          ) {
+            Column(
+              modifier = Modifier.padding(24.dp),
+              horizontalAlignment = Alignment.CenterHorizontally,
+              verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+              Icon(
+                imageVector = Icons.Default.NotificationsOff,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(40.dp)
+              )
+              Text(
+                text = "No circulars found in this category.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+              )
+            }
+          }
+        } else {
+          LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.fillMaxSize()
+          ) {
+            items(filteredNotices, key = { it.id }) { notice ->
+              NoticeCard(
+                notice = notice,
+                onNoticeClick = onNoticeClick
+              )
+            }
+          }
+        }
+      }
     }
+  }
 }

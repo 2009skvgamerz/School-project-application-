@@ -1,119 +1,297 @@
 package com.example.model
 
-enum class UserRole(val displayName: String) {
-    STUDENT("Student"),
-    TEACHER("Teacher"),
-    STAFF("Operations Staff"),
-    ADMIN("Administrator / Principal")
+enum class UserRole(val displayName: String, val badgeColor: Long) {
+  STUDENT("Student", 0xFF2563EB),
+  TEACHER("Teacher", 0xFF059669),
+  STAFF("Staff", 0xFF7C3AED),
+  ADMIN("Administrator", 0xFFD97706),
+  DEVELOPER("Developer / Root", 0xFF10B981);
+
+  val label: String get() = displayName
 }
 
-enum class AttendanceStatus(val code: String, val label: String, val weight: Float) {
-    FULL_DAY("FD", "Full Day", 1.0f),
-    HALF_DAY("HD", "Half Day", 0.5f),
-    ON_DUTY("OD", "On Duty", 1.0f),
-    ABSENT("AB", "Absent", 0.0f)
+data class User(
+  val id: String,
+  val username: String,
+  val fullName: String,
+  val email: String,
+  val role: UserRole,
+  val phone: String = "+91 98765 43210",
+  val avatarUrl: String = "",
+  val designation: String = ""
+) {
+  val name: String get() = fullName
+  val avatarInitials: String
+    get() = fullName.split(" ")
+      .filter { it.isNotBlank() }
+      .mapNotNull { it.firstOrNull()?.uppercase() }
+      .take(2)
+      .joinToString("")
+      .ifEmpty { "SJ" }
 }
 
-data class UserSession(
-    val id: String,
-    val username: String,
-    val fullName: String,
-    val role: UserRole,
-    val email: String,
-    val avatarUrl: String = "",
-    val grade: String = "",
-    val section: String = "",
-    val rollNumber: String = "",
-    val house: String = "St. Patrick",
-    val bloodGroup: String = "O+",
-    val homeroomClass: String = "", // e.g. "10-A" if homeroom teacher
-    val subjects: List<String> = emptyList()
+data class StudentProfile(
+  val user: User,
+  val admissionNo: String,
+  val grade: String,
+  val section: String,
+  val rollNo: Int,
+  val parentName: String,
+  val parentPhone: String,
+  val bloodGroup: String,
+  val attendancePercentage: Double,
+  val houseName: String = "St. Francis House",
+  val busRoute: String = "Route #12 (Main Gate)",
+  val academicYear: String = "2026-2027",
+  val emergencyContact: String = "+91 98450 78912"
 )
 
-data class StudentItem(
-    val id: String,
-    val name: String,
-    val rollNo: String,
-    val grade: String,
-    val section: String,
-    val gender: String,
-    val attendanceRate: Float,
-    val parentContact: String,
-    val house: String = "St. Patrick"
+data class TeacherProfile(
+  val user: User,
+  val employeeId: String,
+  val department: String,
+  val assignedClasses: List<String>,
+  val subjectsTaught: List<String>,
+  val qualification: String,
+  val isClassTeacher: Boolean = true,
+  val classTeacherOf: String? = "Class 10-A",
+  val roomNo: String = "Staff Room 2B",
+  val joiningDate: String = "15 July 2018"
+) {
+  val teachingSubjects: List<String> get() = subjectsTaught
+}
+
+data class StaffProfile(
+  val user: User,
+  val employeeId: String,
+  val department: String,
+  val duties: List<String>,
+  val shiftTiming: String,
+  val emergencyRole: String = "Campus Safety Warden",
+  val locationArea: String = "Campus Ground & Labs"
+) {
+  val staffId: String get() = employeeId
+}
+
+data class AdminProfile(
+  val user: User,
+  val employeeId: String,
+  val adminRole: String,
+  val officeLocation: String = "Principal's Office, Main Block",
+  val systemPermissions: List<String> = listOf("Academic Roster", "Staff Dispatch", "Broadcasts", "Audit Reports")
+) {
+  val adminId: String get() = employeeId
+}
+
+data class DeveloperProfile(
+  val user: User,
+  val devId: String = "DEV-ROOT-007",
+  val accessLevel: String = "Level 5 - God Mode (Full Master Write)",
+  val terminalStatus: String = "ROOT ACTIVE",
+  val environment: String = "St. Joseph's Cloud Core Engine v4.2.0-PRO",
+  val systemPermissions: List<String> = listOf(
+    "Live User & Profile Override",
+    "Universal Entity Mutation",
+    "Global Heads-Up Broadcaster",
+    "Attendance & Grade Override",
+    "Timetable & Roster Master",
+    "Database Reset & Seeding"
+  )
+) {
+  val developerId: String get() = devId
+}
+
+data class SystemUserRecord(
+  val id: String,
+  val username: String,
+  val fullName: String,
+  val email: String,
+  val role: UserRole,
+  val phone: String = "+91 98450 00000",
+  val designation: String = "",
+  val identifier: String = "", // Admission No or Employee ID
+  val departmentOrGrade: String = "",
+  val sectionOrRoom: String = "",
+  val extraNotes: String = ""
 )
 
-data class TeacherItem(
-    val id: String,
-    val name: String,
-    val email: String,
-    val department: String,
-    val homeroomClass: String,
-    val phone: String
+data class SchoolClass(
+  val id: String,
+  val name: String,
+  val section: String,
+  val roomNo: String,
+  val classTeacherName: String,
+  val totalStudents: Int,
+  val averageAttendance: Double = 94.5
 )
+
+data class Subject(
+  val id: String,
+  val code: String,
+  val name: String,
+  val teacherName: String,
+  val totalPeriodsPerWeek: Int,
+  val colorHex: Long = 0xFF1E40AF
+)
+
+enum class DayOfWeek(val shortName: String, val fullName: String) {
+  MONDAY("Mon", "Monday"),
+  TUESDAY("Tue", "Tuesday"),
+  WEDNESDAY("Wed", "Wednesday"),
+  THURSDAY("Thu", "Thursday"),
+  FRIDAY("Fri", "Friday"),
+  SATURDAY("Sat", "Saturday")
+}
+
+data class TimetableEntry(
+  val id: String,
+  val day: DayOfWeek,
+  val periodNumber: Int,
+  val startTime: String,
+  val endTime: String,
+  val subjectName: String,
+  val teacherName: String,
+  val roomNo: String,
+  val className: String
+)
+
+enum class AttendanceStatus(
+  val label: String,
+  val code: String,
+  val colorHex: Long,
+  val description: String,
+  val weight: Double // 1.0 for Full Day and OD, 0.5 for Half Day, 0.0 for Absent
+) {
+  FULL_DAY("Full Day", "FD", 0xFF059669, "Full Day Present", 1.0),
+  HALF_DAY("Half Day", "HD", 0xFFD97706, "Half Day Present", 0.5),
+  ON_DUTY("On-Duty", "OD", 0xFF2563EB, "Official School On-Duty", 1.0),
+  ABSENT("Absent", "AB", 0xFFDC2626, "Absent", 0.0)
+}
 
 data class AttendanceRecord(
-    val id: String,
-    val studentId: String,
-    val studentName: String,
-    val rollNo: String,
-    val className: String,
-    val date: String,
-    val status: AttendanceStatus,
-    val remarks: String = "",
-    val markedByTeacherId: String = ""
+  val id: String,
+  val studentId: String,
+  val studentName: String,
+  val rollNo: Int,
+  val className: String,
+  val date: String,
+  val status: AttendanceStatus,
+  val markedBy: String = "Prof. Sarah Jenkins (Class Teacher)",
+  val notes: String = ""
 )
 
-data class SubjectAttendance(
-    val subject: String,
-    val attended: Int,
-    val total: Int,
-    val percentage: Float
+data class AttendanceSummary(
+  val totalWorkingDays: Int,
+  val fullDays: Int,
+  val halfDays: Int,
+  val onDutyDays: Int,
+  val absentDays: Int,
+  val percentage: Double,
+  val subjectWiseAttendance: Map<String, Double>
 )
 
-data class TimetableSlot(
-    val period: Int,
-    val time: String,
-    val subject: String,
-    val teacher: String,
-    val room: String,
-    val dayOfWeek: String = "Monday"
+enum class HomeworkStatus(val label: String) {
+  PENDING("Pending"),
+  SUBMITTED("Submitted"),
+  EVALUATED("Evaluated")
+}
+
+data class Homework(
+  val id: String,
+  val title: String,
+  val description: String,
+  val subjectName: String,
+  val className: String,
+  val assignedDate: String,
+  val dueDate: String,
+  val teacherName: String,
+  val status: HomeworkStatus = HomeworkStatus.PENDING,
+  val maxMarks: Int = 20,
+  val submissionNote: String = "",
+  val submissionsCount: Int = 28,
+  val totalStudents: Int = 32
 )
 
-data class HomeworkItem(
-    val id: String,
-    val subject: String,
-    val title: String,
-    val description: String,
-    val dueDate: String,
-    val className: String,
-    val teacherName: String,
-    val isCompleted: Boolean = false
+enum class NoticeCategory(val label: String, val colorHex: Long) {
+  ALL("All", 0xFF0F3875),
+  ACADEMIC("Academic", 0xFF2563EB),
+  GENERAL("General", 0xFF059669),
+  SPORTS("Sports", 0xFFD97706),
+  EVENT("Events", 0xFF7C3AED),
+  URGENT("Urgent", 0xFFDC2626)
+}
+
+data class Notice(
+  val id: String,
+  val title: String,
+  val content: String,
+  val date: String,
+  val category: NoticeCategory,
+  val publisherRole: String,
+  val publisherName: String,
+  val isUrgent: Boolean = false,
+  val attachmentName: String? = null
+) {
+  val authorName: String get() = publisherName
+  val authorRole: UserRole
+    get() = when {
+      publisherRole.contains("Teacher", ignoreCase = true) || publisherRole.contains("Exam", ignoreCase = true) -> UserRole.TEACHER
+      publisherRole.contains("Staff", ignoreCase = true) || publisherRole.contains("Sports", ignoreCase = true) -> UserRole.STAFF
+      else -> UserRole.ADMIN
+    }
+}
+
+data class SchoolEvent(
+  val id: String,
+  val title: String,
+  val description: String,
+  val date: String,
+  val time: String,
+  val location: String,
+  val category: String,
+  val iconName: String = "event"
 )
 
-data class NoticeItem(
-    val id: String,
-    val title: String,
-    val content: String,
-    val date: String,
-    val category: String,
-    val isUrgent: Boolean = false,
-    val author: String = "Administration"
+enum class DutyStatus(val label: String, val colorHex: Long) {
+  PENDING("Pending", 0xFFD97706),
+  IN_PROGRESS("In Progress", 0xFF2563EB),
+  COMPLETED("Completed", 0xFF059669)
+}
+
+enum class DutyPriority(val label: String) {
+  HIGH("High"),
+  MEDIUM("Medium"),
+  LOW("Low")
+}
+
+data class DutyTask(
+  val id: String,
+  val title: String,
+  val area: String,
+  val scheduledTime: String,
+  val status: DutyStatus,
+  val assignedTo: String,
+  val priority: DutyPriority = DutyPriority.MEDIUM
 )
 
-data class FeeRecord(
-    val term: String,
-    val totalAmount: Double,
-    val paidAmount: Double,
-    val dueDate: String,
-    val status: String // "Paid", "Pending", "Overdue"
-)
+enum class NotificationType(val label: String, val colorHex: Long) {
+  ALL("All", 0xFF0F3875),
+  ACADEMIC("Academic", 0xFF2563EB),
+  ATTENDANCE("Attendance", 0xFF059669),
+  HOMEWORK("Homework", 0xFFD97706),
+  NOTICE("Notice", 0xFFDC2626),
+  EXAM("Exam", 0xFF7C3AED),
+  FEE("Fee & Admin", 0xFF0891B2),
+  EVENT("Event", 0xFFE11D48)
+}
 
-data class CampusDuty(
-    val id: String,
-    val title: String,
-    val location: String,
-    val timeSlot: String,
-    val staffAssigned: String,
-    val date: String,
-    val isCompleted: Boolean = false
+data class AppNotification(
+  val id: String,
+  val title: String,
+  val message: String,
+  val timeAgo: String,
+  val type: NotificationType,
+  val isRead: Boolean = false,
+  val actionRoute: String? = null,
+  val isUrgent: Boolean = false
 )

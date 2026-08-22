@@ -1,90 +1,169 @@
 package com.example.ui.screens
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.RadioButtonUnchecked
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.viewmodel.SchoolViewModel
+import com.example.model.DutyPriority
+import com.example.model.DutyStatus
+import com.example.model.DutyTask
+import com.example.ui.dashboard.DutyTaskItemCard
+import com.example.ui.theme.SchoolNavyPrimary
 
 @Composable
 fun DutiesScreen(
-    schoolViewModel: SchoolViewModel
+  duties: List<DutyTask>,
+  onUpdateDutyStatus: (String, DutyStatus) -> Unit,
+  onOpenAddDutyDialog: () -> Unit,
+  modifier: Modifier = Modifier
 ) {
-    val duties = schoolViewModel.getCampusDuties()
+  var selectedTab by remember { mutableStateOf(0) }
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+  Column(
+    modifier = modifier
+      .fillMaxSize()
+      .testTag("duties_screen")
+      .padding(16.dp),
+    verticalArrangement = Arrangement.spacedBy(16.dp)
+  ) {
+    Row(
+      modifier = Modifier.fillMaxWidth(),
+      horizontalArrangement = Arrangement.SpaceBetween,
+      verticalAlignment = Alignment.CenterVertically
     ) {
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "Campus Operational Task Roster",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                    Text(
-                        text = "Gate screening, cafeteria supervision, laboratory inspection and bus bay coordination.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-                    )
-                }
-            }
-        }
+      Column {
+        Text(
+          text = "Campus Operations & Duties",
+          style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+          color = MaterialTheme.colorScheme.onSurface
+        )
+        Text(
+          text = "${duties.size} operational tasks assigned today",
+          style = MaterialTheme.typography.bodySmall,
+          color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+      }
 
-        items(duties) { duty ->
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = if (duty.isCompleted) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
-                        contentDescription = null,
-                        tint = if (duty.isCompleted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
-                    )
-                    Spacer(modifier = Modifier.width(14.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = duty.title,
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "${duty.location} • ${duty.timeSlot}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = "Assigned to: ${duty.staffAssigned}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
-            }
-        }
+      Button(
+        onClick = onOpenAddDutyDialog,
+        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+        shape = RoundedCornerShape(8.dp),
+        modifier = Modifier.testTag("add_duty_btn")
+      ) {
+        Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+        Spacer(modifier = Modifier.width(4.dp))
+        Text("Add Duty", style = MaterialTheme.typography.labelSmall)
+      }
     }
+
+    TabRow(
+      selectedTabIndex = selectedTab,
+      containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+      divider = {}
+    ) {
+      Tab(
+        selected = selectedTab == 0,
+        onClick = { selectedTab = 0 },
+        text = { Text("All (${duties.size})") }
+      )
+      Tab(
+        selected = selectedTab == 1,
+        onClick = { selectedTab = 1 },
+        text = { Text("In Progress / Pending") }
+      )
+      Tab(
+        selected = selectedTab == 2,
+        onClick = { selectedTab = 2 },
+        text = { Text("Completed") }
+      )
+    }
+
+    AnimatedContent(
+      targetState = selectedTab,
+      transitionSpec = {
+        if (targetState > initialState) {
+          (slideInHorizontally(
+            initialOffsetX = { (it * 0.2f).toInt() },
+            animationSpec = tween(280, easing = FastOutSlowInEasing)
+          ) + fadeIn(animationSpec = tween(260)))
+            .togetherWith(
+              slideOutHorizontally(
+                targetOffsetX = { -(it * 0.2f).toInt() },
+                animationSpec = tween(240, easing = FastOutSlowInEasing)
+              ) + fadeOut(animationSpec = tween(200))
+            )
+        } else {
+          (slideInHorizontally(
+            initialOffsetX = { -(it * 0.2f).toInt() },
+            animationSpec = tween(280, easing = FastOutSlowInEasing)
+          ) + fadeIn(animationSpec = tween(260)))
+            .togetherWith(
+              slideOutHorizontally(
+                targetOffsetX = { (it * 0.2f).toInt() },
+                animationSpec = tween(240, easing = FastOutSlowInEasing)
+              ) + fadeOut(animationSpec = tween(200))
+            )
+        }
+      },
+      label = "duties_tab_animated_transition",
+      modifier = Modifier.fillMaxSize()
+    ) { tabIdx ->
+      val filteredDuties = when (tabIdx) {
+        0 -> duties
+        1 -> duties.filter { it.status == DutyStatus.PENDING || it.status == DutyStatus.IN_PROGRESS }
+        else -> duties.filter { it.status == DutyStatus.COMPLETED }
+      }
+
+      if (filteredDuties.isEmpty()) {
+        Card(
+          shape = RoundedCornerShape(12.dp),
+          colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+          modifier = Modifier.fillMaxWidth()
+        ) {
+          Column(
+            modifier = Modifier.padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+          ) {
+            Icon(
+              imageVector = Icons.Default.DoneAll,
+              contentDescription = null,
+              tint = SchoolNavyPrimary,
+              modifier = Modifier.size(40.dp)
+            )
+            Text(
+              text = "No duty tasks found in this section.",
+              style = MaterialTheme.typography.bodyMedium,
+              color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+          }
+        }
+      } else {
+        LazyColumn(
+          verticalArrangement = Arrangement.spacedBy(10.dp),
+          modifier = Modifier.fillMaxSize()
+        ) {
+          items(filteredDuties, key = { it.id }) { duty ->
+            DutyTaskItemCard(
+              duty = duty,
+              onStatusChange = { newStatus -> onUpdateDutyStatus(duty.id, newStatus) }
+            )
+          }
+        }
+      }
+    }
+  }
 }
