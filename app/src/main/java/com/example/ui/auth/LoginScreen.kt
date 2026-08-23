@@ -94,6 +94,7 @@ fun LoginScreen(
       UserRole.STUDENT -> "student01"
       UserRole.TEACHER -> "teacher01"
       UserRole.STAFF -> "staff01"
+      UserRole.DRIVER -> "driver01"
       UserRole.ADMIN -> "admin01"
       UserRole.DEVELOPER -> "dev"
     }
@@ -258,6 +259,7 @@ fun LoginScreen(
                 UserRole.STUDENT -> RoleStudentColor.copy(alpha = 0.12f)
                 UserRole.TEACHER -> RoleTeacherColor.copy(alpha = 0.12f)
                 UserRole.STAFF -> RoleStaffColor.copy(alpha = 0.12f)
+                UserRole.DRIVER -> RoleDriverColor.copy(alpha = 0.12f)
                 UserRole.ADMIN -> RoleAdminColor.copy(alpha = 0.12f)
                 UserRole.DEVELOPER -> Color(0xFF10B981).copy(alpha = 0.15f)
               },
@@ -268,6 +270,7 @@ fun LoginScreen(
                   UserRole.STUDENT -> Icons.Default.School
                   UserRole.TEACHER -> Icons.Default.MenuBook
                   UserRole.STAFF -> Icons.Default.Engineering
+                  UserRole.DRIVER -> Icons.Default.DirectionsBus
                   UserRole.ADMIN -> Icons.Default.AdminPanelSettings
                   UserRole.DEVELOPER -> Icons.Default.Terminal
                 },
@@ -276,6 +279,7 @@ fun LoginScreen(
                   UserRole.STUDENT -> RoleStudentColor
                   UserRole.TEACHER -> RoleTeacherColor
                   UserRole.STAFF -> RoleStaffColor
+                  UserRole.DRIVER -> RoleDriverColor
                   UserRole.ADMIN -> RoleAdminColor
                   UserRole.DEVELOPER -> Color(0xFF10B981)
                 },
@@ -326,19 +330,25 @@ fun LoginScreen(
               modifier = Modifier.fillMaxWidth(),
               horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-              UserRole.values().filter { it != UserRole.DEVELOPER }.forEach { role ->
-                val isSelected = selectedRole == role
+              UserRole.values().filter { it != UserRole.DEVELOPER && it != UserRole.DRIVER }.forEach { role ->
+                val isSelected = selectedRole == role || (role == UserRole.STAFF && selectedRole == UserRole.DRIVER)
                 val chipColor = when (role) {
                   UserRole.STUDENT -> RoleStudentColor
                   UserRole.TEACHER -> RoleTeacherColor
-                  UserRole.STAFF -> RoleStaffColor
+                  UserRole.STAFF -> if (selectedRole == UserRole.DRIVER) RoleDriverColor else RoleStaffColor
                   UserRole.ADMIN -> RoleAdminColor
-                  UserRole.DEVELOPER -> Color(0xFF10B981)
+                  else -> MaterialTheme.colorScheme.primary
                 }
 
                 FilterChip(
                   selected = isSelected,
-                  onClick = { onRoleSelected(role) },
+                  onClick = {
+                    if (role == UserRole.STAFF) {
+                      onRoleSelected(UserRole.STAFF)
+                    } else {
+                      onRoleSelected(role)
+                    }
+                  },
                   label = {
                     Text(
                       text = role.displayName,
@@ -364,6 +374,105 @@ fun LoginScreen(
                     .weight(1f)
                     .testTag("role_chip_${role.name.lowercase()}")
                 )
+              }
+            }
+
+            // Integrated Staff Sub-Role Selector (Staff vs Bus Driver)
+            if (selectedRole == UserRole.STAFF || selectedRole == UserRole.DRIVER) {
+              Surface(
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                shape = RoundedCornerShape(10.dp),
+                border = BorderStroke(1.dp, (if (selectedRole == UserRole.DRIVER) RoleDriverColor else RoleStaffColor).copy(alpha = 0.3f)),
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .padding(top = 2.dp)
+              ) {
+                Column(
+                  modifier = Modifier.padding(8.dp),
+                  verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                  Text(
+                    text = "Staff Category / Department:",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                      fontWeight = FontWeight.Bold,
+                      fontSize = 10.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                  )
+                  Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                  ) {
+                    val isStaffSelected = selectedRole == UserRole.STAFF
+                    val isDriverSelected = selectedRole == UserRole.DRIVER
+
+                    // General Staff Option
+                    Surface(
+                      selected = isStaffSelected,
+                      onClick = { onRoleSelected(UserRole.STAFF) },
+                      shape = RoundedCornerShape(8.dp),
+                      color = if (isStaffSelected) RoleStaffColor.copy(alpha = 0.18f) else MaterialTheme.colorScheme.surface,
+                      border = BorderStroke(1.dp, if (isStaffSelected) RoleStaffColor else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+                      modifier = Modifier
+                        .weight(1f)
+                        .testTag("staff_sub_role_general")
+                    ) {
+                      Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                      ) {
+                        Icon(
+                          imageVector = Icons.Default.Engineering,
+                          contentDescription = null,
+                          tint = if (isStaffSelected) RoleStaffColor else MaterialTheme.colorScheme.onSurfaceVariant,
+                          modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                          text = "General Staff",
+                          style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = if (isStaffSelected) FontWeight.Bold else FontWeight.Normal,
+                            fontSize = 11.sp
+                          ),
+                          color = if (isStaffSelected) RoleStaffColor else MaterialTheme.colorScheme.onSurface
+                        )
+                      }
+                    }
+
+                    // Transport Driver Option
+                    Surface(
+                      selected = isDriverSelected,
+                      onClick = { onRoleSelected(UserRole.DRIVER) },
+                      shape = RoundedCornerShape(8.dp),
+                      color = if (isDriverSelected) RoleDriverColor.copy(alpha = 0.18f) else MaterialTheme.colorScheme.surface,
+                      border = BorderStroke(1.dp, if (isDriverSelected) RoleDriverColor else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+                      modifier = Modifier
+                        .weight(1f)
+                        .testTag("staff_sub_role_driver")
+                    ) {
+                      Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                      ) {
+                        Icon(
+                          imageVector = Icons.Default.DirectionsBus,
+                          contentDescription = null,
+                          tint = if (isDriverSelected) RoleDriverColor else MaterialTheme.colorScheme.onSurfaceVariant,
+                          modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                          text = "Bus Driver",
+                          style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = if (isDriverSelected) FontWeight.Bold else FontWeight.Normal,
+                            fontSize = 11.sp
+                          ),
+                          color = if (isDriverSelected) RoleDriverColor else MaterialTheme.colorScheme.onSurface
+                        )
+                      }
+                    }
+                  }
+                }
               }
             }
           }

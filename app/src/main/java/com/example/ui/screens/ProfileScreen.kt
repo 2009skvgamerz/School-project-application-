@@ -27,6 +27,7 @@ fun ProfileScreen(
   teacherProfile: TeacherProfile?,
   staffProfile: StaffProfile?,
   adminProfile: AdminProfile?,
+  driverProfile: DriverProfile? = null,
   onSwitchRole: (UserRole) -> Unit,
   modifier: Modifier = Modifier,
   onNavigateToSettings: (() -> Unit)? = null,
@@ -95,6 +96,7 @@ fun ProfileScreen(
                   UserRole.STUDENT -> Icons.Default.School
                   UserRole.TEACHER -> Icons.Default.MenuBook
                   UserRole.STAFF -> Icons.Default.Engineering
+                  UserRole.DRIVER -> Icons.Default.DirectionsBus
                   UserRole.ADMIN -> Icons.Default.AdminPanelSettings
                   UserRole.DEVELOPER -> Icons.Default.Terminal
                 },
@@ -261,6 +263,30 @@ fun ProfileScreen(
                 ProfileInfoRow(label = "Work Shift", value = p.shiftTiming)
                 ProfileInfoRow(label = "Campus Duty Location", value = p.locationArea)
                 ProfileInfoRow(label = "Emergency Response Role", value = p.emergencyRole)
+              }
+            }
+          }
+        }
+      }
+
+      UserRole.DRIVER -> {
+        driverProfile?.let { p ->
+          item {
+            Card(
+              shape = RoundedCornerShape(14.dp),
+              colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+              Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+              ) {
+                ProfileInfoRow(label = "Driver ID", value = p.driverId)
+                ProfileInfoRow(label = "Driver License No", value = p.licenseNo)
+                ProfileInfoRow(label = "Assigned Vehicle", value = "${p.assignedBusNo} (${p.busRegistration})")
+                ProfileInfoRow(label = "Assigned Route ID", value = p.assignedRouteId)
+                ProfileInfoRow(label = "Years Experience", value = "${p.experienceYears} Years")
+                ProfileInfoRow(label = "Shift Window", value = p.shift)
+                ProfileInfoRow(label = "Safety Attendant", value = "${p.attendantName} (${p.attendantPhone})")
               }
             }
           }

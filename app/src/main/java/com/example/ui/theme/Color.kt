@@ -51,6 +51,7 @@ val SchoolOnErrorContainer = Color(0xFF7F1D1D)
 val RoleStudentColor = Color(0xFF2563EB)
 val RoleTeacherColor = Color(0xFF059669)
 val RoleStaffColor = Color(0xFF7C3AED)
+val RoleDriverColor = Color(0xFFEA580C)
 val RoleAdminColor = Color(0xFFD97706)
 
 // Neutral Surface & Background Tones (Light)

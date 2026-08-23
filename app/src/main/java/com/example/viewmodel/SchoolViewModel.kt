@@ -122,6 +122,7 @@ class SchoolViewModel(
   val studentProfile: StateFlow<StudentProfile?> = repository.currentStudentProfile
   val teacherProfile: StateFlow<TeacherProfile?> = repository.currentTeacherProfile
   val staffProfile: StateFlow<StaffProfile?> = repository.currentStaffProfile
+  val driverProfile: StateFlow<DriverProfile?> = repository.currentDriverProfile
   val adminProfile: StateFlow<AdminProfile?> = repository.currentAdminProfile
   val developerProfile: StateFlow<DeveloperProfile?> = repository.currentDeveloperProfile
   val systemUsers: StateFlow<List<SystemUserRecord>> = repository.systemUsers
@@ -545,6 +546,39 @@ class SchoolViewModel(
   // 2. Bus Tracking Actions
   fun selectBusRoute(routeId: String) {
     repository.selectBusRoute(routeId)
+  }
+
+  fun updateDriverVehicleAndRoute(driverId: String, busNo: String, busReg: String, routeId: String) {
+    repository.updateDriverVehicleAndRoute(driverId, busNo, busReg, routeId)
+    _refreshFeedbackMessage.value = "🚍 Driver configured to $busNo • Assigned route synced"
+  }
+
+  fun updatePassengerBoardingStatus(routeId: String, stopId: String, passengerId: String, status: PassengerBoardingStatus) {
+    repository.updatePassengerBoardingStatus(routeId, stopId, passengerId, status)
+  }
+
+  fun markAllStopPassengersBoarded(routeId: String, stopId: String) {
+    repository.markAllStopPassengersBoarded(routeId, stopId)
+    _refreshFeedbackMessage.value = "✅ All passengers at stop marked as Boarded"
+  }
+
+  fun addTemporaryDetourStop(routeId: String, stopName: String, scheduledTime: String, latitude: Double, longitude: Double, note: String? = null) {
+    repository.addTemporaryDetourStop(routeId, stopName, scheduledTime, latitude, longitude, note)
+    _refreshFeedbackMessage.value = "🚧 Extra detour stop '$stopName' added. Broadcast sent."
+  }
+
+  fun skipStopWithReason(routeId: String, stopId: String, reason: String) {
+    repository.skipStopWithReason(routeId, stopId, reason)
+    _refreshFeedbackMessage.value = "⚠️ Stop marked as bypassed ($reason)"
+  }
+
+  fun broadcastDriverDelayAlert(routeId: String, delayMins: Int, reason: String) {
+    repository.broadcastDriverDelayAlert(routeId, delayMins, reason)
+    _refreshFeedbackMessage.value = "📢 Delay announcement (+$delayMins min) broadcasted to parents."
+  }
+
+  fun advanceBusToNextStop(routeId: String) {
+    repository.advanceBusToNextStop(routeId)
   }
 
   fun simulateBusMovement(routeId: String) {

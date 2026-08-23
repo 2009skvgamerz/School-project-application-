@@ -63,6 +63,7 @@ fun MainSchoolApp(
   val teacherProfile by viewModel.teacherProfile.collectAsState()
   val staffProfile by viewModel.staffProfile.collectAsState()
   val adminProfile by viewModel.adminProfile.collectAsState()
+  val driverProfile by viewModel.driverProfile.collectAsState()
 
   val notices by viewModel.notices.collectAsState()
   val schoolEvents by viewModel.schoolEvents.collectAsState()
@@ -235,6 +236,13 @@ fun MainSchoolApp(
       NavigationTab.DUTIES,
       NavigationTab.ATTENDANCE,
       NavigationTab.NOTICES,
+      NavigationTab.PROFILE
+    )
+    UserRole.DRIVER -> listOf(
+      NavigationTab.DASHBOARD,
+      NavigationTab.BUS_TRACKING,
+      NavigationTab.ANNOUNCEMENTS,
+      NavigationTab.DIRECTORY,
       NavigationTab.PROFILE
     )
     UserRole.ADMIN -> listOf(
@@ -429,6 +437,37 @@ fun MainSchoolApp(
                   }
                 }
 
+                UserRole.DRIVER -> {
+                  driverProfile?.let { prof ->
+                    DriverDashboardScreen(
+                      driverProfile = prof,
+                      busRoutes = busRoutes,
+                      selectedRouteId = selectedBusRouteId,
+                      onSelectRoute = { viewModel.selectBusRoute(it) },
+                      onAdvanceStop = { viewModel.advanceBusToNextStop(it) },
+                      onUpdatePassengerStatus = { routeId, stopId, passengerId, status ->
+                        viewModel.updatePassengerBoardingStatus(routeId, stopId, passengerId, status)
+                      },
+                      onMarkAllBoarded = { routeId, stopId ->
+                        viewModel.markAllStopPassengersBoarded(routeId, stopId)
+                      },
+                      onAddTemporaryStop = { routeId, stopName, time, lat, lng, note ->
+                        viewModel.addTemporaryDetourStop(routeId, stopName, time, lat, lng, note)
+                      },
+                      onSkipStop = { routeId, stopId, reason ->
+                        viewModel.skipStopWithReason(routeId, stopId, reason)
+                      },
+                      onBroadcastDelay = { routeId, delayMins, reason ->
+                        viewModel.broadcastDriverDelayAlert(routeId, delayMins, reason)
+                      },
+                      onUpdateVehicleAndRoute = { driverId, busNo, busReg, routeId ->
+                        viewModel.updateDriverVehicleAndRoute(driverId, busNo, busReg, routeId)
+                      },
+                      onOpenLiveMap = { currentTab = NavigationTab.BUS_TRACKING }
+                    )
+                  }
+                }
+
                 UserRole.ADMIN -> {
                   adminProfile?.let { prof ->
                     AdminDashboardScreen(
@@ -580,6 +619,7 @@ fun MainSchoolApp(
             teacherProfile = teacherProfile,
             staffProfile = staffProfile,
             adminProfile = adminProfile,
+            driverProfile = driverProfile,
             onSwitchRole = { role ->
               viewModel.switchRole(role)
               currentTab = NavigationTab.DASHBOARD
@@ -669,6 +709,7 @@ fun MainSchoolApp(
                     UserRole.STUDENT -> Icons.Default.School
                     UserRole.TEACHER -> Icons.Default.MenuBook
                     UserRole.STAFF -> Icons.Default.Engineering
+                    UserRole.DRIVER -> Icons.Default.DirectionsBus
                     UserRole.ADMIN -> Icons.Default.AdminPanelSettings
                     UserRole.DEVELOPER -> Icons.Default.Terminal
                   },
@@ -686,6 +727,7 @@ fun MainSchoolApp(
                       UserRole.STUDENT -> "Keerthivasan (Class 12-A)"
                       UserRole.TEACHER -> "Prof. Sarah Jenkins (Physics)"
                       UserRole.STAFF -> "Marcus Vance (Head Facilities)"
+                      UserRole.DRIVER -> "Ramesh Kumar (Bus Pilot #12)"
                       UserRole.ADMIN -> "Dr. Arthur Pendelton (Principal)"
                       UserRole.DEVELOPER -> "Alex Rivera (Root God Mode Master)"
                     },

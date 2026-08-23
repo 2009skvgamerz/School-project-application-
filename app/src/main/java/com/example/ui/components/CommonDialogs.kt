@@ -520,6 +520,7 @@ fun QuickRoleSwitcherDialog(
                     UserRole.STUDENT -> Icons.Default.School
                     UserRole.TEACHER -> Icons.Default.MenuBook
                     UserRole.STAFF -> Icons.Default.Engineering
+                    UserRole.DRIVER -> Icons.Default.DirectionsBus
                     UserRole.ADMIN -> Icons.Default.AdminPanelSettings
                     UserRole.DEVELOPER -> Icons.Default.Terminal
                   },
@@ -536,6 +537,7 @@ fun QuickRoleSwitcherDialog(
                       UserRole.STUDENT -> "Keerthivasan (12-A)"
                       UserRole.TEACHER -> "Prof. Sarah Jenkins (Science)"
                       UserRole.STAFF -> "Mr. Thomas Wright (Facilities)"
+                      UserRole.DRIVER -> "Mr. Ramesh Kumar (Bus Pilot #12)"
                       UserRole.ADMIN -> "Dr. Arthur Pendelton (Principal)"
                       UserRole.DEVELOPER -> "Alex Rivera (Developer God Mode)"
                     },

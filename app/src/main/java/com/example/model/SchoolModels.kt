@@ -4,6 +4,7 @@ enum class UserRole(val displayName: String, val badgeColor: Long) {
   STUDENT("Student", 0xFF2563EB),
   TEACHER("Teacher", 0xFF059669),
   STAFF("Staff", 0xFF7C3AED),
+  DRIVER("Bus Driver", 0xFFEA580C),
   ADMIN("Administrator", 0xFFD97706),
   DEVELOPER("Developer / Root", 0xFF10B981);
 
@@ -72,6 +73,20 @@ data class StaffProfile(
 ) {
   val staffId: String get() = employeeId
 }
+
+data class DriverProfile(
+  val user: User,
+  val driverId: String = "DRV-102",
+  val licenseNo: String = "KA-01-2015-DL99482",
+  val assignedBusNo: String = "Bus #12",
+  val busRegistration: String = "KA-04-SJ-1012",
+  val assignedRouteId: String = "route_12",
+  val shift: String = "Morning Shift (06:45 AM - 09:30 AM)",
+  val experienceYears: Int = 12,
+  val attendantName: String = "Mrs. Sunita Devi",
+  val attendantPhone: String = "+91 98451 99881",
+  val isTripActive: Boolean = true
+)
 
 data class AdminProfile(
   val user: User,
@@ -334,13 +349,41 @@ enum class BusStatus(val label: String, val colorHex: Long) {
   HALTED("Halted", 0xFFDC2626)
 }
 
+enum class PassengerBoardingStatus(val label: String, val colorHex: Long) {
+  WAITING("Waiting at Stop", 0xFFD97706),
+  BOARDED("Boarded Bus", 0xFF059669),
+  ABSENT("Absent / On Leave", 0xFFDC2626),
+  DROPPED_OFF("Dropped Off", 0xFF2563EB)
+}
+
+data class BusPassenger(
+  val id: String,
+  val name: String,
+  val role: UserRole = UserRole.STUDENT,
+  val gradeAndSection: String = "Class 12-A",
+  val rollNo: Int? = 1,
+  val parentName: String = "Guardian",
+  val parentPhone: String = "+91 98450 78912",
+  val emergencyPhone: String = "+91 98450 78912",
+  val boardingStatus: PassengerBoardingStatus = PassengerBoardingStatus.WAITING,
+  val stopId: String,
+  val stopName: String,
+  val checkInTime: String? = null
+)
+
 data class BusStop(
   val id: String,
   val name: String,
   val scheduledTime: String,
   val isCompleted: Boolean = false,
   val isCurrent: Boolean = false,
-  val studentCount: Int = 4
+  val isSkipped: Boolean = false,
+  val skipReason: String? = null,
+  val isExtraDetourStop: Boolean = false,
+  val studentCount: Int = 4,
+  val latitude: Double = 12.9716,
+  val longitude: Double = 77.5946,
+  val passengers: List<BusPassenger> = emptyList()
 )
 
 data class BusRoute(
@@ -358,12 +401,20 @@ data class BusRoute(
   val estimatedArrivalMins: Int,
   val status: BusStatus,
   val delayMinutes: Int = 0,
+  val delayReason: String? = null,
   val capacity: Int = 45,
   val studentsOnboard: Int = 34,
   val stops: List<BusStop>,
   val progressPercent: Float = 0.60f,
+  val currentLatitude: Double = 12.9569,
+  val currentLongitude: Double = 77.6660,
+  val currentHeadingDegrees: Float = 65f,
+  val schoolLatitude: Double = 12.9820,
+  val schoolLongitude: Double = 77.6200,
   val morningTripTime: String = "07:15 AM - 08:20 AM",
-  val eveningTripTime: String = "03:30 PM - 04:45 PM"
+  val eveningTripTime: String = "03:30 PM - 04:45 PM",
+  val activeDetourAlert: String? = null,
+  val isTripActive: Boolean = true
 )
 
 // --- 3. School Announcements ---

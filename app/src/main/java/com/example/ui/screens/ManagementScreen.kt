@@ -172,6 +172,7 @@ fun ManagementScreen(
                   UserRole.STUDENT -> Icons.Default.School
                   UserRole.TEACHER -> Icons.Default.MenuBook
                   UserRole.STAFF -> Icons.Default.Engineering
+                  UserRole.DRIVER -> Icons.Default.DirectionsBus
                   UserRole.ADMIN -> Icons.Default.AdminPanelSettings
                   UserRole.DEVELOPER -> Icons.Default.Terminal
                 },

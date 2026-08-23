@@ -74,6 +74,9 @@ class AuthenticationViewModel(
   private val _adminProfile = MutableStateFlow<AdminProfile?>(null)
   val adminProfile: StateFlow<AdminProfile?> = _adminProfile.asStateFlow()
 
+  private val _driverProfile = MutableStateFlow<DriverProfile?>(null)
+  val driverProfile: StateFlow<DriverProfile?> = _driverProfile.asStateFlow()
+
   private val _developerProfile = MutableStateFlow<DeveloperProfile?>(null)
   val developerProfile: StateFlow<DeveloperProfile?> = _developerProfile.asStateFlow()
 
@@ -162,6 +165,7 @@ class AuthenticationViewModel(
             else loginAsRole(UserRole.TEACHER)
           }
           UserRole.STAFF -> setStaffSession()
+          UserRole.DRIVER -> setDriverSession()
           UserRole.ADMIN -> setAdminSession()
           UserRole.DEVELOPER -> setDeveloperSession()
         }
@@ -265,6 +269,10 @@ class AuthenticationViewModel(
           setStaffSession()
         }
 
+        UserRole.DRIVER -> {
+          setDriverSession()
+        }
+
         UserRole.ADMIN -> {
           setAdminSession()
         }
@@ -359,9 +367,26 @@ class AuthenticationViewModel(
     _staffProfile.value = profile
     _studentProfile.value = null
     _teacherProfile.value = null
+    _driverProfile.value = null
     _adminProfile.value = null
     _errorMessage.value = null
     _authState.value = AuthState.Authenticated(user, UserRole.STAFF)
+  }
+
+  private fun setDriverSession() {
+    repository.loginAsRole(UserRole.DRIVER)
+    val user = repository.currentUser.value ?: defaultDriverUser
+    val profile = repository.currentDriverProfile.value
+
+    _currentUser.value = user
+    _currentRole.value = UserRole.DRIVER
+    _driverProfile.value = profile
+    _studentProfile.value = null
+    _teacherProfile.value = null
+    _staffProfile.value = null
+    _adminProfile.value = null
+    _errorMessage.value = null
+    _authState.value = AuthState.Authenticated(user, UserRole.DRIVER)
   }
 
   private fun setAdminSession() {
@@ -441,6 +466,15 @@ class AuthenticationViewModel(
       email = "t.wright@stjosephs.edu",
       role = UserRole.STAFF,
       designation = "Senior Operations Supervisor"
+    )
+
+    private val defaultDriverUser = User(
+      id = "usr_driver_01",
+      username = "driver01",
+      fullName = "Ramesh Kumar",
+      email = "ramesh.k@stjosephs.edu",
+      role = UserRole.DRIVER,
+      designation = "Bus Pilot #12 • Live Telemetry Active"
     )
 
     private val defaultAdminUser = User(

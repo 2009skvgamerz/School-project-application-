@@ -21,6 +21,9 @@ class SchoolRepository {
   private val _currentStaffProfile = MutableStateFlow<StaffProfile?>(null)
   val currentStaffProfile: StateFlow<StaffProfile?> = _currentStaffProfile.asStateFlow()
 
+  private val _currentDriverProfile = MutableStateFlow<DriverProfile?>(null)
+  val currentDriverProfile: StateFlow<DriverProfile?> = _currentDriverProfile.asStateFlow()
+
   private val _currentAdminProfile = MutableStateFlow<AdminProfile?>(null)
   val currentAdminProfile: StateFlow<AdminProfile?> = _currentAdminProfile.asStateFlow()
 
@@ -150,6 +153,7 @@ class SchoolRepository {
         UserRole.STUDENT -> "+91 98450 12001"
         UserRole.TEACHER -> "+91 98765 22001"
         UserRole.STAFF -> "+91 98765 33014"
+        UserRole.DRIVER -> "+91 98451 22334"
         UserRole.ADMIN -> "+91 98765 00001"
         UserRole.DEVELOPER -> "+91 99999 00000"
       },
@@ -157,6 +161,7 @@ class SchoolRepository {
         UserRole.STUDENT -> "Grade 12 - Section A"
         UserRole.TEACHER -> "Senior Science Faculty"
         UserRole.STAFF -> "Facilities & Campus Supervisor"
+        UserRole.DRIVER -> "Senior Fleet Pilot & Transit In-Charge"
         UserRole.ADMIN -> "Principal & Head of Institution"
         UserRole.DEVELOPER -> "Level 5 Root Administrator & System Developer"
       }
@@ -201,6 +206,21 @@ class SchoolRepository {
           emergencyRole = "Campus Fire & Safety Marshal"
         )
       }
+      UserRole.DRIVER -> {
+        _currentDriverProfile.value = DriverProfile(
+          user = user,
+          driverId = "DRV-102",
+          licenseNo = "KA-01-2015-DL99482",
+          assignedBusNo = "Bus #12",
+          busRegistration = "KA-04-SJ-1012",
+          assignedRouteId = "route_12",
+          shift = "Morning Shift (06:45 AM - 09:30 AM)",
+          experienceYears = 12,
+          attendantName = "Mrs. Sunita Devi",
+          attendantPhone = "+91 98451 99881",
+          isTripActive = true
+        )
+      }
       UserRole.ADMIN -> {
         _currentAdminProfile.value = AdminProfile(
           user = user,
@@ -226,6 +246,7 @@ class SchoolRepository {
     _currentStudentProfile.value = null
     _currentTeacherProfile.value = null
     _currentStaffProfile.value = null
+    _currentDriverProfile.value = null
     _currentAdminProfile.value = null
     _currentDeveloperProfile.value = null
   }
@@ -413,6 +434,14 @@ class SchoolRepository {
               )
             }
           }
+          UserRole.DRIVER -> {
+            _currentDriverProfile.update { old ->
+              old?.copy(
+                user = updatedUser,
+                driverId = updated.identifier.ifBlank { old.driverId }
+              )
+            }
+          }
           UserRole.ADMIN -> {
             _currentAdminProfile.update { old ->
               old?.copy(
@@ -559,11 +588,223 @@ class SchoolRepository {
     _selectedBusRouteId.value = routeId
   }
 
+  fun updateDriverVehicleAndRoute(driverId: String, busNo: String, busReg: String, routeId: String) {
+    _currentDriverProfile.update { current ->
+      current?.copy(
+        assignedBusNo = busNo,
+        busRegistration = busReg,
+        assignedRouteId = routeId
+      )
+    }
+    _busRoutes.update { list ->
+      list.map { route ->
+        if (route.id == routeId) {
+          route.copy(
+            routeNumber = busNo,
+            busRegistration = busReg,
+            driverName = _currentUser.value?.fullName ?: route.driverName,
+            driverPhone = _currentUser.value?.phone ?: route.driverPhone
+          )
+        } else route
+      }
+    }
+  }
+
+  fun updatePassengerBoardingStatus(routeId: String, stopId: String, passengerId: String, status: PassengerBoardingStatus) {
+    _busRoutes.update { list ->
+      list.map { route ->
+        if (route.id == routeId) {
+          val updatedStops = route.stops.map { stop ->
+            if (stop.id == stopId) {
+              val updatedPassengers = stop.passengers.map { p ->
+                if (p.id == passengerId) {
+                  p.copy(
+                    boardingStatus = status,
+                    checkInTime = if (status == PassengerBoardingStatus.BOARDED) "Just now" else null
+                  )
+                } else p
+              }
+              stop.copy(
+                passengers = updatedPassengers,
+                studentCount = updatedPassengers.count { it.boardingStatus != PassengerBoardingStatus.ABSENT }
+              )
+            } else stop
+          }
+          val totalOnboard = updatedStops.flatMap { it.passengers }.count { it.boardingStatus == PassengerBoardingStatus.BOARDED }
+          route.copy(stops = updatedStops, studentsOnboard = totalOnboard)
+        } else route
+      }
+    }
+  }
+
+  fun markAllStopPassengersBoarded(routeId: String, stopId: String) {
+    _busRoutes.update { list ->
+      list.map { route ->
+        if (route.id == routeId) {
+          val updatedStops = route.stops.map { stop ->
+            if (stop.id == stopId) {
+              val updatedPassengers = stop.passengers.map { p ->
+                if (p.boardingStatus == PassengerBoardingStatus.WAITING) {
+                  p.copy(boardingStatus = PassengerBoardingStatus.BOARDED, checkInTime = "Just now")
+                } else p
+              }
+              stop.copy(passengers = updatedPassengers)
+            } else stop
+          }
+          val totalOnboard = updatedStops.flatMap { it.passengers }.count { it.boardingStatus == PassengerBoardingStatus.BOARDED }
+          route.copy(stops = updatedStops, studentsOnboard = totalOnboard)
+        } else route
+      }
+    }
+  }
+
+  fun addTemporaryDetourStop(routeId: String, stopName: String, scheduledTime: String, latitude: Double, longitude: Double, note: String? = null) {
+    _busRoutes.update { list ->
+      list.map { route ->
+        if (route.id == routeId) {
+          val newStop = BusStop(
+            id = "st_detour_${System.currentTimeMillis()}",
+            name = "$stopName (Detour)",
+            scheduledTime = scheduledTime,
+            isCompleted = false,
+            isCurrent = false,
+            isExtraDetourStop = true,
+            skipReason = note,
+            studentCount = 2,
+            latitude = latitude,
+            longitude = longitude,
+            passengers = listOf(
+              BusPassenger(
+                id = "p_detour_${System.currentTimeMillis()}",
+                name = "Added Reroute Passenger",
+                role = UserRole.STUDENT,
+                gradeAndSection = "Class 10-A",
+                rollNo = 30,
+                parentName = "Parent / Guardian",
+                parentPhone = "+91 98450 78912",
+                emergencyPhone = "+91 98450 78912",
+                boardingStatus = PassengerBoardingStatus.WAITING,
+                stopId = "st_detour_${System.currentTimeMillis()}",
+                stopName = stopName
+              )
+            )
+          )
+          val insertIndex = (route.stops.size - 1).coerceAtLeast(1)
+          val updatedStops = route.stops.toMutableList().apply { add(insertIndex, newStop) }
+          route.copy(
+            stops = updatedStops,
+            activeDetourAlert = "🚧 Driver added temporary stop: $stopName" + (if (!note.isNullOrBlank()) " ($note)" else "")
+          )
+        } else route
+      }
+    }
+    addNotification(
+      AppNotification(
+        id = "notif_bus_detour_${System.currentTimeMillis()}",
+        title = "🚧 Route Detour Added ($stopName)",
+        message = "Bus driver added extra stop at $stopName due to road conditions.",
+        timeAgo = "Just now",
+        type = NotificationType.NOTICE,
+        isRead = false,
+        actionRoute = "bus",
+        isUrgent = true
+      )
+    )
+  }
+
+  fun skipStopWithReason(routeId: String, stopId: String, reason: String) {
+    _busRoutes.update { list ->
+      list.map { route ->
+        if (route.id == routeId) {
+          val updatedStops = route.stops.map { stop ->
+            if (stop.id == stopId) {
+              stop.copy(isSkipped = true, skipReason = reason, isCompleted = true)
+            } else stop
+          }
+          val skippedStopName = route.stops.find { it.id == stopId }?.name ?: "Stop"
+          route.copy(
+            stops = updatedStops,
+            activeDetourAlert = "⚠️ $skippedStopName SKIPPED: $reason"
+          )
+        } else route
+      }
+    }
+    addNotification(
+      AppNotification(
+        id = "notif_bus_skip_${System.currentTimeMillis()}",
+        title = "⚠️ Bus Stop Skipped Notice",
+        message = "Driver bypassed stop due to: $reason. Next stop active.",
+        timeAgo = "Just now",
+        type = NotificationType.NOTICE,
+        isRead = false,
+        actionRoute = "bus",
+        isUrgent = true
+      )
+    )
+  }
+
+  fun broadcastDriverDelayAlert(routeId: String, delayMins: Int, reason: String) {
+    _busRoutes.update { list ->
+      list.map { route ->
+        if (route.id == routeId) {
+          route.copy(
+            delayMinutes = delayMins,
+            delayReason = reason,
+            status = if (delayMins > 0) BusStatus.DELAYED else BusStatus.ON_TIME,
+            activeDetourAlert = if (delayMins > 0) "⚠️ +$delayMins min delay: $reason" else null
+          )
+        } else route
+      }
+    }
+    addNotification(
+      AppNotification(
+        id = "notif_driver_delay_${System.currentTimeMillis()}",
+        title = "⏱️ Bus Delay Notice: +$delayMins Mins",
+        message = "$reason. Live ETA has been recalculated for all stops.",
+        timeAgo = "Just now",
+        type = NotificationType.NOTICE,
+        isRead = false,
+        actionRoute = "bus",
+        isUrgent = true
+      )
+    )
+  }
+
+  fun advanceBusToNextStop(routeId: String) {
+    _busRoutes.update { list ->
+      list.map { route ->
+        if (route.id == routeId) {
+          val currentIndex = route.stops.indexOfFirst { it.isCurrent }.let { if (it == -1) 0 else it }
+          val nextIndex = (currentIndex + 1).coerceAtMost(route.stops.size - 1)
+          val nextStop = route.stops[nextIndex]
+          val updatedStops = route.stops.mapIndexed { idx, stop ->
+            stop.copy(
+              isCompleted = idx < nextIndex,
+              isCurrent = idx == nextIndex
+            )
+          }
+          val newProgress = (nextIndex.toFloat() / (route.stops.size - 1).coerceAtLeast(1)).coerceIn(0f, 1f)
+          val newStatus = if (nextIndex == route.stops.size - 1) BusStatus.ARRIVED else route.status
+          route.copy(
+            stops = updatedStops,
+            progressPercent = newProgress,
+            currentLocationName = nextStop.name,
+            nextStopName = if (nextIndex < route.stops.size - 1) route.stops[nextIndex + 1].name else "Campus Destination",
+            currentLatitude = nextStop.latitude,
+            currentLongitude = nextStop.longitude,
+            status = newStatus,
+            estimatedArrivalMins = ((1f - newProgress) * 20).toInt().coerceAtLeast(1)
+          )
+        } else route
+      }
+    }
+  }
+
   fun simulateBusMovement(routeId: String) {
     _busRoutes.update { list ->
       list.map { route ->
         if (route.id == routeId) {
-          val nextProgress = (route.progressPercent + 0.12f).let { if (it > 1.0f) 0.15f else it }
+          val nextProgress = (route.progressPercent + 0.10f).let { if (it > 1.0f) 0.05f else it }
           val stopIndex = (nextProgress * route.stops.size).toInt().coerceIn(0, route.stops.size - 1)
           val updatedStops = route.stops.mapIndexed { idx, stop ->
             stop.copy(
@@ -573,13 +814,29 @@ class SchoolRepository {
           }
           val currentStopName = updatedStops.getOrNull(stopIndex)?.name ?: route.currentLocationName
           val nextStop = updatedStops.getOrNull(stopIndex + 1)?.name ?: "Campus Main Gate (Final)"
-          val newSpeed = if (nextProgress >= 0.95f) 0 else (28..45).random()
+          val newSpeed = if (nextProgress >= 0.95f) 0 else (28..48).random()
           val newStatus = when {
             nextProgress >= 0.95f -> BusStatus.ARRIVED
             route.delayMinutes > 0 -> BusStatus.DELAYED
             else -> BusStatus.ON_TIME
           }
           val remainingMins = ((1.0f - nextProgress) * 25).toInt().coerceAtLeast(1)
+
+          // Interpolate GPS coordinates between stops
+          val totalSegments = (route.stops.size - 1).coerceAtLeast(1)
+          val scaled = nextProgress * totalSegments
+          val segIdx = scaled.toInt().coerceIn(0, totalSegments - 1)
+          val fraction = (scaled - segIdx).coerceIn(0f, 1f)
+
+          val p1 = route.stops[segIdx]
+          val p2 = route.stops[(segIdx + 1).coerceAtMost(route.stops.size - 1)]
+
+          val newLat = p1.latitude + (p2.latitude - p1.latitude) * fraction
+          val newLng = p1.longitude + (p2.longitude - p1.longitude) * fraction
+
+          val dLat = p2.latitude - p1.latitude
+          val dLng = p2.longitude - p1.longitude
+          val newHeading = ((Math.toDegrees(Math.atan2(dLng, dLat)).toFloat() + 360f) % 360f)
 
           route.copy(
             progressPercent = nextProgress,
@@ -588,7 +845,10 @@ class SchoolRepository {
             currentSpeedKmH = newSpeed,
             status = newStatus,
             stops = updatedStops,
-            estimatedArrivalMins = remainingMins
+            estimatedArrivalMins = remainingMins,
+            currentLatitude = newLat,
+            currentLongitude = newLng,
+            currentHeadingDegrees = if (newSpeed > 0) newHeading else route.currentHeadingDegrees
           )
         } else route
       }
@@ -681,6 +941,7 @@ class SchoolRepository {
       DemoAccount("student01", DEMO_PASSWORD, UserRole.STUDENT, "Keerthivasan", "keerthivasan.s@stjosephs.edu"),
       DemoAccount("teacher01", DEMO_PASSWORD, UserRole.TEACHER, "Prof. Sarah Jenkins", "s.jenkins@stjosephs.edu"),
       DemoAccount("staff01", DEMO_PASSWORD, UserRole.STAFF, "Mr. Thomas Wright", "t.wright@stjosephs.edu"),
+      DemoAccount("driver01", DEMO_PASSWORD, UserRole.DRIVER, "Mr. Ramesh Kumar", "driver@stjosephs.edu"),
       DemoAccount("admin01", DEMO_PASSWORD, UserRole.ADMIN, "Dr. Arthur Pendelton", "principal@stjosephs.edu"),
       DemoAccount("dev", DEMO_PASSWORD, UserRole.DEVELOPER, "Keerthivasan", "keerthivasan.dev@stjosephs.edu")
     )
@@ -1198,27 +1459,98 @@ class SchoolRepository {
       BusRoute(
         id = "route_12",
         routeNumber = "Route #12",
-        routeName = "North Campus - Indiranagar Express",
+        routeName = "Gandhi Nagar - Indiranagar Express",
         busRegistration = "KA-04-SJ-1012",
         driverName = "Mr. Ramesh Kumar",
         driverPhone = "+91 98451 22334",
         attendantName = "Mrs. Sunita Devi",
         attendantPhone = "+91 98451 99881",
         currentSpeedKmH = 36,
-        currentLocationName = "HAL Main Gate Flyover",
-        nextStopName = "Marathahalli Bridge (Stop 4)",
-        estimatedArrivalMins = 7,
+        currentLocationName = "Gandhi Nagar Main Circle",
+        nextStopName = "Indiranagar 100ft Junction (Stop 3)",
+        estimatedArrivalMins = 6,
         status = BusStatus.ON_TIME,
         delayMinutes = 0,
         capacity = 45,
         studentsOnboard = 34,
-        progressPercent = 0.65f,
+        progressPercent = 0.45f,
+        currentLatitude = 12.9756,
+        currentLongitude = 77.6066,
+        currentHeadingDegrees = 72f,
+        schoolLatitude = 12.9820,
+        schoolLongitude = 77.6200,
         stops = listOf(
-          BusStop("st_12_1", "MG Road Metro Station", "07:15 AM", isCompleted = true, studentCount = 8),
-          BusStop("st_12_2", "Indiranagar 100ft Junction", "07:30 AM", isCompleted = true, studentCount = 12),
-          BusStop("st_12_3", "HAL Main Gate", "07:45 AM", isCompleted = true, isCurrent = true, studentCount = 9),
-          BusStop("st_12_4", "Marathahalli Bridge", "08:00 AM", isCompleted = false, studentCount = 5),
-          BusStop("st_12_5", "School Main Campus (Gate 1)", "08:15 AM", isCompleted = false, studentCount = 0)
+          BusStop(
+            id = "st_12_1",
+            name = "MG Road Metro Station",
+            scheduledTime = "07:15 AM",
+            isCompleted = true,
+            studentCount = 4,
+            latitude = 12.9756,
+            longitude = 77.6066,
+            passengers = listOf(
+              BusPassenger("p_12_1_1", "Keerthivasan S", UserRole.STUDENT, "Class 12-A", 1, "S. Sundar", "+91 98450 78912", "+91 98450 78912", PassengerBoardingStatus.BOARDED, "st_12_1", "MG Road Metro Station", "07:14 AM"),
+              BusPassenger("p_12_1_2", "Aarav Patel", UserRole.STUDENT, "Class 10-B", 4, "Vikram Patel", "+91 98450 78920", "+91 98450 78920", PassengerBoardingStatus.BOARDED, "st_12_1", "MG Road Metro Station", "07:15 AM"),
+              BusPassenger("p_12_1_3", "Prof. Sarah Jenkins", UserRole.TEACHER, "Science Faculty", null, "Self", "+91 98765 22001", "+91 98765 22001", PassengerBoardingStatus.BOARDED, "st_12_1", "MG Road Metro Station", "07:13 AM"),
+              BusPassenger("p_12_1_4", "Meera Nair", UserRole.STUDENT, "Class 9-A", 14, "Gopal Nair", "+91 98450 78933", "+91 98450 78933", PassengerBoardingStatus.BOARDED, "st_12_1", "MG Road Metro Station", "07:15 AM")
+            )
+          ),
+          BusStop(
+            id = "st_12_2",
+            name = "Gandhi Nagar Junction",
+            scheduledTime = "07:30 AM",
+            isCompleted = true,
+            isCurrent = true,
+            studentCount = 5,
+            latitude = 12.9784,
+            longitude = 77.6250,
+            passengers = listOf(
+              BusPassenger("p_12_2_1", "Rahul Sharma", UserRole.STUDENT, "Class 12-A", 2, "Rajesh Sharma", "+91 98450 78913", "+91 98450 78913", PassengerBoardingStatus.BOARDED, "st_12_2", "Gandhi Nagar Junction", "07:29 AM"),
+              BusPassenger("p_12_2_2", "Ananya Verma", UserRole.STUDENT, "Class 12-A", 3, "Col. K. Verma", "+91 98450 78914", "+91 98450 78914", PassengerBoardingStatus.BOARDED, "st_12_2", "Gandhi Nagar Junction", "07:30 AM"),
+              BusPassenger("p_12_2_3", "Devansh Joshi", UserRole.STUDENT, "Class 11-B", 8, "Sanjay Joshi", "+91 98450 78945", "+91 98450 78945", PassengerBoardingStatus.WAITING, "st_12_2", "Gandhi Nagar Junction"),
+              BusPassenger("p_12_2_4", "Dr. Emily Watson", UserRole.TEACHER, "English Faculty", null, "Self", "+91 98765 22003", "+91 98765 22003", PassengerBoardingStatus.BOARDED, "st_12_2", "Gandhi Nagar Junction", "07:28 AM"),
+              BusPassenger("p_12_2_5", "Sneha Rao", UserRole.STUDENT, "Class 8-C", 19, "M. Rao", "+91 98450 78950", "+91 98450 78950", PassengerBoardingStatus.ABSENT, "st_12_2", "Gandhi Nagar Junction")
+            )
+          ),
+          BusStop(
+            id = "st_12_3",
+            name = "Indiranagar 100ft Road",
+            scheduledTime = "07:45 AM",
+            isCompleted = false,
+            studentCount = 4,
+            latitude = 12.9784,
+            longitude = 77.6408,
+            passengers = listOf(
+              BusPassenger("p_12_3_1", "Aditya Krishnan", UserRole.STUDENT, "Class 10-A", 6, "S. Krishnan", "+91 98450 78955", "+91 98450 78955", PassengerBoardingStatus.WAITING, "st_12_3", "Indiranagar 100ft Road"),
+              BusPassenger("p_12_3_2", "Pooja Reddy", UserRole.STUDENT, "Class 11-A", 12, "V. Reddy", "+91 98450 78960", "+91 98450 78960", PassengerBoardingStatus.WAITING, "st_12_3", "Indiranagar 100ft Road"),
+              BusPassenger("p_12_3_3", "Rohan Pillai", UserRole.STUDENT, "Class 12-B", 15, "T. Pillai", "+91 98450 78965", "+91 98450 78965", PassengerBoardingStatus.WAITING, "st_12_3", "Indiranagar 100ft Road"),
+              BusPassenger("p_12_3_4", "Mr. David Miller", UserRole.TEACHER, "Mathematics Faculty", null, "Self", "+91 98765 22002", "+91 98765 22002", PassengerBoardingStatus.WAITING, "st_12_3", "Indiranagar 100ft Road")
+            )
+          ),
+          BusStop(
+            id = "st_12_4",
+            name = "HAL Main Gate",
+            scheduledTime = "08:00 AM",
+            isCompleted = false,
+            studentCount = 3,
+            latitude = 12.9569,
+            longitude = 77.6660,
+            passengers = listOf(
+              BusPassenger("p_12_4_1", "Tanvi Sengupta", UserRole.STUDENT, "Class 9-B", 22, "A. Sengupta", "+91 98450 78970", "+91 98450 78970", PassengerBoardingStatus.WAITING, "st_12_4", "HAL Main Gate"),
+              BusPassenger("p_12_4_2", "Varun Chopra", UserRole.STUDENT, "Class 12-A", 9, "N. Chopra", "+91 98450 78975", "+91 98450 78975", PassengerBoardingStatus.WAITING, "st_12_4", "HAL Main Gate"),
+              BusPassenger("p_12_4_3", "Riya Sen", UserRole.STUDENT, "Class 10-A", 18, "B. Sen", "+91 98450 78980", "+91 98450 78980", PassengerBoardingStatus.WAITING, "st_12_4", "HAL Main Gate")
+            )
+          ),
+          BusStop(
+            id = "st_12_5",
+            name = "St. Joseph's Academy (Main Campus)",
+            scheduledTime = "08:15 AM",
+            isCompleted = false,
+            studentCount = 0,
+            latitude = 12.9820,
+            longitude = 77.6200,
+            passengers = emptyList()
+          )
         )
       ),
       BusRoute(
@@ -1236,15 +1568,84 @@ class SchoolRepository {
         estimatedArrivalMins = 11,
         status = BusStatus.DELAYED,
         delayMinutes = 5,
+        delayReason = "Metro Construction detour via 2nd Cross",
         capacity = 45,
         studentsOnboard = 38,
         progressPercent = 0.52f,
+        currentLatitude = 12.9654,
+        currentLongitude = 77.7127,
+        currentHeadingDegrees = 240f,
+        schoolLatitude = 12.9820,
+        schoolLongitude = 77.6200,
+        activeDetourAlert = "🚧 Detour active: Stop 3 diverted via AECS Main Rd due to pipe laying work.",
         stops = listOf(
-          BusStop("st_05_1", "Whitefield Main Market", "07:10 AM", isCompleted = true, studentCount = 14),
-          BusStop("st_05_2", "ITPL Circle", "07:25 AM", isCompleted = true, studentCount = 11),
-          BusStop("st_05_3", "Kundalahalli Gate", "07:42 AM", isCompleted = true, isCurrent = true, studentCount = 8),
-          BusStop("st_05_4", "Outer Ring Road", "07:58 AM", isCompleted = false, studentCount = 5),
-          BusStop("st_05_5", "School Main Campus (Gate 1)", "08:18 AM", isCompleted = false, studentCount = 0)
+          BusStop(
+            id = "st_05_1",
+            name = "Whitefield Main Market",
+            scheduledTime = "07:10 AM",
+            isCompleted = true,
+            studentCount = 4,
+            latitude = 12.9698,
+            longitude = 77.7499,
+            passengers = listOf(
+              BusPassenger("p_05_1_1", "Kavya Menon", UserRole.STUDENT, "Class 11-A", 5, "S. Menon", "+91 98452 00101", "+91 98452 00101", PassengerBoardingStatus.BOARDED, "st_05_1", "Whitefield Main Market", "07:09 AM"),
+              BusPassenger("p_05_1_2", "Siddharth Roy", UserRole.STUDENT, "Class 12-B", 7, "P. Roy", "+91 98452 00102", "+91 98452 00102", PassengerBoardingStatus.BOARDED, "st_05_1", "Whitefield Main Market", "07:10 AM"),
+              BusPassenger("p_05_1_3", "Arjun Nambiar", UserRole.STUDENT, "Class 9-A", 11, "K. Nambiar", "+91 98452 00103", "+91 98452 00103", PassengerBoardingStatus.BOARDED, "st_05_1", "Whitefield Main Market", "07:11 AM"),
+              BusPassenger("p_05_1_4", "Mrs. Maya Pillai", UserRole.TEACHER, "Biology Faculty", null, "Self", "+91 98765 22004", "+91 98765 22004", PassengerBoardingStatus.BOARDED, "st_05_1", "Whitefield Main Market", "07:08 AM")
+            )
+          ),
+          BusStop(
+            id = "st_05_2",
+            name = "ITPL Circle",
+            scheduledTime = "07:25 AM",
+            isCompleted = true,
+            studentCount = 3,
+            latitude = 12.9863,
+            longitude = 77.7303,
+            passengers = listOf(
+              BusPassenger("p_05_2_1", "Neha Hegde", UserRole.STUDENT, "Class 10-B", 14, "U. Hegde", "+91 98452 00201", "+91 98452 00201", PassengerBoardingStatus.BOARDED, "st_05_2", "ITPL Circle", "07:24 AM"),
+              BusPassenger("p_05_2_2", "Aryan Gupta", UserRole.STUDENT, "Class 8-A", 3, "R. Gupta", "+91 98452 00202", "+91 98452 00202", PassengerBoardingStatus.BOARDED, "st_05_2", "ITPL Circle", "07:25 AM"),
+              BusPassenger("p_05_2_3", "Ishaan Kapoor", UserRole.STUDENT, "Class 12-A", 17, "S. Kapoor", "+91 98452 00203", "+91 98452 00203", PassengerBoardingStatus.BOARDED, "st_05_2", "ITPL Circle", "07:26 AM")
+            )
+          ),
+          BusStop(
+            id = "st_05_3",
+            name = "Kundalahalli Gate",
+            scheduledTime = "07:42 AM",
+            isCompleted = true,
+            isCurrent = true,
+            studentCount = 3,
+            latitude = 12.9654,
+            longitude = 77.7127,
+            passengers = listOf(
+              BusPassenger("p_05_3_1", "Divya Suresh", UserRole.STUDENT, "Class 10-A", 10, "K. Suresh", "+91 98452 00301", "+91 98452 00301", PassengerBoardingStatus.BOARDED, "st_05_3", "Kundalahalli Gate", "07:41 AM"),
+              BusPassenger("p_05_3_2", "Pranav Nair", UserRole.STUDENT, "Class 11-B", 21, "C. Nair", "+91 98452 00302", "+91 98452 00302", PassengerBoardingStatus.WAITING, "st_05_3", "Kundalahalli Gate"),
+              BusPassenger("p_05_3_3", "Gauri Deshmukh", UserRole.STUDENT, "Class 9-C", 16, "A. Deshmukh", "+91 98452 00303", "+91 98452 00303", PassengerBoardingStatus.ABSENT, "st_05_3", "Kundalahalli Gate")
+            )
+          ),
+          BusStop(
+            id = "st_05_4",
+            name = "Outer Ring Road (AECS Layout)",
+            scheduledTime = "07:58 AM",
+            isCompleted = false,
+            studentCount = 2,
+            latitude = 12.9550,
+            longitude = 77.6950,
+            passengers = listOf(
+              BusPassenger("p_05_4_1", "Manish Tiwari", UserRole.STUDENT, "Class 12-A", 25, "H. Tiwari", "+91 98452 00401", "+91 98452 00401", PassengerBoardingStatus.WAITING, "st_05_4", "Outer Ring Road (AECS Layout)"),
+              BusPassenger("p_05_4_2", "Shruti Rao", UserRole.STUDENT, "Class 7-B", 8, "V. Rao", "+91 98452 00402", "+91 98452 00402", PassengerBoardingStatus.WAITING, "st_05_4", "Outer Ring Road (AECS Layout)")
+            )
+          ),
+          BusStop(
+            id = "st_05_5",
+            name = "St. Joseph's Academy (Main Campus)",
+            scheduledTime = "08:18 AM",
+            isCompleted = false,
+            studentCount = 0,
+            latitude = 12.9820,
+            longitude = 77.6200,
+            passengers = emptyList()
+          )
         )
       ),
       BusRoute(
@@ -1265,12 +1666,17 @@ class SchoolRepository {
         capacity = 45,
         studentsOnboard = 41,
         progressPercent = 0.78f,
+        currentLatitude = 12.9606,
+        currentLongitude = 77.6409,
+        currentHeadingDegrees = 45f,
+        schoolLatitude = 12.9820,
+        schoolLongitude = 77.6200,
         stops = listOf(
-          BusStop("st_08_1", "Jayanagar 4th Block", "07:05 AM", isCompleted = true, studentCount = 15),
-          BusStop("st_08_2", "Koramangala Sony World", "07:22 AM", isCompleted = true, studentCount = 12),
-          BusStop("st_08_3", "Domlur Flyover", "07:38 AM", isCompleted = true, isCurrent = true, studentCount = 9),
-          BusStop("st_08_4", "Old Airport Road", "07:50 AM", isCompleted = false, studentCount = 5),
-          BusStop("st_08_5", "School Main Campus (Gate 2)", "08:05 AM", isCompleted = false, studentCount = 0)
+          BusStop("st_08_1", "Jayanagar 4th Block", "07:05 AM", isCompleted = true, studentCount = 3, latitude = 12.9299, longitude = 77.5824),
+          BusStop("st_08_2", "Koramangala Sony World", "07:22 AM", isCompleted = true, studentCount = 4, latitude = 12.9352, longitude = 77.6245),
+          BusStop("st_08_3", "Domlur Flyover", "07:38 AM", isCompleted = true, isCurrent = true, studentCount = 3, latitude = 12.9606, longitude = 77.6409),
+          BusStop("st_08_4", "Old Airport Road", "07:50 AM", isCompleted = false, studentCount = 2, latitude = 12.9622, longitude = 77.6580),
+          BusStop("st_08_5", "St. Joseph's Academy (Campus Gate 2)", "08:05 AM", isCompleted = false, studentCount = 0, latitude = 12.9820, longitude = 77.6200)
         )
       ),
       BusRoute(
@@ -1291,12 +1697,17 @@ class SchoolRepository {
         capacity = 45,
         studentsOnboard = 36,
         progressPercent = 0.68f,
+        currentLatitude = 12.9260,
+        currentLongitude = 77.6762,
+        currentHeadingDegrees = 30f,
+        schoolLatitude = 12.9820,
+        schoolLongitude = 77.6200,
         stops = listOf(
-          BusStop("st_15_1", "Silk Board Junction", "07:00 AM", isCompleted = true, studentCount = 10),
-          BusStop("st_15_2", "HSR Layout BDA Complex", "07:18 AM", isCompleted = true, studentCount = 14),
-          BusStop("st_15_3", "Bellandur Central", "07:35 AM", isCompleted = true, isCurrent = true, studentCount = 8),
-          BusStop("st_15_4", "Sarjapur Junction", "07:52 AM", isCompleted = false, studentCount = 4),
-          BusStop("st_15_5", "School Main Campus (Gate 2)", "08:15 AM", isCompleted = false, studentCount = 0)
+          BusStop("st_15_1", "Silk Board Junction", "07:00 AM", isCompleted = true, studentCount = 4, latitude = 12.9176, longitude = 77.6238),
+          BusStop("st_15_2", "HSR Layout BDA Complex", "07:18 AM", isCompleted = true, studentCount = 5, latitude = 12.9116, longitude = 77.6446),
+          BusStop("st_15_3", "Bellandur Central", "07:35 AM", isCompleted = true, isCurrent = true, studentCount = 3, latitude = 12.9260, longitude = 77.6762),
+          BusStop("st_15_4", "Sarjapur Junction", "07:52 AM", isCompleted = false, studentCount = 2, latitude = 12.9312, longitude = 77.6850),
+          BusStop("st_15_5", "St. Joseph's Academy (Campus Gate 2)", "08:15 AM", isCompleted = false, studentCount = 0, latitude = 12.9820, longitude = 77.6200)
         )
       )
     )

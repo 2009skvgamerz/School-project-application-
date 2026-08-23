@@ -35,14 +35,25 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.example.model.BusRoute
 import com.example.model.BusStatus
 import com.example.model.BusStop
 import com.example.model.StudentProfile
 import com.example.model.UserRole
+import com.example.ui.components.InAppBusMapView
+import com.example.ui.components.launchGoogleMapsLocation
+import com.example.ui.components.launchGoogleMapsNavigation
+import com.example.ui.components.shareBusLiveLocation
 import com.example.ui.theme.SchoolGold
 import com.example.ui.theme.SchoolNavyDark
 import com.example.ui.theme.SchoolNavyPrimary
+
+enum class BusTrackingViewMode(val label: String, val icon: ImageVector) {
+  IN_APP_MAP("In-App Google Map", Icons.Default.Map),
+  TACTICAL_RADAR("Tactical Radar", Icons.Default.Sensors)
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,6 +70,10 @@ fun BusTrackingScreen(
   val activeRoute = routes.find { it.id == selectedRouteId } ?: routes.firstOrNull()
 
   var isAutoSimulating by remember { mutableStateOf(false) }
+  var viewMode by remember { mutableStateOf(BusTrackingViewMode.IN_APP_MAP) }
+  var isFullscreenMapOpen by remember { mutableStateOf(false) }
+  var selectedStopForModal by remember { mutableStateOf<BusStop?>(null) }
+  var isFollowBusEnabled by remember { mutableStateOf(true) }
 
   // Auto-simulation ticker
   LaunchedEffect(isAutoSimulating, selectedRouteId) {
@@ -152,124 +167,328 @@ fun BusTrackingScreen(
         }
       }
 
-      // 2. LIVE GPS RADAR HERO CARD
-      item(key = "live_radar_card") {
+      // 1.5. STOP-CENTRIC TRACKER QUICK SELECTOR (Find Bus by Your Stop Name e.g., Gandhi Nagar)
+      item(key = "stop_centric_selector_row") {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+          Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+          ) {
+            Text(
+              text = "TRACK BY YOUR STOP (STUDENT / FACULTY)",
+              style = MaterialTheme.typography.labelSmall.copy(
+                fontWeight = FontWeight.ExtraBold,
+                letterSpacing = 1.sp
+              ),
+              color = SchoolNavyPrimary
+            )
+            Surface(
+              color = Color(0xFFDBEAFE),
+              shape = RoundedCornerShape(6.dp)
+            ) {
+              Text(
+                text = "Tap to check ETA",
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF1E40AF),
+                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+              )
+            }
+          }
+
+          LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth()
+          ) {
+            items(activeRoute.stops, key = { it.id }) { stop ->
+              val isThisStopSelected = selectedStopForModal?.id == stop.id
+              Surface(
+                modifier = Modifier
+                  .clickable { selectedStopForModal = stop }
+                  .testTag("stop_chip_${stop.id}"),
+                shape = RoundedCornerShape(12.dp),
+                color = when {
+                  isThisStopSelected -> SchoolNavyPrimary
+                  stop.isCurrent -> Color(0xFFFEF3C7)
+                  stop.isCompleted -> Color(0xFFD1FAE5)
+                  else -> MaterialTheme.colorScheme.surfaceVariant
+                },
+                border = if (stop.isCurrent) CardDefaults.outlinedCardBorder().copy(
+                  brush = androidx.compose.ui.graphics.SolidColor(Color(0xFFEA580C))
+                ) else null
+              ) {
+                Row(
+                  modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                  verticalAlignment = Alignment.CenterVertically,
+                  horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                  Icon(
+                    imageVector = when {
+                      stop.isCurrent -> Icons.Default.DirectionsBus
+                      stop.isCompleted -> Icons.Default.CheckCircle
+                      else -> Icons.Default.Place
+                    },
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = when {
+                      isThisStopSelected -> Color.White
+                      stop.isCurrent -> Color(0xFFEA580C)
+                      stop.isCompleted -> Color(0xFF059669)
+                      else -> MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+                  )
+                  Column {
+                    Text(
+                      text = stop.name,
+                      style = MaterialTheme.typography.labelMedium.copy(
+                        fontWeight = if (isThisStopSelected || stop.isCurrent) FontWeight.Bold else FontWeight.Medium
+                      ),
+                      color = if (isThisStopSelected) Color.White else MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                      text = stop.scheduledTime,
+                      style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.5.sp),
+                      color = if (isThisStopSelected) Color.White.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // 2. HERO BUS CARD WITH IN-APP MAP & RADAR TOGGLE
+      item(key = "live_map_hero_card") {
         Card(
           modifier = Modifier
             .fillMaxWidth()
             .testTag("bus_live_radar_card"),
           shape = RoundedCornerShape(22.dp),
-          colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+          colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+          elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
         ) {
-          Box(
-            modifier = Modifier
-              .fillMaxWidth()
-              .background(
-                brush = Brush.verticalGradient(
-                  colors = listOf(SchoolNavyDark, SchoolNavyPrimary)
+          Column {
+            // Header Bar
+            Box(
+              modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                  brush = Brush.verticalGradient(
+                    colors = listOf(SchoolNavyDark, SchoolNavyPrimary)
+                  )
                 )
-              )
-              .padding(18.dp)
-          ) {
-            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-              // Header & Status Pill
-              Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-              ) {
-                Column {
-                  Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                  ) {
-                    Text(
-                      text = activeRoute.routeNumber,
-                      style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black),
-                      color = Color.White
-                    )
-                    Surface(
-                      color = Color.White.copy(alpha = 0.2f),
-                      shape = RoundedCornerShape(6.dp)
+                .padding(16.dp)
+            ) {
+              Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(
+                  modifier = Modifier.fillMaxWidth(),
+                  horizontalArrangement = Arrangement.SpaceBetween,
+                  verticalAlignment = Alignment.CenterVertically
+                ) {
+                  Column {
+                    Row(
+                      verticalAlignment = Alignment.CenterVertically,
+                      horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                       Text(
-                        text = activeRoute.busRegistration,
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                        color = Color.White,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        text = activeRoute.routeNumber,
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black),
+                        color = Color.White
+                      )
+                      Surface(
+                        color = Color.White.copy(alpha = 0.2f),
+                        shape = RoundedCornerShape(6.dp)
+                      ) {
+                        Text(
+                          text = activeRoute.busRegistration,
+                          style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                          color = Color.White,
+                          modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                      }
+                    }
+                    Text(
+                      text = activeRoute.routeName,
+                      style = MaterialTheme.typography.bodySmall,
+                      color = Color.White.copy(alpha = 0.85f),
+                      maxLines = 1,
+                      overflow = TextOverflow.Ellipsis
+                    )
+                  }
+
+                  Surface(
+                    color = statusColor,
+                    shape = RoundedCornerShape(12.dp)
+                  ) {
+                    Row(
+                      modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                      verticalAlignment = Alignment.CenterVertically,
+                      horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                      Box(
+                        modifier = Modifier
+                          .size(8.dp)
+                          .clip(CircleShape)
+                          .background(Color.White)
+                      )
+                      Text(
+                        text = activeRoute.status.label.uppercase(),
+                        style = MaterialTheme.typography.labelSmall.copy(
+                          fontWeight = FontWeight.ExtraBold,
+                          fontSize = 10.sp
+                        ),
+                        color = Color.White
                       )
                     }
                   }
-                  Text(
-                    text = activeRoute.routeName,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.8f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                  )
                 }
 
-                Surface(
-                  color = statusColor,
-                  shape = RoundedCornerShape(12.dp)
+                // View Mode Switcher Pill Tabs
+                Row(
+                  modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color.White.copy(alpha = 0.12f))
+                    .padding(4.dp),
+                  horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                  Row(
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                  ) {
-                    Box(
+                  BusTrackingViewMode.entries.forEach { mode ->
+                    val isSelected = viewMode == mode
+                    Surface(
+                      color = if (isSelected) SchoolGold else Color.Transparent,
+                      shape = RoundedCornerShape(10.dp),
                       modifier = Modifier
-                        .size(8.dp)
-                        .clip(CircleShape)
-                        .background(Color.White)
-                    )
-                    Text(
-                      text = activeRoute.status.label.uppercase(),
-                      style = MaterialTheme.typography.labelSmall.copy(
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 10.sp
-                      ),
-                      color = Color.White
-                    )
+                        .weight(1f)
+                        .clickable { viewMode = mode }
+                    ) {
+                      Row(
+                        modifier = Modifier.padding(vertical = 6.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                      ) {
+                        Icon(
+                          imageVector = mode.icon,
+                          contentDescription = null,
+                          tint = if (isSelected) SchoolNavyDark else Color.White,
+                          modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                          text = mode.label,
+                          style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = if (isSelected) FontWeight.Black else FontWeight.Medium
+                          ),
+                          color = if (isSelected) SchoolNavyDark else Color.White
+                        )
+                      }
+                    }
                   }
                 }
               }
+            }
 
-              // Custom Animated Live Radar Canvas
-              LiveRouteRadarCanvas(
-                progressPercent = activeRoute.progressPercent,
-                currentSpeed = activeRoute.currentSpeedKmH,
-                status = activeRoute.status,
-                stopsCount = activeRoute.stops.size,
+            // Map / Radar Display Area
+            Box(
+              modifier = Modifier
+                .fillMaxWidth()
+                .height(300.dp)
+                .background(Color(0xFF0F172A))
+            ) {
+              if (viewMode == BusTrackingViewMode.IN_APP_MAP) {
+                InAppBusMapView(
+                  route = activeRoute,
+                  onStopClick = { selectedStopForModal = it },
+                  onOpenGoogleMapsApp = {
+                    launchGoogleMapsNavigation(
+                      context = context,
+                      originLat = activeRoute.currentLatitude,
+                      originLng = activeRoute.currentLongitude,
+                      destLat = activeRoute.schoolLatitude,
+                      destLng = activeRoute.schoolLongitude,
+                      waypoints = activeRoute.stops
+                    )
+                  },
+                  onShareLiveLocation = {
+                    shareBusLiveLocation(context, activeRoute)
+                  },
+                  isFollowBusEnabled = isFollowBusEnabled,
+                  onToggleFollowBus = { isFollowBusEnabled = it },
+                  modifier = Modifier.fillMaxSize()
+                )
+              } else {
+                Box(
+                  modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                      brush = Brush.verticalGradient(
+                        colors = listOf(SchoolNavyDark, Color(0xFF0F172A))
+                      )
+                    )
+                    .padding(16.dp)
+                ) {
+                  LiveRouteRadarCanvas(
+                    progressPercent = activeRoute.progressPercent,
+                    currentSpeed = activeRoute.currentSpeedKmH,
+                    status = activeRoute.status,
+                    stopsCount = activeRoute.stops.size,
+                    modifier = Modifier.fillMaxSize()
+                  )
+                }
+              }
+
+              // Fullscreen Map Button
+              Surface(
+                color = SchoolNavyDark.copy(alpha = 0.85f),
+                shape = CircleShape,
+                shadowElevation = 4.dp,
                 modifier = Modifier
-                  .fillMaxWidth()
-                  .height(130.dp)
-              )
+                  .align(Alignment.TopEnd)
+                  .padding(10.dp)
+                  .size(34.dp)
+                  .clickable { isFullscreenMapOpen = true }
+              ) {
+                Box(contentAlignment = Alignment.Center) {
+                  Icon(
+                    imageVector = Icons.Default.Fullscreen,
+                    contentDescription = "Fullscreen Map",
+                    tint = Color.White,
+                    modifier = Modifier.size(20.dp)
+                  )
+                }
+              }
+            }
 
-              // Live Telemetry Stats Strip
+            // Live Telemetry Stats Strip
+            Column(
+              modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+              verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
               Row(
                 modifier = Modifier
                   .fillMaxWidth()
                   .clip(RoundedCornerShape(14.dp))
-                  .background(Color.White.copy(alpha = 0.12f))
+                  .background(SchoolNavyPrimary.copy(alpha = 0.06f))
                   .padding(12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
               ) {
-                BusTelemetryMetric(
+                BusTelemetryMetricDark(
                   label = "Speed",
                   value = "${activeRoute.currentSpeedKmH} km/h",
                   icon = Icons.Default.Speed
                 )
-                VerticalDivider(modifier = Modifier.height(28.dp), color = Color.White.copy(alpha = 0.2f))
-                BusTelemetryMetric(
+                VerticalDivider(modifier = Modifier.height(28.dp), color = MaterialTheme.colorScheme.outlineVariant)
+                BusTelemetryMetricDark(
                   label = "Next Stop ETA",
                   value = "${activeRoute.estimatedArrivalMins} mins",
                   icon = Icons.Default.Timer
                 )
-                VerticalDivider(modifier = Modifier.height(28.dp), color = Color.White.copy(alpha = 0.2f))
-                BusTelemetryMetric(
+                VerticalDivider(modifier = Modifier.height(28.dp), color = MaterialTheme.colorScheme.outlineVariant)
+                BusTelemetryMetricDark(
                   label = "Onboard",
                   value = "${activeRoute.studentsOnboard}/${activeRoute.capacity}",
                   icon = Icons.Default.Groups
@@ -278,7 +497,7 @@ fun BusTrackingScreen(
 
               // Next Stop Alert Box
               Surface(
-                color = Color.White.copy(alpha = 0.15f),
+                color = SchoolNavyPrimary.copy(alpha = 0.08f),
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth()
               ) {
@@ -290,8 +509,8 @@ fun BusTrackingScreen(
                   Icon(
                     imageVector = Icons.Default.NearMe,
                     contentDescription = null,
-                    tint = SchoolGold,
-                    modifier = Modifier.size(20.dp)
+                    tint = SchoolNavyPrimary,
+                    modifier = Modifier.size(22.dp)
                   )
                   Column(modifier = Modifier.weight(1f)) {
                     Text(
@@ -301,16 +520,66 @@ fun BusTrackingScreen(
                         letterSpacing = 0.8.sp,
                         fontSize = 9.sp
                       ),
-                      color = SchoolGold
+                      color = SchoolNavyPrimary
                     )
                     Text(
                       text = activeRoute.nextStopName,
                       style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                      color = Color.White,
+                      color = MaterialTheme.colorScheme.onSurface,
                       maxLines = 1,
                       overflow = TextOverflow.Ellipsis
                     )
                   }
+                  IconButton(
+                    onClick = {
+                      val currentStop = activeRoute.stops.find { it.name == activeRoute.nextStopName }
+                      if (currentStop != null) {
+                        launchGoogleMapsLocation(context, currentStop.latitude, currentStop.longitude, currentStop.name)
+                      }
+                    }
+                  ) {
+                    Icon(
+                      imageVector = Icons.Default.Navigation,
+                      contentDescription = "Navigate to next stop",
+                      tint = SchoolNavyPrimary
+                    )
+                  }
+                }
+              }
+
+              // Google Maps Primary Action Buttons Strip
+              Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+              ) {
+                Button(
+                  onClick = {
+                    launchGoogleMapsNavigation(
+                      context = context,
+                      originLat = activeRoute.currentLatitude,
+                      originLng = activeRoute.currentLongitude,
+                      destLat = activeRoute.schoolLatitude,
+                      destLng = activeRoute.schoolLongitude,
+                      waypoints = activeRoute.stops
+                    )
+                  },
+                  colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E88E5)),
+                  shape = RoundedCornerShape(12.dp),
+                  modifier = Modifier.weight(1f).testTag("open_gmaps_nav_btn")
+                ) {
+                  Icon(Icons.Default.Directions, contentDescription = null, modifier = Modifier.size(18.dp))
+                  Spacer(modifier = Modifier.width(6.dp))
+                  Text("Google Maps Nav", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
+                }
+
+                OutlinedButton(
+                  onClick = { shareBusLiveLocation(context, activeRoute) },
+                  shape = RoundedCornerShape(12.dp),
+                  modifier = Modifier.weight(1f).testTag("share_live_gps_btn")
+                ) {
+                  Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
+                  Spacer(modifier = Modifier.width(6.dp))
+                  Text("Share GPS", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
                 }
               }
 
@@ -321,10 +590,6 @@ fun BusTrackingScreen(
               ) {
                 OutlinedButton(
                   onClick = { onSimulateMovement(activeRoute.id) },
-                  colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
-                  border = ButtonDefaults.outlinedButtonBorder.copy(
-                    brush = Brush.horizontalGradient(listOf(Color.White, Color.White))
-                  ),
                   shape = RoundedCornerShape(10.dp),
                   modifier = Modifier.weight(1f).testTag("simulate_step_btn")
                 ) {
@@ -336,8 +601,8 @@ fun BusTrackingScreen(
                 Button(
                   onClick = { isAutoSimulating = !isAutoSimulating },
                   colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isAutoSimulating) Color(0xFFDC2626) else SchoolGold,
-                    contentColor = if (isAutoSimulating) Color.White else SchoolNavyDark
+                    containerColor = if (isAutoSimulating) Color(0xFFDC2626) else SchoolNavyPrimary,
+                    contentColor = Color.White
                   ),
                   shape = RoundedCornerShape(10.dp),
                   modifier = Modifier.weight(1f).testTag("auto_simulate_toggle_btn")
@@ -349,7 +614,7 @@ fun BusTrackingScreen(
                   )
                   Spacer(modifier = Modifier.width(6.dp))
                   Text(
-                    text = if (isAutoSimulating) "Pause Live" else "Live Radar",
+                    text = if (isAutoSimulating) "Pause Ticker" else "Auto GPS Ticker",
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold)
                   )
                 }
@@ -419,7 +684,10 @@ fun BusTrackingScreen(
       items(activeRoute.stops, key = { it.id }) { stop ->
         BusStopTimelineItem(
           stop = stop,
-          isLast = stop == activeRoute.stops.last()
+          isLast = stop == activeRoute.stops.last(),
+          onOpenInMaps = {
+            launchGoogleMapsLocation(context, stop.latitude, stop.longitude, stop.name)
+          }
         )
       }
 
@@ -466,6 +734,203 @@ fun BusTrackingScreen(
           }
         }
       }
+    }
+
+    // FULLSCREEN MAP DIALOG
+    if (isFullscreenMapOpen) {
+      Dialog(
+        onDismissRequest = { isFullscreenMapOpen = false },
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+      ) {
+        Surface(modifier = Modifier.fillMaxSize()) {
+          Box(modifier = Modifier.fillMaxSize()) {
+            InAppBusMapView(
+              route = activeRoute,
+              onStopClick = { selectedStopForModal = it },
+              onOpenGoogleMapsApp = {
+                launchGoogleMapsNavigation(
+                  context = context,
+                  originLat = activeRoute.currentLatitude,
+                  originLng = activeRoute.currentLongitude,
+                  destLat = activeRoute.schoolLatitude,
+                  destLng = activeRoute.schoolLongitude,
+                  waypoints = activeRoute.stops
+                )
+              },
+              onShareLiveLocation = { shareBusLiveLocation(context, activeRoute) },
+              isFollowBusEnabled = isFollowBusEnabled,
+              onToggleFollowBus = { isFollowBusEnabled = it },
+              modifier = Modifier.fillMaxSize()
+            )
+
+            // Close Fullscreen Button
+            FloatingActionButton(
+              onClick = { isFullscreenMapOpen = false },
+              containerColor = SchoolNavyPrimary,
+              contentColor = Color.White,
+              shape = CircleShape,
+              modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(16.dp)
+                .size(48.dp)
+            ) {
+              Icon(Icons.Default.Close, contentDescription = "Close Fullscreen")
+            }
+          }
+        }
+      }
+    }
+
+    // STOP DETAIL MODAL (STUDENT / TEACHER QUICK TRACKER FOR SPECIFIC STOP)
+    selectedStopForModal?.let { stop ->
+      val stopIndex = activeRoute.stops.indexOfFirst { it.id == stop.id }
+      val currentIndex = activeRoute.stops.indexOfFirst { it.isCurrent }.let { if (it == -1) 0 else it }
+      val isPastStop = stopIndex < currentIndex || stop.isCompleted
+      val isCurrentStop = stop.isCurrent
+      val stopsAway = (stopIndex - currentIndex).coerceAtLeast(0)
+      val calculatedETA = if (isPastStop) "Bus has already passed this stop" else if (isCurrentStop) "Bus is currently here!" else "~${stopsAway * 4 + activeRoute.delayMinutes} mins"
+
+      AlertDialog(
+        onDismissRequest = { selectedStopForModal = null },
+        icon = {
+          Surface(
+            modifier = Modifier.size(48.dp),
+            shape = CircleShape,
+            color = if (isCurrentStop) Color(0xFFFEF3C7) else SchoolNavyPrimary.copy(alpha = 0.12f)
+          ) {
+            Box(contentAlignment = Alignment.Center) {
+              Icon(
+                imageVector = if (isCurrentStop) Icons.Default.DirectionsBus else Icons.Default.Place,
+                contentDescription = null,
+                tint = if (isCurrentStop) Color(0xFFEA580C) else SchoolNavyPrimary,
+                modifier = Modifier.size(26.dp)
+              )
+            }
+          }
+        },
+        title = {
+          Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+              text = stop.name,
+              style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+              textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+            Text(
+              text = "${activeRoute.routeNumber} (${activeRoute.busRegistration})",
+              style = MaterialTheme.typography.bodySmall,
+              color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+          }
+        },
+        text = {
+          Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+          ) {
+            // Live Status Card
+            Surface(
+              shape = RoundedCornerShape(12.dp),
+              color = when {
+                stop.isSkipped -> Color(0xFFFEE2E2)
+                isCurrentStop -> Color(0xFFFEF3C7)
+                isPastStop -> Color(0xFFD1FAE5)
+                else -> Color(0xFFEFF6FF)
+              },
+              modifier = Modifier.fillMaxWidth()
+            ) {
+              Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                  text = "ESTIMATED ARRIVAL (ETA)",
+                  style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.8.sp),
+                  color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                  text = calculatedETA,
+                  style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
+                  color = when {
+                    stop.isSkipped -> Color(0xFFDC2626)
+                    isCurrentStop -> Color(0xFFC2410C)
+                    isPastStop -> Color(0xFF047857)
+                    else -> Color(0xFF1E40AF)
+                  }
+                )
+                Text(
+                  text = "Scheduled Time: ${stop.scheduledTime} • Current Bus Speed: ${activeRoute.currentSpeedKmH} km/h",
+                  style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.5.sp),
+                  color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+              }
+            }
+
+            // Driver & Crew Quick Contact Card
+            Surface(
+              shape = RoundedCornerShape(12.dp),
+              color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+              modifier = Modifier.fillMaxWidth()
+            ) {
+              Row(
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+              ) {
+                Column(modifier = Modifier.weight(1f)) {
+                  Text(
+                    text = "Pilot / Driver Contact",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                  )
+                  Text(
+                    text = activeRoute.driverName,
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurface
+                  )
+                  Text(
+                    text = activeRoute.driverPhone,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                  )
+                }
+
+                IconButton(
+                  onClick = { launchDialer(context, activeRoute.driverPhone) },
+                  modifier = Modifier
+                    .size(40.dp)
+                    .background(Color(0xFFD1FAE5), CircleShape)
+                ) {
+                  Icon(
+                    imageVector = Icons.Default.Call,
+                    contentDescription = "Call Driver",
+                    tint = Color(0xFF065F46)
+                  )
+                }
+              }
+            }
+
+            // Google Maps Navigation button
+            OutlinedButton(
+              onClick = {
+                launchGoogleMapsLocation(context, stop.latitude, stop.longitude, stop.name)
+              },
+              modifier = Modifier.fillMaxWidth(),
+              shape = RoundedCornerShape(10.dp)
+            ) {
+              Icon(Icons.Default.Directions, contentDescription = null, modifier = Modifier.size(18.dp))
+              Spacer(Modifier.width(6.dp))
+              Text("Open Stop in Google Maps")
+            }
+          }
+        },
+        confirmButton = {
+          Button(
+            onClick = { selectedStopForModal = null },
+            colors = ButtonDefaults.buttonColors(containerColor = SchoolNavyPrimary)
+          ) {
+            Text("Close")
+          }
+        }
+      )
     }
   }
 }
@@ -579,7 +1044,7 @@ private fun LiveRouteRadarCanvas(
 }
 
 @Composable
-private fun BusTelemetryMetric(
+private fun BusTelemetryMetricDark(
   label: String,
   value: String,
   icon: ImageVector
@@ -592,17 +1057,17 @@ private fun BusTelemetryMetric(
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-      Icon(imageVector = icon, contentDescription = null, tint = SchoolGold, modifier = Modifier.size(14.dp))
+      Icon(imageVector = icon, contentDescription = null, tint = SchoolNavyPrimary, modifier = Modifier.size(14.dp))
       Text(
         text = label,
         style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-        color = Color.White.copy(alpha = 0.75f)
+        color = MaterialTheme.colorScheme.onSurfaceVariant
       )
     }
     Text(
       text = value,
       style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-      color = Color.White
+      color = MaterialTheme.colorScheme.onSurface
     )
   }
 }
@@ -674,7 +1139,8 @@ private fun BusCrewContactCard(
 @Composable
 private fun BusStopTimelineItem(
   stop: BusStop,
-  isLast: Boolean
+  isLast: Boolean,
+  onOpenInMaps: () -> Unit
 ) {
   Row(
     modifier = Modifier.fillMaxWidth(),
@@ -714,7 +1180,7 @@ private fun BusStopTimelineItem(
         Box(
           modifier = Modifier
             .width(2.dp)
-            .height(38.dp)
+            .height(44.dp)
             .background(
               if (stop.isCompleted) Color(0xFF059669) else MaterialTheme.colorScheme.surfaceVariant
             )
@@ -747,25 +1213,52 @@ private fun BusStopTimelineItem(
             ),
             color = if (stop.isCurrent) SchoolNavyPrimary else MaterialTheme.colorScheme.onSurface
           )
-          if (stop.isCurrent) {
+          Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+          ) {
+            if (stop.isCurrent) {
+              Text(
+                text = "• Current Location",
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, color = SchoolGold)
+              )
+            }
             Text(
-              text = "• Current Checkpoint",
-              style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, color = SchoolGold)
+              text = "${String.format("%.4f", stop.latitude)}, ${String.format("%.4f", stop.longitude)}",
+              style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+              color = MaterialTheme.colorScheme.onSurfaceVariant
             )
           }
         }
 
-        Column(horizontalAlignment = Alignment.End) {
-          Text(
-            text = stop.scheduledTime,
-            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-          )
-          if (stop.studentCount > 0) {
+        Row(
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+          Column(horizontalAlignment = Alignment.End) {
             Text(
-              text = "+${stop.studentCount} students",
-              style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp),
+              text = stop.scheduledTime,
+              style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
               color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            if (stop.studentCount > 0) {
+              Text(
+                text = "+${stop.studentCount} students",
+                style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+              )
+            }
+          }
+
+          IconButton(
+            onClick = onOpenInMaps,
+            modifier = Modifier.size(32.dp)
+          ) {
+            Icon(
+              imageVector = Icons.Default.OpenInNew,
+              contentDescription = "Open in Google Maps",
+              tint = SchoolNavyPrimary,
+              modifier = Modifier.size(16.dp)
             )
           }
         }

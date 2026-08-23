@@ -79,6 +79,7 @@ fun BaseDashboardScaffold(
     UserRole.STUDENT -> RoleStudentColor
     UserRole.TEACHER -> RoleTeacherColor
     UserRole.STAFF -> RoleStaffColor
+    UserRole.DRIVER -> RoleDriverColor
     UserRole.ADMIN -> RoleAdminColor
     UserRole.DEVELOPER -> Color(0xFF10B981)
   }
@@ -530,6 +531,7 @@ fun RoleSpecificDrawerContent(
     UserRole.STUDENT -> RoleStudentColor
     UserRole.TEACHER -> RoleTeacherColor
     UserRole.STAFF -> RoleStaffColor
+    UserRole.DRIVER -> RoleDriverColor
     UserRole.ADMIN -> RoleAdminColor
     UserRole.DEVELOPER -> Color(0xFF10B981)
   }
@@ -538,6 +540,7 @@ fun RoleSpecificDrawerContent(
     UserRole.STUDENT -> studentProfile?.let { "Class ${it.grade}-${it.section} • Roll #${it.rollNo}" } ?: "St. Joseph's Student"
     UserRole.TEACHER -> teacherProfile?.let { "${it.department} Department • ${it.employeeId}" } ?: "Faculty Member"
     UserRole.STAFF -> staffProfile?.let { "${it.department} • ${it.shiftTiming}" } ?: "Campus Operations Staff"
+    UserRole.DRIVER -> "Bus Fleet Pilot • Live GPS Telemetry"
     UserRole.ADMIN -> adminProfile?.let { it.adminRole } ?: "Administration Bureau"
     UserRole.DEVELOPER -> "System Master Root • Dev Console Active"
   }
@@ -781,6 +784,30 @@ fun RoleSpecificDrawerContent(
             isSelected = currentTab == NavigationTab.ATTENDANCE,
             onClick = { onTabSelected(NavigationTab.ATTENDANCE) },
             testTag = "drawer_item_attendance"
+          )
+        }
+
+        UserRole.DRIVER -> {
+          DrawerNavigationItem(
+            label = "Bus Fleet Live Tracking",
+            icon = Icons.Default.DirectionsBus,
+            isSelected = currentTab == NavigationTab.BUS_TRACKING,
+            onClick = { onTabSelected(NavigationTab.BUS_TRACKING) },
+            testTag = "drawer_item_bus_tracking"
+          )
+          DrawerNavigationItem(
+            label = "Campus Broadcasts",
+            icon = Icons.Default.Campaign,
+            isSelected = currentTab == NavigationTab.ANNOUNCEMENTS,
+            onClick = { onTabSelected(NavigationTab.ANNOUNCEMENTS) },
+            testTag = "drawer_item_announcements"
+          )
+          DrawerNavigationItem(
+            label = "Emergency Directory",
+            icon = Icons.Default.ContactPhone,
+            isSelected = currentTab == NavigationTab.DIRECTORY,
+            onClick = { onTabSelected(NavigationTab.DIRECTORY) },
+            testTag = "drawer_item_directory"
           )
         }
 
