@@ -240,7 +240,7 @@ fun EditUserDialog(
           onSave(record)
           onDismiss()
         },
-        colors = ButtonDefaults.buttonColors(containerColor = SchoolNavyPrimary),
+        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
         modifier = Modifier.testTag("save_user_button")
       ) {
         Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))

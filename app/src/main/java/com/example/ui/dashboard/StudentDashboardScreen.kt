@@ -164,7 +164,7 @@ fun StudentDashboardScreen(
             Text(
               text = "Campus ERP Services",
               style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-              color = SchoolNavyPrimary
+              color = MaterialTheme.colorScheme.primary
             )
             Surface(
               color = SchoolGold.copy(alpha = 0.2f),
@@ -290,7 +290,7 @@ fun StudentDashboardScreen(
           Icon(
             imageVector = Icons.Default.Schedule,
             contentDescription = null,
-            tint = SchoolNavyPrimary
+            tint = MaterialTheme.colorScheme.primary
           )
           Text(
             text = "Today's Schedule (Monday)",

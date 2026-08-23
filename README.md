@@ -4,34 +4,29 @@
 [![Kotlin](https://img.shields.io/badge/Language-Kotlin%202.0-7F52FF.svg?logo=kotlin&logoColor=white)](https://kotlinlang.org)
 [![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose%20M3-4285F4.svg?logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
 [![Room Database](https://img.shields.io/badge/Database-Android%20Room%20SQLite-FFCA28.svg?logo=sqlite&logoColor=black)](https://developer.android.com/training/data-storage/room)
-[![Release](https://img.shields.io/badge/Release-v1.1.0-blue.svg)](https://github.com)
+[![Release](https://img.shields.io/badge/Release-v2.4.0-blue.svg)](https://github.com)
 
-A native Android School ERP and Student Information System built with **Jetpack Compose (Material Design 3)**, **Kotlin Coroutines & Flow**, and **Android Room Database**. Designed specifically for St. Joseph's Higher Secondary School, this platform unifies daily academic operations, digital homeroom roll-calls, student timetables, homework assignments, circulars, fee tracking, and campus duty management into an intuitive, role-tailored mobile experience.
+A native Android School ERP and Student Information System built with **Jetpack Compose (Material Design 3)**, **Kotlin Coroutines & Flow**, and **Android Room Database**. Designed specifically for St. Joseph's Higher Secondary School, this platform unifies daily academic operations, digital homeroom roll-calls, student timetables, homework assignments, circulars, fee tracking, transport systems, and campus duty management into an intuitive, role-tailored mobile experience.
 
 ---
 
-## 🚀 What's New in Release v1.1.0
+## 🚀 What's New in Release v2.4.0
 
-> **Previous Release**: `v1.0.0` (Initial Prototype & Core Role Dashboards)  
-> **Current Release**: `v1.1.0` (Dark Mode Accessibility, Homeroom Authorization & Room DB Integration)
+> **Previous Release**: `v1.1.0`  
+> **Current Release**: `v2.4.0` (Comprehensive UI Refactor, Dark Mode Fixes, Unified Staff Authentication & Dynamic Versioning)
 
 ### 🌟 Key Highlights & Enhancements
-1. **🌙 Full Dark Mode Contrast & Dynamic Theming**:
-   - Replaced all static dark navy color references with dynamic Material 3 color tokens (`MaterialTheme.colorScheme.onSurface`, `primary`, `onSurfaceVariant`, `primaryContainer`, `surfaceContainer`).
-   - High-contrast, WCAG-compliant legibility across all tabs in both Light and Dark themes.
-2. **🛡️ Strict Homeroom Teacher Roll-Call Access Control**:
-   - Enforced security authorization: **Only the designated Homeroom Class Teacher** (e.g., *Prof. Sarah Jenkins* for Class 10-A) can record or modify student attendance.
-   - Non-homeroom faculty and student views automatically transition into a locked read-only register with clear authorization tooltips.
-3. **📊 4-Tier Attendance Roll Call Model**:
-   - 🟢 **Full-day (`FD`, 1.0 weight)** — Standard presence.
-   - 🟡 **Half-day (`HD`, 0.5 weight)** — Morning/Afternoon session.
-   - 🔵 **On-duty (`OD`, 1.0 weight)** — Authorized school representation (Sports tournaments, Olympiads, Science exhibitions).
-   - 🔴 **Absent (`AB`, 0.0 weight)** — Medical or unexcused leaves with mandatory remarks.
-4. **💾 Reactive Room Database Layer**:
-   - Consolidated SQLite persistence (`AppDatabase.kt`) with DAOs for students, teachers, and attendance logs.
-   - Live synchronization between interactive UI chips, filter tabs, and on-device storage.
-5. **🎓 Exam Eligibility & Academic Tracking**:
-   - Real-time gauge validating the institutional 75% minimum attendance threshold for Term Exam hall tickets.
+1. **🌙 Complete Dark Mode Fix & Semantic Token Migration**:
+   - Replaced all legacy hardcoded color references (`SchoolNavyPrimary`) with dynamic Material Design 3 semantic tokens (`MaterialTheme.colorScheme.primary`, `onPrimary`, `onSurface`, etc.).
+   - Solved dark-on-dark legibility issues to deliver a WCAG-compliant high-contrast experience across both Light and Dark mode variations.
+2. **🛡️ Unified Staff Section (Driver Role Integration)**:
+   - Simplified the login screen layout by integrating the **Transport Driver** role as a seamless sub-role within the master **Staff** authentication flow.
+3. **📅 Live Version Tracking & SemVer Compliance**:
+   - Automated layout components (`BaseDashboardScaffold`) to dynamically extract and display the semantic version name (`BuildConfig.VERSION_NAME`) from the Gradle configurations.
+   - Standardized version progression under **Semantic Versioning (SemVer)** conventions.
+4. **🚗 Advanced Transport Tracking (Driver Dashboard)**:
+   - Real-time Leaflet/WebView-based Map view with interactive stop-by-stop coordinate check-ins and passenger manifests.
+   - Quick navigation shortcuts launching standard Google Maps routing automatically.
 
 ---
 
@@ -52,11 +47,17 @@ A native Android School ERP and Student Information System built with **Jetpack 
 - **Syllabus & Duties**: Track curriculum progress and view assigned campus invigilation duties.
 
 ### 🛠️ 3. Operations & Campus Staff Portal
+- **Sub-Role Support**: Select either Operational Staff duties or **Transport Route Management (Driver)**.
 - **Campus Duty Rosters**: Daily assigned operational duties (Gate supervision, lab maintenance, cafeteria oversight, sports ground setup).
 - **Incident & Facility Reporting**: Log campus maintenance requests with priority flags.
 - **Institutional Directory**: Search faculty and department extensions.
 
-### 👑 4. Principal & Administration Portal
+### 🚗 4. Transport & Driver Dashboard
+- **Interactive WebView Map**: Real-time coordinate visualization, GPS-lock switches, and route bounds fitting.
+- **Passenger Checklist**: Check students off at designated stop times.
+- **Google Maps Navigation**: One-tap redirection to open default Google Maps navigation for specific stops.
+
+### 👑 5. Principal & Administration Portal
 - **Governance Dashboard**: Institutional attendance averages, staff strength metrics, fee collection summaries, and grade distribution.
 - **School-Wide Circulars**: Publish urgent notices and announcements across specific user cohorts.
 - **Database Administration**: Inspect demo SQLite seeding records and manage global academic configurations.
@@ -128,7 +129,7 @@ app/src/main/java/com/example/
 └── ui/
     ├── MainSchoolApp.kt                  # Top-level scaffold, navigation bar, and dialogs
     ├── auth/
-    │   └── LoginScreen.kt                # Institutional login & quick demo selector
+    │   └── LoginScreen.kt                # Institutional login with unified staff panel
     ├── screens/
     │   ├── AttendanceScreen.kt           # Student report & Teacher roll-call register
     │   ├── TeacherAttendanceScreen.kt    # Dedicated Homeroom Teacher register
@@ -158,7 +159,8 @@ app/src/main/java/com/example/
 | :--- | :--- | :--- | :--- | :--- |
 | 👨‍🎓 **Student** | `student01` | `alex.j@stjosephs.edu` | Alex Johnson | Class 10-A, Roll #1, St. Patrick House |
 | 👩‍🏫 **Teacher** | `teacher01` | `s.jenkins@stjosephs.edu` | Prof. Sarah Jenkins | Class Teacher of Class 10-A (Physics & Lab) |
-| 🛠️ **Staff** | `staff01` | `t.wright@stjosephs.edu` | Mr. Thomas Wright | Senior Operations Supervisor |
+| 🛠️ **Staff (Operations)** | `staff01` | `t.wright@stjosephs.edu` | Mr. Thomas Wright | Senior Operations Supervisor |
+| 🚗 **Staff (Driver)** | `driver01` | `m.ross@stjosephs.edu` | Mr. Marcus Ross | Transport Driver (Route #05) |
 | 👑 **Admin** | `admin01` | `principal@stjosephs.edu` | Dr. Arthur Pendelton | Principal & Head of Institution |
 
 ---

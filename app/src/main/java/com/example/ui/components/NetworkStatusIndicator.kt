@@ -249,7 +249,7 @@ fun OfflineInfoDialog(
             Text(
               text = "Offline Mode Status",
               style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-              color = SchoolNavyPrimary
+              color = MaterialTheme.colorScheme.primary
             )
             Text(
               text = "Why data is not refreshing live",
@@ -329,7 +329,7 @@ fun OfflineInfoDialog(
               onRetry()
               onDismiss()
             },
-            colors = ButtonDefaults.buttonColors(containerColor = SchoolNavyPrimary)
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
           ) {
             Icon(imageVector = Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
             Spacer(modifier = Modifier.width(4.dp))
@@ -354,7 +354,7 @@ private fun OfflineFeatureRow(
     Icon(
       imageVector = icon,
       contentDescription = null,
-      tint = SchoolNavyPrimary,
+      tint = MaterialTheme.colorScheme.primary,
       modifier = Modifier.size(20.dp).padding(top = 2.dp)
     )
     Column {

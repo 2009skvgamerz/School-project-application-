@@ -205,9 +205,9 @@ fun BaseDashboardScaffold(
                 selected = isSelected,
                 onClick = { onTabSelected(tab) },
                 colors = NavigationBarItemDefaults.colors(
-                  selectedIconColor = SchoolNavyPrimary,
-                  selectedTextColor = SchoolNavyPrimary,
-                  indicatorColor = SchoolNavyPrimary.copy(alpha = 0.12f),
+                  selectedIconColor = MaterialTheme.colorScheme.primary,
+                  selectedTextColor = MaterialTheme.colorScheme.primary,
+                  indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
                   unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                   unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
                 ),
@@ -258,7 +258,7 @@ fun CommonDashboardTopAppBar(
         Icon(
           imageVector = Icons.Default.Menu,
           contentDescription = "Open Navigation Drawer",
-          tint = SchoolNavyPrimary
+          tint = MaterialTheme.colorScheme.primary
         )
       }
     },
@@ -271,7 +271,7 @@ fun CommonDashboardTopAppBar(
           modifier = Modifier
             .size(36.dp)
             .clip(RoundedCornerShape(8.dp))
-            .background(SchoolNavyPrimary),
+            .background(MaterialTheme.colorScheme.primary),
           contentAlignment = Alignment.Center
         ) {
           Icon(
@@ -296,7 +296,7 @@ fun CommonDashboardTopAppBar(
                 fontWeight = FontWeight.ExtraBold,
                 letterSpacing = 0.3.sp
               ),
-              color = SchoolNavyPrimary,
+              color = MaterialTheme.colorScheme.primary,
               maxLines = 1,
               overflow = TextOverflow.Ellipsis,
               modifier = Modifier.weight(1f, fill = false)
@@ -319,7 +319,7 @@ fun CommonDashboardTopAppBar(
     actions = {
       // 1. Role Badge & Quick Switch Action
       Surface(
-        color = if (currentUser.role == UserRole.DEVELOPER) Color(0xFF10B981).copy(alpha = 0.15f) else SchoolNavyPrimary.copy(alpha = 0.08f),
+        color = if (currentUser.role == UserRole.DEVELOPER) Color(0xFF10B981).copy(alpha = 0.15f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
         shape = RoundedCornerShape(10.dp),
         modifier = Modifier
           .clickable { onOpenRoleSwitcher() }
@@ -333,15 +333,14 @@ fun CommonDashboardTopAppBar(
           Icon(
             imageVector = if (currentUser.role == UserRole.DEVELOPER) Icons.Default.Terminal else Icons.Default.SwapHoriz,
             contentDescription = "Switch Role",
-            tint = if (currentUser.role == UserRole.DEVELOPER) Color(0xFF059669) else SchoolNavyPrimary,
+            tint = if (currentUser.role == UserRole.DEVELOPER) Color(0xFF059669) else MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(15.dp)
           )
           Text(
             text = currentUser.role.label,
             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 11.sp),
-            color = if (currentUser.role == UserRole.DEVELOPER) Color(0xFF059669) else SchoolNavyPrimary,
-            maxLines = 1,
-            softWrap = false
+            color = if (currentUser.role == UserRole.DEVELOPER) Color(0xFF059669) else MaterialTheme.colorScheme.primary,
+            maxLines = 1, softWrap = false
           )
         }
       }
@@ -1012,7 +1011,7 @@ fun RoleSpecificDrawerContent(
       }
 
       Text(
-        text = "St. Joseph's SMS Prototype • v2.4.0 (Room DB)",
+        text = "St. Joseph's SMS Prototype • v${com.example.BuildConfig.VERSION_NAME} (Room DB)",
         style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.align(Alignment.CenterHorizontally)
@@ -1036,6 +1035,7 @@ fun DrawerNavigationItem(
   badgeColor: Color = SchoolNavyPrimary,
   testTag: String = ""
 ) {
+  val finalBadgeColor = if (badgeColor == SchoolNavyPrimary) MaterialTheme.colorScheme.primary else badgeColor
   NavigationDrawerItem(
     label = {
       Row(
@@ -1051,7 +1051,7 @@ fun DrawerNavigationItem(
         )
         if (badgeCount > 0) {
           Surface(
-            color = badgeColor,
+            color = finalBadgeColor,
             shape = CircleShape
           ) {
             Text(
@@ -1059,14 +1059,14 @@ fun DrawerNavigationItem(
               style = MaterialTheme.typography.labelSmall.copy(
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = if (finalBadgeColor == MaterialTheme.colorScheme.primary) MaterialTheme.colorScheme.onPrimary else Color.White
               ),
               modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
             )
           }
         } else if (badgeText != null) {
           Surface(
-            color = badgeColor.copy(alpha = 0.15f),
+            color = finalBadgeColor.copy(alpha = 0.15f),
             shape = RoundedCornerShape(4.dp)
           ) {
             Text(
@@ -1074,7 +1074,7 @@ fun DrawerNavigationItem(
               style = MaterialTheme.typography.labelSmall.copy(
                 fontSize = 9.sp,
                 fontWeight = FontWeight.ExtraBold,
-                color = badgeColor
+                color = finalBadgeColor
               ),
               modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
             )
@@ -1086,15 +1086,15 @@ fun DrawerNavigationItem(
       Icon(
         imageVector = icon,
         contentDescription = label,
-        tint = if (isSelected) SchoolNavyPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+        tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
       )
     },
     selected = isSelected,
     onClick = onClick,
     colors = NavigationDrawerItemDefaults.colors(
-      selectedContainerColor = SchoolNavyPrimary.copy(alpha = 0.12f),
-      selectedIconColor = SchoolNavyPrimary,
-      selectedTextColor = SchoolNavyPrimary,
+      selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+      selectedIconColor = MaterialTheme.colorScheme.primary,
+      selectedTextColor = MaterialTheme.colorScheme.primary,
       unselectedContainerColor = Color.Transparent,
       unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
       unselectedTextColor = MaterialTheme.colorScheme.onSurface

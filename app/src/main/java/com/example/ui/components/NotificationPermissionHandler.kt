@@ -157,14 +157,14 @@ fun CompulsoryNotificationPermissionDialog(
           modifier = Modifier
             .size(72.dp)
             .clip(CircleShape)
-            .background(SchoolNavyPrimary.copy(alpha = 0.12f)),
+            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
           contentAlignment = Alignment.Center
         ) {
           Box(
             modifier = Modifier
               .size(52.dp)
               .clip(CircleShape)
-              .background(SchoolNavyPrimary),
+              .background(MaterialTheme.colorScheme.primary),
             contentAlignment = Alignment.Center
           ) {
             Icon(
@@ -187,7 +187,7 @@ fun CompulsoryNotificationPermissionDialog(
               fontWeight = FontWeight.ExtraBold,
               fontSize = 20.sp
             ),
-            color = SchoolNavyPrimary,
+            color = MaterialTheme.colorScheme.primary,
             textAlign = TextAlign.Center
           )
           Surface(
@@ -260,8 +260,8 @@ fun CompulsoryNotificationPermissionDialog(
               .height(48.dp)
               .testTag("allow_notifications_btn"),
             colors = ButtonDefaults.buttonColors(
-              containerColor = SchoolNavyPrimary,
-              contentColor = Color.White
+              containerColor = MaterialTheme.colorScheme.primary,
+              contentColor = MaterialTheme.colorScheme.onPrimary
             ),
             shape = RoundedCornerShape(12.dp)
           ) {

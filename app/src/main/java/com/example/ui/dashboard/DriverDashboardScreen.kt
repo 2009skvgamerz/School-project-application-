@@ -400,7 +400,7 @@ fun DriverDashboardScreen(
         Text(
           text = "Stops & Passenger Check-In",
           style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-          color = SchoolNavyPrimary
+          color = MaterialTheme.colorScheme.primary
         )
         Text(
           text = "${activeRoute?.stops?.size ?: 0} Checkpoints",
@@ -557,7 +557,7 @@ fun DriverDashboardScreen(
                 Text(
                   text = "Passenger Manifest (${stopPassengers.size})",
                   style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                  color = SchoolNavyPrimary
+                  color = MaterialTheme.colorScheme.primary
                 )
 
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {

@@ -110,13 +110,13 @@ fun NotificationCenterSheet(
             modifier = Modifier
               .size(42.dp)
               .clip(CircleShape)
-              .background(SchoolNavyPrimary.copy(alpha = 0.12f)),
+              .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
             contentAlignment = Alignment.Center
           ) {
             Icon(
               imageVector = Icons.Default.NotificationsActive,
               contentDescription = null,
-              tint = SchoolNavyPrimary,
+              tint = MaterialTheme.colorScheme.primary,
               modifier = Modifier.size(24.dp)
             )
           }
@@ -160,7 +160,7 @@ fun NotificationCenterSheet(
             Icon(
               imageVector = if (showPopUpTools) Icons.Default.Campaign else Icons.Outlined.Campaign,
               contentDescription = "External Pop-up Tools",
-              tint = if (showPopUpTools) SchoolAccentGreen else SchoolNavyPrimary
+              tint = if (showPopUpTools) SchoolAccentGreen else MaterialTheme.colorScheme.primary
             )
           }
 
@@ -242,9 +242,9 @@ fun NotificationCenterSheet(
       AnimatedVisibility(visible = showPopUpTools) {
         Card(
           shape = RoundedCornerShape(14.dp),
-          colors = CardDefaults.cardColors(containerColor = Color(0xFF0F3875).copy(alpha = 0.05f)),
+          colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)),
           border = CardDefaults.outlinedCardBorder().copy(
-            brush = androidx.compose.ui.graphics.SolidColor(SchoolNavyPrimary.copy(alpha = 0.2f))
+            brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary.copy(alpha = 0.25f))
           ),
           modifier = Modifier
             .fillMaxWidth()
@@ -320,7 +320,7 @@ fun NotificationCenterSheet(
                   .weight(1f)
                   .testTag("trigger_immediate_popup_btn"),
                 shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = SchoolNavyPrimary)
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
               ) {
                 Icon(imageVector = Icons.Default.FlashOn, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(4.dp))
@@ -425,20 +425,20 @@ fun NotificationCenterSheet(
               modifier = Modifier
                 .size(60.dp)
                 .clip(CircleShape)
-                .background(SchoolNavyPrimary.copy(alpha = 0.08f)),
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
               contentAlignment = Alignment.Center
             ) {
               Icon(
                 imageVector = Icons.Default.NotificationsNone,
                 contentDescription = null,
-                tint = SchoolNavyPrimary,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(32.dp)
               )
             }
             Text(
               text = "You're all caught up!",
               style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-              color = SchoolNavyPrimary
+              color = MaterialTheme.colorScheme.primary
             )
             Text(
               text = "No pending notifications in this filter",
@@ -533,14 +533,14 @@ fun NotificationCardItem(
     shape = RoundedCornerShape(14.dp),
     colors = CardDefaults.cardColors(
       containerColor = if (!notification.isRead) {
-        SchoolNavyPrimary.copy(alpha = 0.05f)
+        MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
       } else {
         MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
       }
     ),
     border = if (!notification.isRead) {
       CardDefaults.outlinedCardBorder().copy(
-        brush = androidx.compose.ui.graphics.SolidColor(SchoolNavyPrimary.copy(alpha = 0.25f))
+        brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary.copy(alpha = 0.25f))
       )
     } else null,
     modifier = modifier
@@ -620,7 +620,7 @@ fun NotificationCardItem(
               modifier = Modifier
                 .size(8.dp)
                 .clip(CircleShape)
-                .background(SchoolNavyPrimary)
+                .background(MaterialTheme.colorScheme.primary)
             )
           }
         }
@@ -658,8 +658,8 @@ fun NotificationCardItem(
               contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
               shape = RoundedCornerShape(8.dp),
               colors = ButtonDefaults.filledTonalButtonColors(
-                containerColor = SchoolNavyPrimary.copy(alpha = 0.1f),
-                contentColor = SchoolNavyPrimary
+                containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                contentColor = MaterialTheme.colorScheme.primary
               ),
               modifier = Modifier.height(28.dp)
             ) {
@@ -692,7 +692,7 @@ fun NotificationCardItem(
               Icon(
                 imageVector = Icons.Outlined.OpenInNew,
                 contentDescription = "Pop-up Outside App",
-                tint = SchoolNavyPrimary,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(16.dp)
               )
             }

@@ -77,7 +77,7 @@ fun NoticeDetailDialog(
         Text(
           text = "Issued by: ${notice.publisherName}",
           style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
-          color = SchoolNavyPrimary
+          color = MaterialTheme.colorScheme.primary
         )
         Text(
           text = "Designation: ${notice.publisherRole}",
@@ -325,7 +325,7 @@ fun SubmitHomeworkDialog(
         Text(
           text = homework.title,
           style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-          color = SchoolNavyPrimary
+          color = MaterialTheme.colorScheme.primary
         )
         Text(
           text = "Subject: ${homework.subjectName}  |  Due: ${homework.dueDate}",
@@ -503,7 +503,7 @@ fun QuickRoleSwitcherDialog(
               },
             shape = RoundedCornerShape(12.dp),
             colors = CardDefaults.cardColors(
-              containerColor = if (isCurrent) SchoolNavyPrimary.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surfaceVariant
+              containerColor = if (isCurrent) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant
             )
           ) {
             Row(
@@ -551,7 +551,7 @@ fun QuickRoleSwitcherDialog(
                 Icon(
                   imageVector = Icons.Default.CheckCircle,
                   contentDescription = "Active",
-                  tint = SchoolNavyPrimary
+                  tint = MaterialTheme.colorScheme.primary
                 )
               }
             }

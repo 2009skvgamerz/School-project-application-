@@ -171,8 +171,8 @@ fun ProfileScreen(
                 onClick = { onSwitchRole(role) },
                 modifier = Modifier.weight(1f).testTag("switch_to_${role.name.lowercase()}"),
                 colors = ButtonDefaults.outlinedButtonColors(
-                  containerColor = if (isSelected) SchoolNavyPrimary else Color.Transparent,
-                  contentColor = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface
+                  containerColor = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                  contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
                 ),
                 contentPadding = PaddingValues(4.dp)
               ) {
@@ -360,13 +360,13 @@ fun ProfileScreen(
               modifier = Modifier
                 .size(40.dp)
                 .clip(CircleShape)
-                .background(SchoolNavyPrimary.copy(alpha = 0.12f)),
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
               contentAlignment = Alignment.Center
             ) {
               Icon(
                 imageVector = Icons.Default.NotificationsActive,
                 contentDescription = null,
-                tint = SchoolNavyPrimary,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(22.dp)
               )
             }

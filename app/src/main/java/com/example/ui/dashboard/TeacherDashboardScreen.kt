@@ -138,7 +138,7 @@ fun TeacherDashboardScreen(
           Icon(
             imageVector = Icons.Default.Schedule,
             contentDescription = null,
-            tint = SchoolNavyPrimary
+            tint = MaterialTheme.colorScheme.primary
           )
           Text(
             text = "Today's Teaching Schedule",

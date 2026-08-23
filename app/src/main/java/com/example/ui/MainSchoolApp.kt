@@ -672,7 +672,7 @@ fun MainSchoolApp(
   if (showRoleSwitcherDialog) {
     AlertDialog(
       onDismissRequest = { showRoleSwitcherDialog = false },
-      icon = { Icon(imageVector = Icons.Default.AccountCircle, contentDescription = null, tint = SchoolNavyPrimary) },
+      icon = { Icon(imageVector = Icons.Default.AccountCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
       title = { Text("Select Portal User Role", fontWeight = FontWeight.Bold) },
       text = {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -689,7 +689,7 @@ fun MainSchoolApp(
             val isCurrent = currentUser.role == role
             Surface(
               shape = RoundedCornerShape(12.dp),
-              color = if (isCurrent) SchoolNavyPrimary.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+              color = if (isCurrent) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
               modifier = Modifier
                 .fillMaxWidth()
                 .clickable {
@@ -714,13 +714,13 @@ fun MainSchoolApp(
                     UserRole.DEVELOPER -> Icons.Default.Terminal
                   },
                   contentDescription = null,
-                  tint = if (isCurrent) SchoolNavyPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                  tint = if (isCurrent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Column(modifier = Modifier.weight(1f)) {
                   Text(
                     text = role.label,
                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                    color = if (isCurrent) SchoolNavyPrimary else MaterialTheme.colorScheme.onSurface
+                    color = if (isCurrent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                   )
                   Text(
                     text = when(role) {
@@ -736,7 +736,7 @@ fun MainSchoolApp(
                   )
                 }
                 if (isCurrent) {
-                  Icon(imageVector = Icons.Default.Check, contentDescription = null, tint = SchoolNavyPrimary)
+                  Icon(imageVector = Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 }
               }
             }
@@ -761,7 +761,7 @@ fun MainSchoolApp(
 
     AlertDialog(
       onDismissRequest = { showAssignHomeworkDialog = false },
-      icon = { Icon(Icons.Default.Assignment, contentDescription = null, tint = SchoolNavyPrimary) },
+      icon = { Icon(Icons.Default.Assignment, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
       title = { Text("Assign New Homework", fontWeight = FontWeight.Bold) },
       text = {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -822,7 +822,7 @@ fun MainSchoolApp(
               showAssignHomeworkDialog = false
             }
           },
-          colors = ButtonDefaults.buttonColors(containerColor = SchoolNavyPrimary),
+          colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
           modifier = Modifier.testTag("submit_assign_hw_btn")
         ) {
           Text("Publish Assignment")
@@ -845,7 +845,7 @@ fun MainSchoolApp(
 
     AlertDialog(
       onDismissRequest = { showCreateNoticeDialog = false },
-      icon = { Icon(Icons.Default.Campaign, contentDescription = null, tint = SchoolNavyPrimary) },
+      icon = { Icon(Icons.Default.Campaign, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
       title = { Text("Broadcast New Circular", fontWeight = FontWeight.Bold) },
       text = {
         Column(
@@ -854,10 +854,10 @@ fun MainSchoolApp(
         ) {
           // Info banner about automatic heads-up notification
           Surface(
-            color = Color(0xFFEFF6FF),
+            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
             shape = RoundedCornerShape(8.dp),
             border = CardDefaults.outlinedCardBorder().copy(
-              brush = androidx.compose.ui.graphics.SolidColor(Color(0xFF93C5FD))
+              brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
             ),
             modifier = Modifier.fillMaxWidth()
           ) {
@@ -977,7 +977,7 @@ fun MainSchoolApp(
               showCreateNoticeDialog = false
             }
           },
-          colors = ButtonDefaults.buttonColors(containerColor = SchoolNavyPrimary),
+          colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
           modifier = Modifier.testTag("submit_create_notice_btn")
         ) {
           Icon(imageVector = Icons.Default.Campaign, contentDescription = null, modifier = Modifier.size(16.dp))
@@ -1001,7 +1001,7 @@ fun MainSchoolApp(
 
     AlertDialog(
       onDismissRequest = { showAddDutyDialog = false },
-      icon = { Icon(Icons.Default.Checklist, contentDescription = null, tint = SchoolNavyPrimary) },
+      icon = { Icon(Icons.Default.Checklist, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
       title = { Text("Assign Campus Duty", fontWeight = FontWeight.Bold) },
       text = {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -1037,7 +1037,7 @@ fun MainSchoolApp(
               showAddDutyDialog = false
             }
           },
-          colors = ButtonDefaults.buttonColors(containerColor = SchoolNavyPrimary),
+          colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
           modifier = Modifier.testTag("submit_add_duty_btn")
         ) {
           Text("Add Duty")
@@ -1138,7 +1138,7 @@ fun MainSchoolApp(
       confirmButton = {
         Button(
           onClick = { selectedNoticeDetail = null },
-          colors = ButtonDefaults.buttonColors(containerColor = SchoolNavyPrimary)
+          colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
         ) {
           Text("Close")
         }

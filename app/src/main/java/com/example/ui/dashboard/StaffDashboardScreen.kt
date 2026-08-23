@@ -139,7 +139,7 @@ fun StaffDashboardScreen(
           Icon(
             imageVector = Icons.Default.Checklist,
             contentDescription = null,
-            tint = SchoolNavyPrimary
+            tint = MaterialTheme.colorScheme.primary
           )
           Text(
             text = "Today's Operational Duties",

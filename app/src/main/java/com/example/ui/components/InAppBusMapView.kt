@@ -128,7 +128,7 @@ fun InAppBusMapView(
     modifier = modifier
       .fillMaxWidth()
       .clip(RoundedCornerShape(20.dp))
-      .border(1.dp, SchoolNavyPrimary.copy(alpha = 0.2f), RoundedCornerShape(20.dp))
+      .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f), RoundedCornerShape(20.dp))
       .testTag("in_app_bus_map_container")
   ) {
     // 1. Interactive Android WebView Map View
@@ -268,8 +268,8 @@ fun InAppBusMapView(
       // Follow Bus Toggle
       FloatingMapControl(
         icon = if (isFollowBusEnabled) Icons.Default.GpsFixed else Icons.Default.GpsNotFixed,
-        tint = if (isFollowBusEnabled) Color(0xFF059669) else SchoolNavyPrimary,
-        bgColor = if (isFollowBusEnabled) Color(0xFFDCFCE7) else Color.White,
+        tint = if (isFollowBusEnabled) Color(0xFF059669) else MaterialTheme.colorScheme.primary,
+        bgColor = if (isFollowBusEnabled) Color(0xFFDCFCE7) else MaterialTheme.colorScheme.surface,
         contentDesc = "Follow Bus",
         onClick = {
           onToggleFollowBus(!isFollowBusEnabled)
@@ -280,7 +280,8 @@ fun InAppBusMapView(
       // Center on Campus
       FloatingMapControl(
         icon = Icons.Default.School,
-        tint = SchoolNavyPrimary,
+        tint = MaterialTheme.colorScheme.primary,
+        bgColor = MaterialTheme.colorScheme.surface,
         contentDesc = "Center on Campus",
         onClick = {
           webViewRef?.evaluateJavascript("if (window.centerOnCampus) { window.centerOnCampus(); }", null)
@@ -290,7 +291,8 @@ fun InAppBusMapView(
       // Fit All Stops Bounds
       FloatingMapControl(
         icon = Icons.Default.ZoomOutMap,
-        tint = SchoolNavyPrimary,
+        tint = MaterialTheme.colorScheme.primary,
+        bgColor = MaterialTheme.colorScheme.surface,
         contentDesc = "Fit Route",
         onClick = {
           webViewRef?.evaluateJavascript("if (window.fitRouteBounds) { window.fitRouteBounds(); }", null)
@@ -368,7 +370,7 @@ fun InAppBusMapView(
           Icon(
             imageVector = Icons.Default.LocationOn,
             contentDescription = null,
-            tint = if (stop.isCompleted) Color(0xFF059669) else SchoolNavyPrimary,
+            tint = if (stop.isCompleted) Color(0xFF059669) else MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(28.dp)
           )
         },
@@ -376,7 +378,7 @@ fun InAppBusMapView(
           Text(
             text = stop.name,
             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-            color = SchoolNavyPrimary
+            color = MaterialTheme.colorScheme.primary
           )
         },
         text = {
@@ -389,7 +391,7 @@ fun InAppBusMapView(
               Text(
                 text = stop.scheduledTime,
                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                color = SchoolNavyPrimary
+                color = MaterialTheme.colorScheme.primary
               )
             }
             Row(
@@ -431,7 +433,7 @@ fun InAppBusMapView(
               selectedStopForPopup = null
               launchGoogleMapsLocation(context, stop.latitude, stop.longitude, stop.name)
             },
-            colors = ButtonDefaults.buttonColors(containerColor = SchoolNavyPrimary)
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
           ) {
             Icon(Icons.Default.OpenInNew, contentDescription = null, modifier = Modifier.size(16.dp))
             Spacer(modifier = Modifier.width(6.dp))

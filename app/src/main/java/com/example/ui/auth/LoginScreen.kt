@@ -244,7 +244,7 @@ fun LoginScreen(
               Text(
                 text = "Welcome Back",
                 style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                color = SchoolNavyPrimary
+                color = MaterialTheme.colorScheme.primary
               )
               Text(
                 text = "Sign in to access your school portal",
@@ -524,7 +524,7 @@ fun LoginScreen(
               Icon(
                 imageVector = Icons.Default.Email,
                 contentDescription = "Email",
-                tint = SchoolNavyPrimary
+                tint = MaterialTheme.colorScheme.primary
               )
             },
             trailingIcon = {
@@ -545,9 +545,9 @@ fun LoginScreen(
             ),
             shape = RoundedCornerShape(12.dp),
             colors = OutlinedTextFieldDefaults.colors(
-              focusedBorderColor = SchoolNavyPrimary,
-              focusedLabelColor = SchoolNavyPrimary,
-              cursorColor = SchoolNavyPrimary
+              focusedBorderColor = MaterialTheme.colorScheme.primary,
+              focusedLabelColor = MaterialTheme.colorScheme.primary,
+              cursorColor = MaterialTheme.colorScheme.primary
             ),
             modifier = Modifier
               .fillMaxWidth()
@@ -567,7 +567,7 @@ fun LoginScreen(
               Icon(
                 imageVector = Icons.Default.Lock,
                 contentDescription = "Password",
-                tint = SchoolNavyPrimary
+                tint = MaterialTheme.colorScheme.primary
               )
             },
             trailingIcon = {
@@ -588,9 +588,9 @@ fun LoginScreen(
             keyboardActions = KeyboardActions(onDone = { performLogin() }),
             shape = RoundedCornerShape(12.dp),
             colors = OutlinedTextFieldDefaults.colors(
-              focusedBorderColor = SchoolNavyPrimary,
-              focusedLabelColor = SchoolNavyPrimary,
-              cursorColor = SchoolNavyPrimary
+              focusedBorderColor = MaterialTheme.colorScheme.primary,
+              focusedLabelColor = MaterialTheme.colorScheme.primary,
+              cursorColor = MaterialTheme.colorScheme.primary
             ),
             modifier = Modifier
               .fillMaxWidth()
@@ -612,7 +612,7 @@ fun LoginScreen(
               Checkbox(
                 checked = rememberMe,
                 onCheckedChange = { rememberMe = it },
-                colors = CheckboxDefaults.colors(checkedColor = SchoolNavyPrimary),
+                colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary),
                 modifier = Modifier
                   .size(24.dp)
                   .testTag("remember_me_checkbox")
@@ -638,7 +638,7 @@ fun LoginScreen(
               Text(
                 text = "Forgot Password?",
                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                color = SchoolNavyPrimary
+                color = MaterialTheme.colorScheme.primary
               )
             }
           }
@@ -652,14 +652,14 @@ fun LoginScreen(
               .testTag("login_button"),
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.buttonColors(
-              containerColor = SchoolNavyPrimary,
-              contentColor = Color.White
+              containerColor = MaterialTheme.colorScheme.primary,
+              contentColor = MaterialTheme.colorScheme.onPrimary
             ),
             enabled = !isLoading
           ) {
             if (isLoading) {
               CircularProgressIndicator(
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onPrimary,
                 modifier = Modifier.size(22.dp),
                 strokeWidth = 2.5.dp
               )
@@ -690,10 +690,10 @@ fun LoginScreen(
               .testTag("quick_login_button"),
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.outlinedButtonColors(
-              contentColor = SchoolNavyPrimary
+              contentColor = MaterialTheme.colorScheme.primary
             ),
             border = ButtonDefaults.outlinedButtonBorder.copy(
-              brush = Brush.horizontalGradient(listOf(SchoolNavyPrimary, SchoolGold))
+              brush = Brush.horizontalGradient(listOf(MaterialTheme.colorScheme.primary, SchoolGold))
             )
           ) {
             Icon(
@@ -706,7 +706,7 @@ fun LoginScreen(
             Text(
               text = "1-Tap Demo Access (${selectedRole.displayName})",
               style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-              color = SchoolNavyPrimary
+              color = MaterialTheme.colorScheme.primary
             )
           }
         }
@@ -750,7 +750,7 @@ fun LoginScreen(
             text = "Contact IT Desk",
             style = MaterialTheme.typography.bodySmall.copy(
               fontWeight = FontWeight.Bold,
-              color = SchoolNavyPrimary
+              color = MaterialTheme.colorScheme.primary
             ),
             modifier = Modifier
               .clickable {
@@ -782,7 +782,7 @@ fun LoginScreen(
         Icon(
           imageVector = Icons.Default.ContactSupport,
           contentDescription = null,
-          tint = SchoolNavyPrimary,
+          tint = MaterialTheme.colorScheme.primary,
           modifier = Modifier.size(28.dp)
         )
       },
@@ -796,7 +796,7 @@ fun LoginScreen(
             style = MaterialTheme.typography.bodyMedium
           )
           Surface(
-            color = SchoolNavyPrimary.copy(alpha = 0.08f),
+            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f),
             shape = RoundedCornerShape(10.dp),
             modifier = Modifier.fillMaxWidth()
           ) {
@@ -804,7 +804,7 @@ fun LoginScreen(
               Text(
                 text = "IT Helpdesk Contact:",
                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                color = SchoolNavyPrimary
+                color = MaterialTheme.colorScheme.primary
               )
               Text(
                 text = "Email: ithelpdesk@stjosephs.edu\nPhone: +91 (080) 2221-4567\nOffice: Main Academic Block, Room 104",
@@ -823,7 +823,7 @@ fun LoginScreen(
       confirmButton = {
         Button(
           onClick = { showForgotPasswordDialog = false },
-          colors = ButtonDefaults.buttonColors(containerColor = SchoolNavyPrimary)
+          colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
         ) {
           Text("Got It")
         }
