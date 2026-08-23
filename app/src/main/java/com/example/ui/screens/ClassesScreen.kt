@@ -46,7 +46,7 @@ fun ClassesScreen(
       verticalArrangement = Arrangement.spacedBy(12.dp),
       modifier = Modifier.fillMaxSize()
     ) {
-      items(classes) { cls ->
+      items(classes, key = { it.id }) { cls ->
         val fullClassName = "${cls.name}-${cls.section}"
         val isClassTeacherForThis = when (userRole) {
           UserRole.ADMIN -> false

@@ -133,7 +133,7 @@ fun ManagementScreen(
           label = { Text("All (${systemUsers.size})") }
         )
       }
-      items(visibleFilterRoles) { role ->
+      items(visibleFilterRoles, key = { it.name }) { role ->
         FilterChip(
           selected = selectedFilterRole == role,
           onClick = { selectedFilterRole = if (selectedFilterRole == role) null else role },

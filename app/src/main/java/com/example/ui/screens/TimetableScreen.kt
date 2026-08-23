@@ -86,7 +86,7 @@ fun TimetableScreen(
       horizontalArrangement = Arrangement.spacedBy(8.dp),
       modifier = Modifier.fillMaxWidth()
     ) {
-      items(DayOfWeek.values()) { day ->
+      items(DayOfWeek.entries, key = { it.name }) { day ->
         val isSelected = day == selectedDay
         FilterChip(
           selected = isSelected,

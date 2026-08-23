@@ -38,12 +38,16 @@ import com.example.viewmodel.SchoolViewModel
 enum class NavigationTab(val label: String, val icon: ImageVector) {
   DASHBOARD("Dashboard", Icons.Default.Dashboard),
   TIMETABLE("Timetable", Icons.Default.CalendarMonth),
+  CALENDAR("Calendar", Icons.Default.EventNote),
+  BUS_TRACKING("Bus Live", Icons.Default.DirectionsBus),
+  ANNOUNCEMENTS("Broadcasts", Icons.Default.Campaign),
+  DIRECTORY("Directory", Icons.Default.ContactPhone),
   HOMEWORK("Homework", Icons.Default.Assignment),
   ATTENDANCE("Attendance", Icons.Default.FactCheck),
-  NOTICES("Circulars", Icons.Default.Campaign),
+  NOTICES("Circulars", Icons.Default.Article),
   DUTIES("Duties", Icons.Default.Checklist),
   CLASSES("Classes", Icons.Default.Groups),
-  MANAGEMENT("Directory", Icons.Default.AdminPanelSettings),
+  MANAGEMENT("Admin DB", Icons.Default.AdminPanelSettings),
   PROFILE("Profile", Icons.Default.Person),
   SETTINGS("Settings", Icons.Default.Settings)
 }
@@ -68,6 +72,13 @@ fun MainSchoolApp(
   val staffDuties by viewModel.staffDuties.collectAsState()
   val attendanceRecords by viewModel.attendanceRecords.collectAsState()
   val roomAttendanceRecords by viewModel.roomAttendanceRecords.collectAsState()
+
+  // Wave 1 ERP Collected States
+  val calendarEvents by viewModel.calendarEvents.collectAsState()
+  val busRoutes by viewModel.busRoutes.collectAsState()
+  val selectedBusRouteId by viewModel.selectedBusRouteId.collectAsState()
+  val announcements by viewModel.announcements.collectAsState()
+  val sanitizedDirectoryContacts by viewModel.sanitizedDirectoryContacts.collectAsState()
 
   val notifications by viewModel.notifications.collectAsState()
   val unreadNotificationsCount by viewModel.unreadNotificationsCount.collectAsState()
@@ -123,6 +134,10 @@ fun MainSchoolApp(
         "homework", "hw" -> currentTab = NavigationTab.HOMEWORK
         "attendance", "att" -> currentTab = NavigationTab.ATTENDANCE
         "timetable", "schedule" -> currentTab = NavigationTab.TIMETABLE
+        "calendar", "events", "exam" -> currentTab = NavigationTab.CALENDAR
+        "bus", "bustracking", "transport" -> currentTab = NavigationTab.BUS_TRACKING
+        "announcements", "broadcast", "broadcasts" -> currentTab = NavigationTab.ANNOUNCEMENTS
+        "directory", "contacts", "sos" -> currentTab = NavigationTab.DIRECTORY
         "notices", "bulletin", "bulletins", "circular" -> currentTab = NavigationTab.NOTICES
         "profile" -> currentTab = NavigationTab.PROFILE
         "classes" -> currentTab = NavigationTab.CLASSES
@@ -240,6 +255,13 @@ fun MainSchoolApp(
     )
   }
 
+  // Gracefully switch back to Dashboard if the active tab is not accessible in the new user role
+  LaunchedEffect(currentUser.role) {
+    if (currentTab != NavigationTab.SETTINGS && !visibleTabs.contains(currentTab)) {
+      currentTab = NavigationTab.DASHBOARD
+    }
+  }
+
     BaseDashboardScaffold(
       currentUser = currentUser,
       currentTab = currentTab,
@@ -347,6 +369,10 @@ fun MainSchoolApp(
                       onNavigateToAttendance = { currentTab = NavigationTab.ATTENDANCE },
                       onNavigateToNotices = { currentTab = NavigationTab.NOTICES },
                       onNoticeClick = { selectedNoticeDetail = it },
+                      onNavigateToCalendar = { currentTab = NavigationTab.CALENDAR },
+                      onNavigateToBusTracking = { currentTab = NavigationTab.BUS_TRACKING },
+                      onNavigateToAnnouncements = { currentTab = NavigationTab.ANNOUNCEMENTS },
+                      onNavigateToDirectory = { currentTab = NavigationTab.DIRECTORY },
                       onOpenNotificationCenter = { showNotificationCenterSheet = true },
                       onTriggerPopUpAlert = {
                         viewModel.sendTestNotification(
@@ -483,6 +509,42 @@ fun MainSchoolApp(
             canCreateNotice = currentUser.role != UserRole.STUDENT,
             isRefreshing = isRefreshing,
             onRefresh = { viewModel.refreshData() }
+          )
+        }
+
+        NavigationTab.CALENDAR -> {
+          CalendarScreen(
+            events = calendarEvents,
+            userRole = currentUser.role,
+            onAddEvent = { viewModel.addCalendarEvent(it) },
+            onToggleReminder = { viewModel.toggleCalendarEventReminder(it) }
+          )
+        }
+
+        NavigationTab.BUS_TRACKING -> {
+          BusTrackingScreen(
+            routes = busRoutes,
+            selectedRouteId = selectedBusRouteId,
+            studentProfile = studentProfile,
+            userRole = currentUser.role,
+            onSelectRoute = { viewModel.selectBusRoute(it) },
+            onSimulateMovement = { viewModel.simulateBusMovement(it) }
+          )
+        }
+
+        NavigationTab.ANNOUNCEMENTS -> {
+          AnnouncementsScreen(
+            announcements = announcements,
+            userRole = currentUser.role,
+            onAddAnnouncement = { viewModel.addAnnouncement(it) },
+            onAcknowledgeAnnouncement = { viewModel.acknowledgeAnnouncement(it) }
+          )
+        }
+
+        NavigationTab.DIRECTORY -> {
+          DirectoryScreen(
+            contacts = sanitizedDirectoryContacts,
+            userRole = currentUser.role
           )
         }
 

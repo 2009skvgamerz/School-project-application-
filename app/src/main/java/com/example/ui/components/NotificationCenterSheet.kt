@@ -522,6 +522,8 @@ fun NotificationCardItem(
     NotificationType.FEE -> Icons.Default.ReceiptLong
     NotificationType.EVENT -> Icons.Default.Event
     NotificationType.ACADEMIC -> Icons.Default.School
+    NotificationType.BUS -> Icons.Default.DirectionsBus
+    NotificationType.ANNOUNCEMENT -> Icons.Default.Campaign
     NotificationType.ALL -> Icons.Default.Notifications
   }
 

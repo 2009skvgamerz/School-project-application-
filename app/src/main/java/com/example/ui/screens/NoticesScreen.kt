@@ -95,7 +95,7 @@ fun NoticesScreen(
           )
         }
 
-        items(NoticeCategory.values()) { category ->
+        items(NoticeCategory.entries, key = { it.name }) { category ->
           val count = notices.count { it.category == category }
           FilterChip(
             selected = selectedCategory == category,

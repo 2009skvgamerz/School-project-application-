@@ -845,10 +845,60 @@ fun RoleSpecificDrawerContent(
       // Universal Circulars & Notices
       DrawerNavigationItem(
         label = "Circulars & Notices",
-        icon = Icons.Default.Campaign,
+        icon = Icons.Default.Article,
         isSelected = currentTab == NavigationTab.NOTICES,
         onClick = { onTabSelected(NavigationTab.NOTICES) },
         testTag = "drawer_item_notices"
+      )
+
+      Spacer(modifier = Modifier.height(6.dp))
+      HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
+      Spacer(modifier = Modifier.height(6.dp))
+
+      Text(
+        text = "CAMPUS ERP MODULES",
+        style = MaterialTheme.typography.labelSmall.copy(
+          fontWeight = FontWeight.ExtraBold,
+          letterSpacing = 1.sp
+        ),
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+      )
+
+      // 1. School Calendar
+      DrawerNavigationItem(
+        label = "School Calendar",
+        icon = Icons.Default.EventNote,
+        isSelected = currentTab == NavigationTab.CALENDAR,
+        onClick = { onTabSelected(NavigationTab.CALENDAR) },
+        testTag = "drawer_item_calendar"
+      )
+
+      // 2. Bus Live GPS Tracking
+      DrawerNavigationItem(
+        label = "Bus GPS Tracking",
+        icon = Icons.Default.DirectionsBus,
+        isSelected = currentTab == NavigationTab.BUS_TRACKING,
+        onClick = { onTabSelected(NavigationTab.BUS_TRACKING) },
+        testTag = "drawer_item_bus_tracking"
+      )
+
+      // 3. School Broadcasts & Announcements
+      DrawerNavigationItem(
+        label = "Broadcasts & Alerts",
+        icon = Icons.Default.Campaign,
+        isSelected = currentTab == NavigationTab.ANNOUNCEMENTS,
+        onClick = { onTabSelected(NavigationTab.ANNOUNCEMENTS) },
+        testTag = "drawer_item_announcements"
+      )
+
+      // 4. Role-Restricted School Directory
+      DrawerNavigationItem(
+        label = "Campus Directory",
+        icon = Icons.Default.ContactPhone,
+        isSelected = currentTab == NavigationTab.DIRECTORY,
+        onClick = { onTabSelected(NavigationTab.DIRECTORY) },
+        testTag = "drawer_item_directory"
       )
 
       Spacer(modifier = Modifier.height(6.dp))

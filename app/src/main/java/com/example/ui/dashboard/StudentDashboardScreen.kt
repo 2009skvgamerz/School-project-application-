@@ -38,6 +38,10 @@ fun StudentDashboardScreen(
   onNavigateToAttendance: () -> Unit,
   onNavigateToNotices: () -> Unit,
   onNoticeClick: (Notice) -> Unit,
+  onNavigateToCalendar: () -> Unit = {},
+  onNavigateToBusTracking: () -> Unit = {},
+  onNavigateToAnnouncements: () -> Unit = {},
+  onNavigateToDirectory: () -> Unit = {},
   onOpenNotificationCenter: () -> Unit = {},
   onTriggerPopUpAlert: () -> Unit = {},
   networkState: com.example.util.NetworkState? = null,
@@ -134,9 +138,77 @@ fun StudentDashboardScreen(
             )
             QuickActionButton(
               title = "Circulars",
-              icon = Icons.Default.Campaign,
+              icon = Icons.Default.Article,
               color = Color(0xFF7C3AED),
               onClick = onNavigateToNotices
+            )
+          }
+        }
+      }
+    }
+
+    // 3.1 Campus ERP Services (Wave 1 Features)
+    item {
+      Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        modifier = Modifier.fillMaxWidth().testTag("student_erp_services_card")
+      ) {
+        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+          Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+          ) {
+            Text(
+              text = "Campus ERP Services",
+              style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+              color = SchoolNavyPrimary
+            )
+            Surface(
+              color = SchoolGold.copy(alpha = 0.2f),
+              shape = RoundedCornerShape(6.dp)
+            ) {
+              Text(
+                text = "WAVE 1 ACTIVE",
+                style = MaterialTheme.typography.labelSmall.copy(
+                  fontWeight = FontWeight.Black,
+                  fontSize = 9.sp
+                ),
+                color = SchoolNavyDark,
+                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+              )
+            }
+          }
+
+          Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+          ) {
+            QuickActionButton(
+              title = "Calendar",
+              icon = Icons.Default.EventNote,
+              color = Color(0xFF0284C7),
+              onClick = onNavigateToCalendar
+            )
+            QuickActionButton(
+              title = "Bus GPS",
+              icon = Icons.Default.DirectionsBus,
+              color = Color(0xFFEA580C),
+              onClick = onNavigateToBusTracking
+            )
+            QuickActionButton(
+              title = "Broadcasts",
+              icon = Icons.Default.Campaign,
+              color = Color(0xFFDC2626),
+              onClick = onNavigateToAnnouncements
+            )
+            QuickActionButton(
+              title = "Directory",
+              icon = Icons.Default.ContactPhone,
+              color = Color(0xFF059669),
+              onClick = onNavigateToDirectory
             )
           }
         }

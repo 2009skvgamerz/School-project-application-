@@ -282,7 +282,9 @@ enum class NotificationType(val label: String, val colorHex: Long) {
   NOTICE("Notice", 0xFFDC2626),
   EXAM("Exam", 0xFF7C3AED),
   FEE("Fee & Admin", 0xFF0891B2),
-  EVENT("Event", 0xFFE11D48)
+  EVENT("Event", 0xFFE11D48),
+  BUS("Bus & Transport", 0xFFD97706),
+  ANNOUNCEMENT("Announcement", 0xFFDC2626)
 }
 
 data class AppNotification(
@@ -295,3 +297,130 @@ data class AppNotification(
   val actionRoute: String? = null,
   val isUrgent: Boolean = false
 )
+
+// ==================== WAVE 1 ERP MODELS ====================
+
+// --- 1. Calendar ---
+enum class CalendarCategory(val label: String, val colorHex: Long) {
+  ALL("All Events", 0xFF0F3875),
+  ACADEMIC("Academic", 0xFF2563EB),
+  EXAM("Exams", 0xFF7C3AED),
+  HOLIDAY("Holidays", 0xFF059669),
+  SPORTS("Sports & Games", 0xFFD97706),
+  CULTURAL("Cultural & Arts", 0xFFE11D48),
+  MEETING("PTM & Meetings", 0xFF0891B2)
+}
+
+data class CalendarEvent(
+  val id: String,
+  val title: String,
+  val description: String,
+  val date: String, // YYYY-MM-DD or readable
+  val formattedDate: String,
+  val time: String,
+  val location: String,
+  val category: CalendarCategory,
+  val isHoliday: Boolean = false,
+  val targetGrades: String = "All Classes",
+  val organizer: String = "St. Joseph's Academic Council",
+  val hasReminder: Boolean = false
+)
+
+// --- 2. Live Bus Tracking ---
+enum class BusStatus(val label: String, val colorHex: Long) {
+  ON_TIME("On Time", 0xFF059669),
+  DELAYED("Delayed", 0xFFD97706),
+  ARRIVED("Arrived at Campus", 0xFF2563EB),
+  HALTED("Halted", 0xFFDC2626)
+}
+
+data class BusStop(
+  val id: String,
+  val name: String,
+  val scheduledTime: String,
+  val isCompleted: Boolean = false,
+  val isCurrent: Boolean = false,
+  val studentCount: Int = 4
+)
+
+data class BusRoute(
+  val id: String,
+  val routeNumber: String,
+  val routeName: String,
+  val busRegistration: String,
+  val driverName: String,
+  val driverPhone: String,
+  val attendantName: String,
+  val attendantPhone: String,
+  val currentSpeedKmH: Int,
+  val currentLocationName: String,
+  val nextStopName: String,
+  val estimatedArrivalMins: Int,
+  val status: BusStatus,
+  val delayMinutes: Int = 0,
+  val capacity: Int = 45,
+  val studentsOnboard: Int = 34,
+  val stops: List<BusStop>,
+  val progressPercent: Float = 0.60f,
+  val morningTripTime: String = "07:15 AM - 08:20 AM",
+  val eveningTripTime: String = "03:30 PM - 04:45 PM"
+)
+
+// --- 3. School Announcements ---
+enum class AnnouncementPriority(val label: String, val colorHex: Long) {
+  URGENT("Emergency Alert", 0xFFDC2626),
+  HIGH("High Priority", 0xFFD97706),
+  GENERAL("General Bulletin", 0xFF2563EB)
+}
+
+enum class AnnouncementAudience(val label: String) {
+  ALL_SCHOOL("Entire School Community"),
+  STUDENTS_ONLY("Students Only"),
+  TEACHERS_FACULTY("Teachers & Faculty"),
+  PARENTS_ONLY("Parents Only"),
+  SENIOR_SECONDARY("Classes 10, 11 & 12")
+}
+
+data class SchoolAnnouncement(
+  val id: String,
+  val title: String,
+  val content: String,
+  val priority: AnnouncementPriority,
+  val targetAudience: AnnouncementAudience,
+  val date: String,
+  val timeAgo: String,
+  val authorName: String,
+  val authorRole: String,
+  val isEmergency: Boolean = false,
+  val audioDurationSec: Int? = null,
+  val acknowledgedByCurrentUser: Boolean = false,
+  val acknowledgmentsCount: Int = 128,
+  val attachmentName: String? = null
+)
+
+// --- 4. Role-Gated School Directory ---
+enum class DirectoryCategory(val label: String) {
+  ALL("All"),
+  FACULTY("Teachers"),
+  ADMINISTRATION("Administration"),
+  STAFF("Support Staff"),
+  TRANSPORT("Transport"),
+  STUDENTS("Students"),
+  HELPLINE("Helpline & Emergency")
+}
+
+data class DirectoryContact(
+  val id: String,
+  val name: String,
+  val role: UserRole,
+  val category: DirectoryCategory,
+  val designation: String,
+  val departmentOrGrade: String,
+  val phoneNumber: String, // Redacted for students viewing other students!
+  val email: String,
+  val roomOrLocation: String,
+  val isStudent: Boolean = false,
+  val parentContact: String = "",
+  val bloodGroup: String = ""
+)
+

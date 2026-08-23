@@ -154,6 +154,30 @@ class SchoolViewModel(
   val staffDuties: StateFlow<List<DutyTask>> = repository.duties
   val attendanceRecords: StateFlow<List<AttendanceRecord>> = repository.attendanceRecords
 
+  // Wave 1 ERP Data Streams
+  val calendarEvents: StateFlow<List<CalendarEvent>> = repository.calendarEvents
+  val busRoutes: StateFlow<List<BusRoute>> = repository.busRoutes
+  val selectedBusRouteId: StateFlow<String> = repository.selectedBusRouteId
+  val announcements: StateFlow<List<SchoolAnnouncement>> = repository.announcements
+  val directoryContacts: StateFlow<List<DirectoryContact>> = repository.directoryContacts
+
+  // Role-Sanitized Directory Stream (Privacy Protection for Students)
+  val sanitizedDirectoryContacts: StateFlow<List<DirectoryContact>> = combine(
+    currentUser,
+    repository.directoryContacts
+  ) { user, contacts ->
+    if (user.role == UserRole.STUDENT) {
+      contacts.map { contact ->
+        if (contact.isStudent) {
+          contact.copy(
+            phoneNumber = "🔒 Hidden for Student Privacy",
+            parentContact = "🔒 Hidden for Student Privacy"
+          )
+        } else contact
+      }
+    } else contacts
+  }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
   // Notifications Stream
   val notifications: StateFlow<List<AppNotification>> = repository.notifications
   val unreadNotificationsCount: StateFlow<Int> = repository.notifications
@@ -501,6 +525,43 @@ class SchoolViewModel(
         AppDatabase.populateInitialData(db)
       }
     }
+  }
+
+  // ==================== WAVE 1 ERP METHODS ====================
+
+  // 1. Calendar Actions
+  fun addCalendarEvent(event: CalendarEvent) {
+    repository.addCalendarEvent(event)
+  }
+
+  fun toggleCalendarEventReminder(eventId: String): Boolean {
+    return repository.toggleCalendarEventReminder(eventId)
+  }
+
+  fun deleteCalendarEvent(eventId: String) {
+    repository.deleteCalendarEvent(eventId)
+  }
+
+  // 2. Bus Tracking Actions
+  fun selectBusRoute(routeId: String) {
+    repository.selectBusRoute(routeId)
+  }
+
+  fun simulateBusMovement(routeId: String) {
+    repository.simulateBusMovement(routeId)
+  }
+
+  // 3. Announcements Actions
+  fun addAnnouncement(announcement: SchoolAnnouncement) {
+    repository.addAnnouncement(announcement)
+  }
+
+  fun acknowledgeAnnouncement(announcementId: String) {
+    repository.acknowledgeAnnouncement(announcementId)
+  }
+
+  fun deleteAnnouncement(announcementId: String) {
+    repository.deleteAnnouncement(announcementId)
   }
 
   // Developer God Mode Mutators
