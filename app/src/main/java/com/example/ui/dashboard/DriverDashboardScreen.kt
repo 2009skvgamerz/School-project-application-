@@ -26,6 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.model.*
+import com.example.ui.components.*
 import com.example.ui.theme.*
 import com.example.viewmodel.SchoolViewModel
 
@@ -72,139 +73,118 @@ fun DriverDashboardScreen(
       .testTag("driver_dashboard_screen"),
     contentPadding = PaddingValues(bottom = 96.dp)
   ) {
-    // 1. DRIVER COCKPIT HERO BANNER (High-Visibility Deep Safety Palette)
+    // 0. User Profile Header
+    item {
+      Box(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp)) {
+        UserProfileHeader(
+          user = driverProfile.user,
+          subtitle = "Bus #${driverProfile.assignedBusNo.removePrefix("Bus #")} • DL: ${driverProfile.licenseNo}",
+          schoolSession = "Academic Session 2026–2027",
+          statusLabel = "PILOT ACTIVE",
+          testTag = "driver_user_profile_header"
+        )
+      }
+    }
+
+    // 1. TODAY'S OPERATING VEHICLE & ROUTE CARD
     item {
       Box(
         modifier = Modifier
           .fillMaxWidth()
-          .background(
-            brush = Brush.verticalGradient(
-              listOf(Color(0xFF9A3412), Color(0xFFC2410C), Color(0xFFEA580C))
-            )
-          )
-          .statusBarsPadding()
-          .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 24.dp)
+          .padding(horizontal = 16.dp, vertical = 8.dp)
       ) {
-        Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-          // Top Bar: Driver Identity & Assigned Bus Switcher
-          Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-          ) {
-            Row(
-              verticalAlignment = Alignment.CenterVertically,
-              horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-              Surface(
-                modifier = Modifier.size(54.dp),
-                shape = CircleShape,
-                color = Color.White.copy(alpha = 0.2f),
-                border = CardDefaults.outlinedCardBorder().copy(
-                  brush = androidx.compose.ui.graphics.SolidColor(Color.White)
-                )
-              ) {
-                Box(contentAlignment = Alignment.Center) {
-                  Icon(
-                    imageVector = Icons.Default.DirectionsBus,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(30.dp)
+        Card(
+          shape = RoundedCornerShape(20.dp),
+          colors = CardDefaults.cardColors(
+            containerColor = Color.Transparent
+          ),
+          elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+          modifier = Modifier.fillMaxWidth()
+        ) {
+          Box(
+            modifier = Modifier
+              .fillMaxWidth()
+              .background(
+                brush = Brush.horizontalGradient(
+                  colors = listOf(
+                    Color(0xFFC2410C),
+                    Color(0xFFEA580C)
                   )
+                )
+              )
+              .padding(18.dp)
+          ) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+              Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+              ) {
+                Surface(
+                  color = Color.Black.copy(alpha = 0.25f),
+                  shape = RoundedCornerShape(8.dp)
+                ) {
+                  Text(
+                    text = "OPERATING VEHICLE & ROUTE",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                      fontWeight = FontWeight.Bold,
+                      letterSpacing = 1.sp,
+                      fontSize = 10.sp
+                    ),
+                    color = SchoolGoldLight,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                  )
+                }
+
+                // Quick Change Bus Vehicle Button
+                FilledTonalButton(
+                  onClick = { showBusVehicleSelectorDialog = true },
+                  colors = ButtonDefaults.filledTonalButtonColors(
+                    containerColor = Color.White,
+                    contentColor = Color(0xFFC2410C)
+                  ),
+                  shape = RoundedCornerShape(12.dp),
+                  contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                  modifier = Modifier.testTag("driver_switch_bus_button")
+                ) {
+                  Icon(Icons.Default.Tune, contentDescription = null, modifier = Modifier.size(14.dp))
+                  Spacer(Modifier.width(4.dp))
+                  Text("Switch Bus", fontWeight = FontWeight.Bold, fontSize = 11.5.sp)
                 }
               }
 
-              Column {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+              Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+              ) {
+                Column(modifier = Modifier.weight(1f)) {
                   Text(
-                    text = driverProfile.user.fullName,
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    text = "${activeRoute?.routeNumber ?: driverProfile.assignedBusNo} • ${activeRoute?.busRegistration ?: driverProfile.busRegistration}",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
                     color = Color.White
                   )
-                  Surface(
-                    color = Color(0xFF10B981),
-                    shape = RoundedCornerShape(4.dp)
-                  ) {
-                    Text(
-                      text = "PILOT ACTIVE",
-                      style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.ExtraBold, fontSize = 9.sp),
-                      color = Color.White,
-                      modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                    )
-                  }
-                }
-                Text(
-                  text = "DL: ${driverProfile.licenseNo} • ${driverProfile.shift}",
-                  style = MaterialTheme.typography.bodySmall,
-                  color = Color.White.copy(alpha = 0.85f)
-                )
-              }
-            }
-
-            // Quick Change Bus Vehicle Button
-            FilledTonalButton(
-              onClick = { showBusVehicleSelectorDialog = true },
-              colors = ButtonDefaults.filledTonalButtonColors(
-                containerColor = Color.White,
-                contentColor = Color(0xFFC2410C)
-              ),
-              shape = RoundedCornerShape(12.dp),
-              contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-              modifier = Modifier.testTag("driver_switch_bus_button")
-            ) {
-              Icon(Icons.Default.Tune, contentDescription = null, modifier = Modifier.size(16.dp))
-              Spacer(Modifier.width(6.dp))
-              Text("Switch Bus", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-            }
-          }
-
-          // Active Assigned Bus & Route Info Card
-          Surface(
-            color = Color.Black.copy(alpha = 0.25f),
-            shape = RoundedCornerShape(16.dp),
-            modifier = Modifier.fillMaxWidth()
-          ) {
-            Row(
-              modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp),
-              horizontalArrangement = Arrangement.SpaceBetween,
-              verticalAlignment = Alignment.CenterVertically
-            ) {
-              Column(modifier = Modifier.weight(1f)) {
-                Text(
-                  text = "TODAY'S OPERATING VEHICLE & ROUTE",
-                  style = MaterialTheme.typography.labelSmall.copy(
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp,
-                    color = SchoolGoldLight
+                  Text(
+                    text = activeRoute?.routeName ?: "Gandhi Nagar - Indiranagar Express",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White.copy(alpha = 0.9f)
                   )
-                )
-                Text(
-                  text = "${activeRoute?.routeNumber ?: driverProfile.assignedBusNo} • ${activeRoute?.busRegistration ?: driverProfile.busRegistration}",
-                  style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
-                  color = Color.White
-                )
-                Text(
-                  text = activeRoute?.routeName ?: "Assigned Route",
-                  style = MaterialTheme.typography.bodyMedium,
-                  color = Color.White.copy(alpha = 0.9f)
-                )
-              }
+                }
 
-              // Live Map Shortcut
-              IconButton(
-                onClick = onOpenLiveMap,
-                modifier = Modifier
-                  .size(46.dp)
-                  .background(Color.White.copy(alpha = 0.2f), CircleShape)
-                  .testTag("driver_open_map_btn")
-              ) {
-                Icon(
-                  imageVector = Icons.Default.Map,
-                  contentDescription = "Open In-App Map",
-                  tint = Color.White
-                )
+                // Live Map Shortcut
+                IconButton(
+                  onClick = onOpenLiveMap,
+                  modifier = Modifier
+                    .size(44.dp)
+                    .background(Color.White.copy(alpha = 0.2f), CircleShape)
+                    .testTag("driver_open_map_btn")
+                ) {
+                  Icon(
+                    imageVector = Icons.Default.Map,
+                    contentDescription = "Open In-App Map",
+                    tint = Color.White
+                  )
+                }
               }
             }
           }

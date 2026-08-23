@@ -41,11 +41,13 @@ fun StaffDashboardScreen(
     contentPadding = PaddingValues(16.dp),
     verticalArrangement = Arrangement.spacedBy(16.dp)
   ) {
-    // 1. Welcome Header Banner
+    // 1. User Profile Header
     item {
-      WelcomeGreetingBanner(
+      UserProfileHeader(
         user = profile.user,
-        subtitle = "${profile.department} • Shift: ${profile.shiftTiming} • ${profile.emergencyRole}"
+        subtitle = "${profile.department} • Shift: ${profile.shiftTiming} • ${profile.emergencyRole}",
+        schoolSession = "Academic Session 2026–2027",
+        testTag = "staff_user_profile_header"
       )
     }
 

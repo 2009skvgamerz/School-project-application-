@@ -321,30 +321,23 @@ fun CommonDashboardTopAppBar(
       }
     },
     actions = {
-      // 1. Role Badge & Quick Switch Action
-      Surface(
-        color = if (currentUser.role == UserRole.DEVELOPER) Color(0xFF10B981).copy(alpha = 0.15f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-        shape = RoundedCornerShape(10.dp),
-        modifier = Modifier
-          .clickable { onOpenRoleSwitcher() }
-          .testTag("switch_role_top_bar_btn")
+      // 1. Role Quick Switch Icon Action
+      IconButton(
+        onClick = onOpenRoleSwitcher,
+        modifier = Modifier.testTag("switch_role_top_bar_btn")
       ) {
-        Row(
-          modifier = Modifier.padding(horizontal = 7.dp, vertical = 5.dp),
-          verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.spacedBy(4.dp)
+        Box(
+          modifier = Modifier
+            .size(36.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(if (currentUser.role == UserRole.DEVELOPER) Color(0xFF10B981).copy(alpha = 0.15f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+          contentAlignment = Alignment.Center
         ) {
           Icon(
             imageVector = if (currentUser.role == UserRole.DEVELOPER) Icons.Default.Terminal else Icons.Default.SwapHoriz,
-            contentDescription = "Switch Role",
+            contentDescription = "Switch Role (${currentUser.role.label})",
             tint = if (currentUser.role == UserRole.DEVELOPER) Color(0xFF059669) else MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(15.dp)
-          )
-          Text(
-            text = currentUser.role.label,
-            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 11.sp),
-            color = if (currentUser.role == UserRole.DEVELOPER) Color(0xFF059669) else MaterialTheme.colorScheme.primary,
-            maxLines = 1, softWrap = false
+            modifier = Modifier.size(20.dp)
           )
         }
       }

@@ -219,72 +219,15 @@ fun RoleBadge(
 fun WelcomeGreetingBanner(
   user: User,
   subtitle: String,
-  modifier: Modifier = Modifier
+  modifier: Modifier = Modifier,
+  schoolSession: String = "Academic Session 2026–2027",
+  onProfileClick: (() -> Unit)? = null
 ) {
-  Card(
-    shape = RoundedCornerShape(16.dp),
-    colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-    modifier = modifier.fillMaxWidth()
-  ) {
-    Box(
-      modifier = Modifier
-        .fillMaxWidth()
-        .background(
-          brush = Brush.horizontalGradient(
-            colors = listOf(
-              SchoolNavyPrimary,
-              Color(0xFF1D4ED8)
-            )
-          )
-        )
-        .padding(18.dp)
-    ) {
-      Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-      ) {
-        Column(modifier = Modifier.weight(1f)) {
-          Text(
-            text = "Welcome back,",
-            style = MaterialTheme.typography.bodyMedium,
-            color = Color.White.copy(alpha = 0.8f)
-          )
-          Text(
-            text = user.fullName,
-            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-            color = Color.White
-          )
-          Spacer(modifier = Modifier.height(4.dp))
-          Text(
-            text = subtitle,
-            style = MaterialTheme.typography.bodySmall,
-            color = SchoolGoldLight
-          )
-        }
-
-        Box(
-          modifier = Modifier
-            .size(54.dp)
-            .clip(CircleShape)
-            .background(Color.White.copy(alpha = 0.15f)),
-          contentAlignment = Alignment.Center
-        ) {
-          Icon(
-            imageVector = when(user.role) {
-              UserRole.STUDENT -> Icons.Default.School
-              UserRole.TEACHER -> Icons.Default.MenuBook
-              UserRole.STAFF -> Icons.Default.Engineering
-              UserRole.DRIVER -> Icons.Default.DirectionsBus
-              UserRole.ADMIN -> Icons.Default.AdminPanelSettings
-              UserRole.DEVELOPER -> Icons.Default.Terminal
-            },
-            contentDescription = null,
-            tint = Color.White,
-            modifier = Modifier.size(32.dp)
-          )
-        }
-      }
-    }
-  }
+  UserProfileHeader(
+    user = user,
+    subtitle = subtitle,
+    schoolSession = schoolSession,
+    onProfileClick = onProfileClick,
+    modifier = modifier
+  )
 }

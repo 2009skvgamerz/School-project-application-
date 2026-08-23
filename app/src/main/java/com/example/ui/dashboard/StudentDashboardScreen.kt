@@ -62,42 +62,37 @@ fun StudentDashboardScreen(
       contentPadding = PaddingValues(16.dp),
       verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-      // 1. Welcome Greeting Banner
+      // 1. User Profile Header
       item {
-        WelcomeGreetingBanner(
+        UserProfileHeader(
           user = profile.user,
-          subtitle = "Class ${profile.grade}-${profile.section} • Roll #${profile.rollNo} • ${profile.houseName}"
+          subtitle = "Class ${profile.grade}-${profile.section} • Roll #${profile.rollNo} • ${profile.houseName}",
+          schoolSession = "Academic Session 2026–2027",
+          testTag = "student_user_profile_header"
         )
       }
 
-    // 2. Key Academic Metric Cards
+    // 2. Key Academic Quick Stats Card (Attendance, Assignments, Announcements)
     item {
-      Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-      ) {
-        StatCard(
-          title = "Attendance",
-          value = "${profile.attendancePercentage}%",
-          subtitle = "Excellent (>90%)",
-          icon = Icons.Default.CheckCircle,
-          accentColor = SchoolAccentGreen,
-          modifier = Modifier.weight(1f),
-          testTag = "stat_attendance_card",
+      QuickStatsOverviewCard(
+        attendance = AttendanceStatData(
+          percentage = profile.attendancePercentage.toFloat(),
+          statusLabel = if (profile.attendancePercentage >= 90) "Excellent (>90%)" else "Regular",
           onClick = onNavigateToAttendance
-        )
-
-        StatCard(
-          title = "Pending HW",
-          value = "$pendingHomeworkCount Tasks",
-          subtitle = "Due this week",
-          icon = Icons.Default.Assignment,
-          accentColor = if (pendingHomeworkCount > 0) SchoolGold else SchoolAccentGreen,
-          modifier = Modifier.weight(1f),
-          testTag = "stat_homework_card",
+        ),
+        assignments = AssignmentStatData(
+          pendingCount = pendingHomeworkCount,
+          dueTodayCount = if (pendingHomeworkCount > 0) 1 else 0,
           onClick = onNavigateToHomework
-        )
-      }
+        ),
+        announcements = AnnouncementStatData(
+          totalCount = notices.size.coerceAtLeast(3),
+          unreadCount = notices.count { it.isUrgent },
+          latestTitle = notices.firstOrNull()?.title ?: "Annual School Meet Scheduled",
+          onClick = onNavigateToNotices
+        ),
+        testTag = "student_quick_stats_card"
+      )
     }
 
     // 3. Quick Action Shortcuts

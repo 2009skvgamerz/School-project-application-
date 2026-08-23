@@ -37,6 +37,8 @@ val SchoolAccentGreen = Color(0xFF059669)
 val SchoolAccentRed = Color(0xFFDC2626)
 val SchoolAccentPurple = Color(0xFF7C3AED)
 val SchoolAccentAmber = Color(0xFFF59E0B)
+val SchoolBurgundy = Color(0xFF800020)
+val SchoolMaroon = Color(0xFF991B1B)
 
 // Status & Semantic Colors
 val SchoolSuccess = Color(0xFF10B981)

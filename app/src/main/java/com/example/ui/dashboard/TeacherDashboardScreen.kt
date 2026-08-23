@@ -40,11 +40,13 @@ fun TeacherDashboardScreen(
     contentPadding = PaddingValues(16.dp),
     verticalArrangement = Arrangement.spacedBy(16.dp)
   ) {
-    // 1. Welcome Header Banner
+    // 1. User Profile Header
     item {
-      WelcomeGreetingBanner(
+      UserProfileHeader(
         user = profile.user,
-        subtitle = "${profile.department} • Class Teacher (${profile.classTeacherOf ?: "Class 10-A"}) • Emp #${profile.employeeId}"
+        subtitle = "${profile.department} • Class Teacher (${profile.classTeacherOf ?: "Class 10-A"}) • Emp #${profile.employeeId}",
+        schoolSession = "Academic Session 2026–2027",
+        testTag = "teacher_user_profile_header"
       )
     }
 
@@ -95,33 +97,30 @@ fun TeacherDashboardScreen(
       }
     }
 
-    // 3. Faculty Teaching Overview Metrics
+    // 3. Faculty Teaching & Class Quick Stats Card
     item {
-      Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-      ) {
-        StatCard(
-          title = "Today's Periods",
-          value = "4 Lectures",
-          subtitle = "Next: Physics 10-A",
-          icon = Icons.Default.MenuBook,
-          accentColor = SchoolNavyPrimary,
-          modifier = Modifier.weight(1f),
-          testTag = "stat_periods_card"
-        )
-
-        StatCard(
-          title = "Assigned Classes",
-          value = "${profile.assignedClasses.size} Sections",
-          subtitle = "124 Students Total",
-          icon = Icons.Default.Groups,
-          accentColor = SchoolAccentGreen,
-          modifier = Modifier.weight(1f),
-          testTag = "stat_assigned_classes_card",
-          onClick = onNavigateToClasses
-        )
-      }
+      QuickStatsOverviewCard(
+        attendance = AttendanceStatData(
+          percentage = 96f,
+          presentDays = 119,
+          totalDays = 124,
+          statusLabel = "Roll Call Today (96%)",
+          onClick = { onOpenMarkAttendance(profile.classTeacherOf ?: "Class 10-A") }
+        ),
+        assignments = AssignmentStatData(
+          pendingCount = 4,
+          dueTodayCount = 2,
+          nextTitle = "Physics Assignment #3 Grading",
+          onClick = onOpenAssignHomeworkDialog
+        ),
+        announcements = AnnouncementStatData(
+          totalCount = notices.size.coerceAtLeast(4),
+          unreadCount = notices.count { it.isUrgent },
+          latestTitle = notices.firstOrNull()?.title ?: "Faculty Meeting at 3:30 PM",
+          onClick = onNavigateToNotices
+        ),
+        testTag = "teacher_quick_stats_card"
+      )
     }
 
     // 4. Today's Teaching Schedule

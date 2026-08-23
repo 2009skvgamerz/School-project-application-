@@ -4,29 +4,33 @@
 [![Kotlin](https://img.shields.io/badge/Language-Kotlin%202.0-7F52FF.svg?logo=kotlin&logoColor=white)](https://kotlinlang.org)
 [![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose%20M3-4285F4.svg?logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
 [![Room Database](https://img.shields.io/badge/Database-Android%20Room%20SQLite-FFCA28.svg?logo=sqlite&logoColor=black)](https://developer.android.com/training/data-storage/room)
-[![Release](https://img.shields.io/badge/Release-v2.4.0-blue.svg)](https://github.com/2009skvgamerz/School-project-application-/releases)
+[![Release](https://img.shields.io/badge/Release-v2.5.0-blue.svg)](https://github.com/2009skvgamerz/School-project-application-/releases)
 
 A native Android School ERP and Student Information System built with **Jetpack Compose (Material Design 3)**, **Kotlin Coroutines & Flow**, and **Android Room Database**. Designed specifically for St. Joseph's Higher Secondary School, this platform unifies daily academic operations, digital homeroom roll-calls, student timetables, homework assignments, circulars, fee tracking, transport systems, and campus duty management into an intuitive, role-tailored mobile experience.
 
 ---
 
-## 🚀 What's New in Release v2.4.0
+## 🚀 What's New in Release v2.5.0
 
-> **Previous Release**: `v1.1.0`  
-> **Current Release**: `v2.4.0` (Comprehensive UI Refactor, Dark Mode Fixes, Unified Staff Authentication & Dynamic Versioning)
+> **Previous Release**: `v2.4.0`  
+> **Current Release**: `v2.5.0` (Top-Level UserProfileHeader Component, Full Dashboard Layout Optimization & Header Streamlining)
 
 ### 🌟 Key Highlights & Enhancements
-1. **🌙 Complete Dark Mode Fix & Semantic Token Migration**:
-   - Replaced all legacy hardcoded color references (`SchoolNavyPrimary`) with dynamic Material Design 3 semantic tokens (`MaterialTheme.colorScheme.primary`, `onPrimary`, `onSurface`, etc.).
-   - Solved dark-on-dark legibility issues to deliver a WCAG-compliant high-contrast experience across both Light and Dark mode variations.
-2. **🛡️ Unified Staff Section (Driver Role Integration)**:
-   - Simplified the login screen layout by integrating the **Transport Driver** role as a seamless sub-role within the master **Staff** authentication flow.
-3. **📅 Live Version Tracking & SemVer Compliance**:
-   - Automated layout components (`BaseDashboardScaffold`) to dynamically extract and display the semantic version name (`BuildConfig.VERSION_NAME`) from the Gradle configurations.
-   - Standardized version progression under **Semantic Versioning (SemVer)** conventions.
-4. **🚗 Advanced Transport Tracking (Driver Dashboard)**:
-   - Real-time Leaflet/WebView-based Map view with interactive stop-by-stop coordinate check-ins and passenger manifests.
-   - Quick navigation shortcuts launching standard Google Maps routing automatically.
+1. **👤 Universal `UserProfileHeader` Component**:
+   - Created a top-level `UserProfileHeader` component added across all role-based dashboards (Student, Teacher, Operations Staff, Transport Driver, Admin, Developer).
+   - Displays user's full name, role-specific profile avatar badge, live status indicator (*"Active Session"*, *"PILOT ACTIVE"*, *"GOD MODE ACTIVE"*), and current school session pill (*"Academic Session 2026–2027"*).
+   - Includes contextual details such as Class/Section & Roll #, Department & Employee ID, Vehicle Route & Driver's License, or Office Location.
+
+2. **✨ Full Dashboard Layout Optimization & Header De-duplication**:
+   - Streamlined Driver and Developer dashboards by removing redundant duplicate header cards beneath the top header for a clean, hierarchical layout.
+   - Refined Driver cockpit with a focused *"Operating Vehicle & Route"* card containing active bus info, route details, quick bus switcher, and in-app map shortcut.
+   - Fixed subtitle formatting bugs (eliminating duplicate `"Bus #Bus #"` prefixes).
+
+3. **📱 Top Bar Compact Layout & Truncation Prevention**:
+   - Streamlined top bar actions in `BaseDashboardScaffold` to compact the role switcher icon button, preserving header space and preventing text truncation of *"St. Joseph's"* title, network badge, and tab titles on smaller device viewports.
+
+4. **🏷️ Metadata & String Standardization**:
+   - Aligned platform `metadata.json` and Android resource `strings.xml` to officially declare St. Joseph's School **v2.5.0**.
 
 ---
 

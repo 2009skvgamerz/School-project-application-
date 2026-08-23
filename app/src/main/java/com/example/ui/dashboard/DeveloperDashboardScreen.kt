@@ -23,7 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.model.*
-import com.example.ui.components.EditUserDialog
+import com.example.ui.components.*
 import com.example.viewmodel.SchoolViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -61,7 +61,20 @@ fun DeveloperDashboardScreen(
     verticalArrangement = Arrangement.spacedBy(16.dp),
     contentPadding = PaddingValues(vertical = 16.dp)
   ) {
-    // 1. Hero Developer Root Header
+    // 0. User Profile Header
+    item {
+      currentUser?.let { user ->
+        UserProfileHeader(
+          user = user,
+          subtitle = "Root Administrator • Node ID #${developerProfile?.devId ?: "DEV-ROOT-01"}",
+          schoolSession = "Academic Session 2026–2027",
+          statusLabel = "GOD MODE ACTIVE",
+          testTag = "developer_user_profile_header"
+        )
+      }
+    }
+
+    // 1. Master System Controller Notice Card
     item {
       Surface(
         color = Color(0xFF0F172A),
@@ -80,91 +93,41 @@ fun DeveloperDashboardScreen(
                 )
               )
             )
-            .padding(20.dp)
+            .padding(16.dp)
         ) {
-          Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Row(
-              modifier = Modifier.fillMaxWidth(),
-              horizontalArrangement = Arrangement.SpaceBetween,
-              verticalAlignment = Alignment.CenterVertically
-            ) {
-              Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-              ) {
-                Surface(
-                  color = Color(0xFF10B981).copy(alpha = 0.2f),
-                  shape = CircleShape,
-                  modifier = Modifier.size(44.dp)
-                ) {
-                  Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                      imageVector = Icons.Default.Terminal,
-                      contentDescription = null,
-                      tint = Color(0xFF10B981),
-                      modifier = Modifier.size(24.dp)
-                    )
-                  }
-                }
-                Column {
-                  Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(
-                      text = "ROOT DEVELOPER",
-                      style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Black,
-                        fontFamily = FontFamily.Monospace,
-                        letterSpacing = 1.sp
-                      ),
-                      color = Color(0xFF10B981)
-                    )
-                    Surface(
-                      color = Color(0xFFEF4444).copy(alpha = 0.25f),
-                      shape = RoundedCornerShape(4.dp)
-                    ) {
-                      Text(
-                        text = "GOD MODE ACTIVE",
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace),
-                        color = Color(0xFFF87171),
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                      )
-                    }
-                  }
-                  Text(
-                    text = currentUser.fullName,
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                    color = Color.White
-                  )
-                  Text(
-                    text = "${currentUser.email} • ID: ${developerProfile?.devId ?: "DEV-ROOT-007"}",
-                    style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
-                    color = Color(0xFF94A3B8)
-                  )
-                }
-              }
-            }
-
+          Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+          ) {
             Surface(
-              color = Color(0xFF1E293B).copy(alpha = 0.7f),
-              shape = RoundedCornerShape(10.dp),
-              modifier = Modifier.fillMaxWidth()
+              color = Color(0xFF10B981).copy(alpha = 0.2f),
+              shape = CircleShape,
+              modifier = Modifier.size(40.dp)
             ) {
-              Row(
-                modifier = Modifier.padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-              ) {
+              Box(contentAlignment = Alignment.Center) {
                 Icon(
                   imageVector = Icons.Default.VpnKey,
                   contentDescription = null,
                   tint = Color(0xFF10B981),
-                  modifier = Modifier.size(18.dp)
-                )
-                Text(
-                  text = "Full Master Write Authority: You can edit or rewrite names, roles, grades, credentials, homework, notices & attendance across the entire system.",
-                  style = MaterialTheme.typography.bodySmall,
-                  color = Color(0xFFE2E8F0)
+                  modifier = Modifier.size(20.dp)
                 )
               }
+            }
+            Column(modifier = Modifier.weight(1f)) {
+              Text(
+                text = "FULL MASTER WRITE AUTHORITY",
+                style = MaterialTheme.typography.labelSmall.copy(
+                  fontWeight = FontWeight.Bold,
+                  fontFamily = FontFamily.Monospace,
+                  letterSpacing = 1.sp
+                ),
+                color = Color(0xFF10B981)
+              )
+              Text(
+                text = "Full read/write access to user records, role switching, attendance, homework, notices & real-time telemetry.",
+                style = MaterialTheme.typography.bodySmall,
+                color = Color(0xFFE2E8F0)
+              )
             }
           }
         }

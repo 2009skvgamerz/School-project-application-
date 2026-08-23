@@ -40,11 +40,13 @@ fun AdminDashboardScreen(
     contentPadding = PaddingValues(16.dp),
     verticalArrangement = Arrangement.spacedBy(16.dp)
   ) {
-    // 1. Welcome Greeting Banner
+    // 1. User Profile Header
     item {
-      WelcomeGreetingBanner(
+      UserProfileHeader(
         user = profile.user,
-        subtitle = "${profile.adminRole} • ${profile.officeLocation}"
+        subtitle = "${profile.adminRole} • ${profile.officeLocation}",
+        schoolSession = "Academic Session 2026–2027",
+        testTag = "admin_user_profile_header"
       )
     }
 
@@ -107,7 +109,31 @@ fun AdminDashboardScreen(
       }
     }
 
-    // 3. Quick Management Actions
+    // 2.5 Quick Academic Stats Overview Card (Attendance, Assignments, Announcements)
+    item {
+      QuickStatsOverviewCard(
+        attendance = AttendanceStatData(
+          percentage = 95.2f,
+          presentDays = 1352,
+          totalDays = 1420,
+          statusLabel = "Institutional Avg 95.2%",
+          onClick = onNavigateToManagement
+        ),
+        assignments = AssignmentStatData(
+          pendingCount = 18,
+          dueTodayCount = 5,
+          nextTitle = "Term Examination Worksheets",
+          onClick = onNavigateToManagement
+        ),
+        announcements = AnnouncementStatData(
+          totalCount = notices.size.coerceAtLeast(6),
+          unreadCount = notices.count { it.isUrgent },
+          latestTitle = notices.firstOrNull()?.title ?: "Parent-Teacher Association Meeting",
+          onClick = onNavigateToNotices
+        ),
+        testTag = "admin_quick_stats_card"
+      )
+    }
     item {
       Card(
         shape = RoundedCornerShape(16.dp),
