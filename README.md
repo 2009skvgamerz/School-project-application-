@@ -4,7 +4,7 @@
 [![Kotlin](https://img.shields.io/badge/Language-Kotlin%202.0-7F52FF.svg?logo=kotlin&logoColor=white)](https://kotlinlang.org)
 [![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose%20M3-4285F4.svg?logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
 [![Room Database](https://img.shields.io/badge/Database-Android%20Room%20SQLite-FFCA28.svg?logo=sqlite&logoColor=black)](https://developer.android.com/training/data-storage/room)
-[![Release](https://img.shields.io/badge/Release-v2.4.0-blue.svg)](https://github.com)
+[![Release](https://img.shields.io/badge/Release-v2.4.0-blue.svg)](https://github.com/2009skvgamerz/School-project-application-/releases)
 
 A native Android School ERP and Student Information System built with **Jetpack Compose (Material Design 3)**, **Kotlin Coroutines & Flow**, and **Android Room Database**. Designed specifically for St. Joseph's Higher Secondary School, this platform unifies daily academic operations, digital homeroom roll-calls, student timetables, homework assignments, circulars, fee tracking, transport systems, and campus duty management into an intuitive, role-tailored mobile experience.
 
