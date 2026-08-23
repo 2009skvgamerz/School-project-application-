@@ -50,8 +50,8 @@ fun SettingsScreen(
   var showResetConfirmDialog by remember { mutableStateOf(false) }
 
   // App Meta constants
-  val appVersion = "2.4.0"
-  val buildNumber = "2026.08.16.1"
+  val appVersion = com.example.BuildConfig.VERSION_NAME
+  val buildNumber = "2026.08.23.1"
   val releaseChannel = "Enterprise Production"
   val composeVersion = "Jetpack Compose M3 (Material 3)"
   val databaseEngine = "Room SQLite Database v1"
