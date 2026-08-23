@@ -156,35 +156,18 @@ fun LoginScreen(
             Box(
               modifier = Modifier
                 .fillMaxSize()
-                .padding(4.dp)
-                .clip(CircleShape)
-                .background(
-                  brush = Brush.radialGradient(
-                    colors = listOf(SchoolNavyPrimary, SchoolNavyDark)
-                  )
-                ),
+                .padding(2.dp)
+                .clip(CircleShape),
               contentAlignment = Alignment.Center
             ) {
-              Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-              ) {
-                Icon(
-                  imageVector = Icons.Default.School,
-                  contentDescription = "$schoolName Crest",
-                  tint = SchoolGold,
-                  modifier = Modifier.size(34.dp)
-                )
-                Text(
-                  text = "SJ",
-                  style = MaterialTheme.typography.labelSmall.copy(
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 11.sp,
-                    letterSpacing = 1.sp
-                  ),
-                  color = Color.White
-                )
-              }
+              Image(
+                painter = painterResource(id = R.drawable.school_logo),
+                contentDescription = "$schoolName Crest",
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                  .fillMaxSize()
+                  .clip(CircleShape)
+              )
             }
           }
 

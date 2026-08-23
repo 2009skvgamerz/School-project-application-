@@ -58,20 +58,14 @@ fun SchoolTopBar(
             .padding(2.dp),
           contentAlignment = Alignment.Center
         ) {
-          Box(
+          Image(
+            painter = painterResource(id = R.drawable.school_logo),
+            contentDescription = "St. Joseph's Emblem",
+            contentScale = ContentScale.Crop,
             modifier = Modifier
               .fillMaxSize()
               .clip(CircleShape)
-              .background(SchoolNavyPrimary),
-            contentAlignment = Alignment.Center
-          ) {
-            Icon(
-              imageVector = Icons.Default.School,
-              contentDescription = "St. Joseph's Emblem",
-              tint = SchoolGold,
-              modifier = Modifier.size(24.dp)
-            )
-          }
+          )
         }
 
         Column {
