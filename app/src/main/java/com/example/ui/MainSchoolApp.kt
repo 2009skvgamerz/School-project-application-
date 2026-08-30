@@ -87,6 +87,7 @@ fun MainSchoolApp(
   val deepLinkRoute by viewModel.deepLinkRoute.collectAsState()
   val networkState by viewModel.networkState.collectAsState()
   val isSimulatedOffline by viewModel.isSimulatedOffline.collectAsState()
+  val cloudSyncInfo by viewModel.cloudSyncInfo.collectAsState()
   val refreshFeedbackMessage by viewModel.refreshFeedbackMessage.collectAsState()
 
   val snackbarHostState = remember { SnackbarHostState() }
@@ -124,7 +125,7 @@ fun MainSchoolApp(
   val coroutineScope = rememberCoroutineScope()
 
   LaunchedEffect(Unit) {
-    kotlinx.coroutines.delay(2000)
+    kotlinx.coroutines.delay(600)
     showSplash = false
   }
 
@@ -305,6 +306,8 @@ fun MainSchoolApp(
       onRetryConnection = { viewModel.retryNetworkConnection() },
       onToggleSimulatedOffline = { viewModel.setSimulatedOffline(it) },
       isSimulatedOffline = isSimulatedOffline,
+      cloudSyncInfo = cloudSyncInfo,
+      onTriggerCloudSync = { viewModel.triggerManualCloudSync() },
       snackbarHostState = snackbarHostState
     ) { innerPadding ->
       Box(

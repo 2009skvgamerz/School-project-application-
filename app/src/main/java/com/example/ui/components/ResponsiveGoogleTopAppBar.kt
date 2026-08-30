@@ -1,7 +1,7 @@
 package com.example.ui.components
 
 import androidx.compose.animation.*
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
@@ -37,6 +38,8 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.model.User
 import com.example.model.UserRole
+import com.example.model.CloudSyncInfo
+import com.example.model.CloudSyncState
 import com.example.ui.NavigationTab
 import com.example.ui.theme.*
 import com.example.util.NetworkState
@@ -69,6 +72,10 @@ fun ResponsiveGoogleTopAppBar(
   networkState: NetworkState,
   unreadNotificationsCount: Int,
   roleColor: Color,
+  cloudSyncInfo: CloudSyncInfo = CloudSyncInfo(),
+  onTriggerCloudSync: () -> Unit = {},
+  onToggleSimulatedOffline: ((Boolean) -> Unit)? = null,
+  isSimulatedOffline: Boolean = false,
   onNavigationIconClick: () -> Unit,
   onOpenRoleSwitcher: () -> Unit,
   onOpenNotificationCenter: () -> Unit,
@@ -81,6 +88,7 @@ fun ResponsiveGoogleTopAppBar(
   var searchQuery by remember { mutableStateOf("") }
   var selectedCategoryFilter by remember { mutableStateOf("All") }
   var showGoogleAccountDialog by remember { mutableStateOf(false) }
+  var showCloudSyncDialog by remember { mutableStateOf(false) }
   val focusManager = LocalFocusManager.current
 
   // Built-in Quick Search Index across ERP
@@ -312,6 +320,50 @@ fun ResponsiveGoogleTopAppBar(
                   contentDescription = "Switch Role",
                   tint = roleColor,
                   modifier = Modifier.size(20.dp)
+                )
+              }
+
+              // Real-Time Cloud Sync Indicator Component
+              val syncIcon = when (cloudSyncInfo.state) {
+                CloudSyncState.SYNCED -> Icons.Default.CloudDone
+                CloudSyncState.SYNCING -> Icons.Default.Sync
+                CloudSyncState.OFFLINE -> Icons.Default.CloudOff
+                CloudSyncState.ERROR -> Icons.Default.CloudQueue
+              }
+
+              val syncColor = when (cloudSyncInfo.state) {
+                CloudSyncState.SYNCED -> Color(0xFF0F9D58) // Google Green
+                CloudSyncState.SYNCING -> Color(0xFF1A73E8) // Google Blue
+                CloudSyncState.OFFLINE -> Color(0xFFF59E0B) // Amber
+                CloudSyncState.ERROR -> Color(0xFFEA4335) // Google Red
+              }
+
+              val infiniteTransition = rememberInfiniteTransition(label = "top_bar_sync_rotate")
+              val rotateAngle by infiniteTransition.animateFloat(
+                initialValue = 0f,
+                targetValue = 360f,
+                animationSpec = infiniteRepeatable(
+                  animation = tween(1200, easing = LinearEasing),
+                  repeatMode = RepeatMode.Restart
+                ),
+                label = "sync_rotation"
+              )
+
+              IconButton(
+                onClick = { showCloudSyncDialog = true },
+                modifier = Modifier
+                  .size(38.dp)
+                  .testTag("cloud_sync_indicator_btn")
+              ) {
+                Icon(
+                  imageVector = syncIcon,
+                  contentDescription = cloudSyncInfo.state.displayName,
+                  tint = syncColor,
+                  modifier = Modifier
+                    .size(20.dp)
+                    .then(
+                      if (cloudSyncInfo.state == CloudSyncState.SYNCING) Modifier.graphicsLayer { rotationZ = rotateAngle } else Modifier
+                    )
                 )
               }
 
@@ -616,6 +668,20 @@ fun ResponsiveGoogleTopAppBar(
       }
     )
   }
+
+  // Google Cloud Sync Telemetry Dialog
+  if (showCloudSyncDialog) {
+    GoogleCloudSyncDetailsDialog(
+      cloudSyncInfo = cloudSyncInfo,
+      isSimulatedOffline = isSimulatedOffline,
+      onDismiss = { showCloudSyncDialog = false },
+      onForceSync = {
+        onTriggerCloudSync()
+        showCloudSyncDialog = false
+      },
+      onToggleSimulatedOffline = onToggleSimulatedOffline
+    )
+  }
 }
 
 /**
@@ -868,3 +934,209 @@ fun ProfileQuickActionRow(
     }
   }
 }
+
+/**
+ * Material 3 Dialog displaying real-time Google Cloud Firestore telemetry and synchronization status.
+ */
+@Composable
+fun GoogleCloudSyncDetailsDialog(
+  cloudSyncInfo: CloudSyncInfo,
+  isSimulatedOffline: Boolean,
+  onDismiss: () -> Unit,
+  onForceSync: () -> Unit,
+  onToggleSimulatedOffline: ((Boolean) -> Unit)? = null,
+  modifier: Modifier = Modifier
+) {
+  val statusColor = when (cloudSyncInfo.state) {
+    CloudSyncState.SYNCED -> Color(0xFF0F9D58)
+    CloudSyncState.SYNCING -> Color(0xFF1A73E8)
+    CloudSyncState.OFFLINE -> Color(0xFFF59E0B)
+    CloudSyncState.ERROR -> Color(0xFFEA4335)
+  }
+
+  val statusIcon = when (cloudSyncInfo.state) {
+    CloudSyncState.SYNCED -> Icons.Default.CloudDone
+    CloudSyncState.SYNCING -> Icons.Default.Sync
+    CloudSyncState.OFFLINE -> Icons.Default.CloudOff
+    CloudSyncState.ERROR -> Icons.Default.CloudQueue
+  }
+
+  AlertDialog(
+    onDismissRequest = onDismiss,
+    modifier = modifier.testTag("google_cloud_sync_dialog"),
+    shape = RoundedCornerShape(28.dp),
+    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+    icon = {
+      Box(
+        modifier = Modifier
+          .size(56.dp)
+          .clip(CircleShape)
+          .background(statusColor.copy(alpha = 0.12f)),
+        contentAlignment = Alignment.Center
+      ) {
+        Icon(
+          imageVector = statusIcon,
+          contentDescription = null,
+          tint = statusColor,
+          modifier = Modifier.size(28.dp)
+        )
+      }
+    },
+    title = {
+      Text(
+        text = "Google Cloud Sync",
+        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+        textAlign = TextAlign.Center,
+        modifier = Modifier.fillMaxWidth()
+      )
+    },
+    text = {
+      Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+      ) {
+        // Status Badge Pill
+        Surface(
+          shape = RoundedCornerShape(20.dp),
+          color = statusColor.copy(alpha = 0.14f),
+          border = BorderStroke(1.dp, statusColor.copy(alpha = 0.35f)),
+          modifier = Modifier.align(Alignment.CenterHorizontally)
+        ) {
+          Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+          ) {
+            Box(
+              modifier = Modifier
+                .size(8.dp)
+                .clip(CircleShape)
+                .background(statusColor)
+            )
+            Text(
+              text = cloudSyncInfo.state.displayName,
+              style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+              color = statusColor
+            )
+          }
+        }
+
+        // Telemetry details card
+        Surface(
+          shape = RoundedCornerShape(16.dp),
+          color = MaterialTheme.colorScheme.surface,
+          border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
+          modifier = Modifier.fillMaxWidth()
+        ) {
+          Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+          ) {
+            SyncDetailRow(
+              icon = Icons.Default.Cloud,
+              label = "Cloud Provider",
+              value = "Google Cloud Firestore"
+            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+            SyncDetailRow(
+              icon = Icons.Default.Storage,
+              label = "Local Persistence",
+              value = "Room SQLite Cache"
+            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+            SyncDetailRow(
+              icon = Icons.Default.Schedule,
+              label = "Last Synchronized",
+              value = cloudSyncInfo.lastSyncedTime
+            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+            SyncDetailRow(
+              icon = Icons.Default.RssFeed,
+              label = "Real-Time Listeners",
+              value = if (cloudSyncInfo.isRealtimeConnected) "Connected & Live" else "Paused (Offline Cache)"
+            )
+          }
+        }
+
+        if (onToggleSimulatedOffline != null) {
+          OutlinedButton(
+            onClick = {
+              onToggleSimulatedOffline(!isSimulatedOffline)
+              onDismiss()
+            },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(14.dp),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+          ) {
+            Icon(
+              imageVector = if (isSimulatedOffline) Icons.Default.Wifi else Icons.Default.WifiOff,
+              contentDescription = null,
+              modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(if (isSimulatedOffline) "Go Online" else "Simulate Offline Mode")
+          }
+        }
+      }
+    },
+    confirmButton = {
+      Button(
+        onClick = onForceSync,
+        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+        shape = RoundedCornerShape(14.dp)
+      ) {
+        Icon(
+          imageVector = Icons.Default.Refresh,
+          contentDescription = null,
+          modifier = Modifier.size(18.dp)
+        )
+        Spacer(modifier = Modifier.width(6.dp))
+        Text("Force Sync Now")
+      }
+    },
+    dismissButton = {
+      TextButton(
+        onClick = onDismiss,
+        shape = RoundedCornerShape(14.dp)
+      ) {
+        Text("Close")
+      }
+    }
+  )
+}
+
+@Composable
+private fun SyncDetailRow(
+  icon: ImageVector,
+  label: String,
+  value: String
+) {
+  Row(
+    modifier = Modifier.fillMaxWidth(),
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.SpaceBetween
+  ) {
+    Row(
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+      Icon(
+        imageVector = icon,
+        contentDescription = null,
+        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.size(16.dp)
+      )
+      Text(
+        text = label,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+      )
+    }
+    Text(
+      text = value,
+      style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+      color = MaterialTheme.colorScheme.onSurface
+    )
+  }
+}
+

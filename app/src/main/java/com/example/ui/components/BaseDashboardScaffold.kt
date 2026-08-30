@@ -73,6 +73,8 @@ fun BaseDashboardScaffold(
   onRetryConnection: () -> Unit = {},
   onToggleSimulatedOffline: ((Boolean) -> Unit)? = null,
   isSimulatedOffline: Boolean = false,
+  cloudSyncInfo: CloudSyncInfo = CloudSyncInfo(),
+  onTriggerCloudSync: () -> Unit = {},
   snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
   floatingActionButton: @Composable () -> Unit = {},
   modifier: Modifier = Modifier,
@@ -145,6 +147,10 @@ fun BaseDashboardScaffold(
             networkState = networkState,
             unreadNotificationsCount = unreadNotificationsCount,
             roleColor = roleColor,
+            cloudSyncInfo = cloudSyncInfo,
+            onTriggerCloudSync = onTriggerCloudSync,
+            onToggleSimulatedOffline = onToggleSimulatedOffline,
+            isSimulatedOffline = isSimulatedOffline,
             onNavigationIconClick = {
               coroutineScope.launch {
                 if (drawerState.isClosed) drawerState.open() else drawerState.close()

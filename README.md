@@ -4,7 +4,7 @@
 [![Kotlin](https://img.shields.io/badge/Language-Kotlin%202.0-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org)
 [![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose%20M3-4285F4?logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
 [![Room Database](https://img.shields.io/badge/Database-Android%20Room%20SQLite-FFCA28?logo=sqlite&logoColor=black)](https://developer.android.com/training/data-storage/room)
-[![Release](https://img.shields.io/badge/Release-v2.5.0-blue.svg)](https://github.com/2009skvgamerz/School-project-application-/releases/tag/v2.5.0)
+[![Release](https://img.shields.io/badge/Release-v3.0.0-blue.svg)](https://github.com/2009skvgamerz/School-project-application-/releases/tag/v3.0.0)
 
 A native Android **School ERP & Student Information System** built with **Jetpack Compose (Material Design 3)**, **Kotlin Coroutines & Flow**, and **Android Room**. Designed for St. Joseph's Higher Secondary School, it unifies daily academic operations — digital roll-calls, timetables, homework, circulars, fee tracking, transport, and campus duty management — into a single role-tailored mobile app.
 
@@ -12,7 +12,7 @@ A native Android **School ERP & Student Information System** built with **Jetpac
 
 ## Table of Contents
 
-- [What's New](#whats-new-in-release-v250)
+- [What's New](#whats-new-in-release-v300)
 - [Role-Based Modules](#role-based-modules--feature-breakdown)
 - [Architecture](#architecture--technical-stack)
 - [Source Code Structure](#source-code-structure)
@@ -22,22 +22,33 @@ A native Android **School ERP & Student Information System** built with **Jetpac
 
 ---
 
-## 🚀 What's New in Release v2.5.0
+## 🚀 What's New in Release v3.0.0
 
-> **Previous Release:** `v2.4.0` → **Current Release:** `v2.5.0`
-> *(Top-Level UserProfileHeader Component, Full Dashboard Layout Optimization & Header Streamlining)*
+> **Previous Release:** `v2.5.0` ([Commit f28b8b3](https://github.com/2009skvgamerz/School-project-application-/tree/f28b8b301bbaec3814cfeefb61e5bd02594296cf)) → **Current Release:** `v3.0.0`
+> *(Google Material You Floating Search Bar Pill, Real-Time Cloud Sync Indicator & Telemetry, Instant Startup Engine, and Complete M3 Design Refresh)*
 
-1. **👤 Universal `UserProfileHeader` Component**
-   Added across all role-based dashboards (Student, Teacher, Operations Staff, Transport Driver, Admin, Developer). Displays full name, role-specific avatar badge, live status indicator (*"Active Session"*, *"PILOT ACTIVE"*, *"GOD MODE ACTIVE"*), and current session pill (*"Academic Session 2026–2027"*), plus contextual details (Class/Section & Roll #, Department & Employee ID, Vehicle Route & License, or Office Location).
+1. **☁️ Real-Time Cloud Sync Indicator Component & Telemetry Dialog**
+   - Added an interactive **Cloud Sync** indicator icon button to the TopAppBar that dynamically tracks Google Cloud Firestore connection state:
+     - 🟢 **Synced**: Solid green cloud check icon confirming active real-time connection.
+     - 🔵 **Syncing**: Rotating blue sync animation during active background updates or force refreshes.
+     - 🟡 **Working Offline**: Amber cloud off icon indicating local Room SQLite cache is active.
+     - 🔴 **Sync Alert**: Red alert badge for connection interruptions.
+   - Tapping the icon opens the **Google Cloud Sync Telemetry Sheet** displaying live synchronization provider info, Room SQLite cache metrics, last synced timestamp, real-time listener state, and a **"Force Sync Now"** manual action button.
 
-2. **✨ Dashboard Layout Optimization & Header De-duplication**
-   Removed redundant duplicate header cards on Driver and Developer dashboards. Refined the Driver cockpit into a focused *"Operating Vehicle & Route"* card (active bus info, route details, quick bus switcher, in-app map shortcut). Fixed duplicate `"Bus #Bus #"` subtitle formatting bug.
+2. **🎨 Google Material You (M3) Expressive Top Bar & Surface Redesign**
+   - Transformed the top navigation into Google's signature **Floating Search Bar Pill** (`RoundedCornerShape(28.dp)`) with built-in search trigger, drawer navigation toggle, notification bell badging, role switcher, and Google Account profile avatar ring.
+   - Standardized layout cards, modal sheets, and stat metrics to Google M3 tonal container surfaces (`surfaceContainerLow`) with 20.dp–28.dp rounded corners and subtle outline borders.
+   - Enhanced bottom navigation bar with Material 3 indicator pills and unread notification badge counters.
 
-3. **📱 Top Bar Compact Layout**
-   Compacted the role-switcher icon in `BaseDashboardScaffold` to prevent truncation of the *"St. Joseph's"* title, network badge, and tab titles on smaller viewports.
+3. **⚡ Sub-Second Instant Launch & Session Engine**
+   - Streamlined application initialization sequence with a 600ms splash transition and instant session restoration in `SchoolViewModel`, ensuring the app opens directly to the active ERP dashboard without cold-boot delays.
 
-4. **🏷️ Metadata & String Standardization**
-   Aligned `metadata.json` and `strings.xml` to officially declare v2.5.0.
+4. **👤 Universal `UserProfileHeader` & Role Cockpits** *(Carried from v2.5.0)*
+   - Universal profile banner across Student, Teacher, Operations Staff, Transport Driver, Admin, and Developer dashboards with role badges, session indicators, and contextual metadata.
+   - Optimized Driver cockpit with focused vehicle route cards, active bus switcher, and in-app GPS map shortcuts.
+
+5. **🏷️ Release v3.0.0 Standardization**
+   - Updated `app_version` in `strings.xml` and `metadata.json` to officially declare release `v3.0.0`.
 
 ---
 
@@ -163,7 +174,7 @@ app/src/main/java/com/example/
 ## Getting Started
 
 ### Option A — Download the APK
-Grab the latest build directly from the [**v2.5.0 Release**](https://github.com/2009skvgamerz/School-project-application-/releases/tag/v2.5.0), install it on your device, and log in with a [demo account](#demo-institutional-accounts) below.
+Grab the latest build directly from the [**v3.0.0 Release**](https://github.com/2009skvgamerz/School-project-application-/releases/tag/v3.0.0), install it on your device, and log in with a [demo account](#demo-institutional-accounts) below.
 
 ### Option B — Build from source
 1. Clone the repository

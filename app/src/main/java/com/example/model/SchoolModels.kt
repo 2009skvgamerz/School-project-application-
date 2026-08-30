@@ -475,3 +475,18 @@ data class DirectoryContact(
   val bloodGroup: String = ""
 )
 
+// --- 5. Cloud Sync Status & Telemetry ---
+enum class CloudSyncState(val displayName: String) {
+  SYNCED("Cloud Synced"),
+  SYNCING("Syncing..."),
+  OFFLINE("Working Offline"),
+  ERROR("Sync Alert")
+}
+
+data class CloudSyncInfo(
+  val state: CloudSyncState = CloudSyncState.SYNCED,
+  val lastSyncedTime: String = "Just now",
+  val pendingChangesCount: Int = 0,
+  val isRealtimeConnected: Boolean = true,
+  val firestoreProject: String = "st-josephs-erp-prod"
+)
