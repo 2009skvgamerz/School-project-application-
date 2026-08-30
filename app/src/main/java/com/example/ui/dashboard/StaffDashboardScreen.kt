@@ -43,85 +43,91 @@ fun StaffDashboardScreen(
   ) {
     // 1. User Profile Header
     item {
-      UserProfileHeader(
-        user = profile.user,
-        subtitle = "${profile.department} • Shift: ${profile.shiftTiming} • ${profile.emergencyRole}",
-        schoolSession = "Academic Session 2026–2027",
-        testTag = "staff_user_profile_header"
-      )
+      ScrollEntranceItem(index = 0) {
+        UserProfileHeader(
+          user = profile.user,
+          subtitle = "${profile.department} • Shift: ${profile.shiftTiming} • ${profile.emergencyRole}",
+          schoolSession = "Academic Session 2026–2027",
+          testTag = "staff_user_profile_header"
+        )
+      }
     }
 
     // 2. Metric Cards
     item {
-      Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-      ) {
-        StatCard(
-          title = "Active Tasks",
-          value = "$pendingDutiesCount Pending",
-          subtitle = "$completedDutiesCount Completed",
-          icon = Icons.Default.TaskAlt,
-          accentColor = Color(0xFF7C3AED),
-          modifier = Modifier.weight(1f),
-          testTag = "stat_duties_card",
-          onClick = onNavigateToDuties
-        )
+      ScrollEntranceItem(index = 1) {
+        Row(
+          modifier = Modifier.fillMaxWidth(),
+          horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+          StatCard(
+            title = "Active Tasks",
+            value = "$pendingDutiesCount Pending",
+            subtitle = "$completedDutiesCount Completed",
+            icon = Icons.Default.TaskAlt,
+            accentColor = Color(0xFF7C3AED),
+            modifier = Modifier.weight(1f),
+            testTag = "stat_duties_card",
+            onClick = onNavigateToDuties
+          )
 
-        StatCard(
-          title = "Shift Status",
-          value = "On Duty",
-          subtitle = profile.shiftTiming,
-          icon = Icons.Default.AccessTime,
-          accentColor = SchoolAccentGreen,
-          modifier = Modifier.weight(1f),
-          testTag = "stat_shift_card"
-        )
+          StatCard(
+            title = "Shift Status",
+            value = "On Duty",
+            subtitle = profile.shiftTiming,
+            icon = Icons.Default.AccessTime,
+            accentColor = SchoolAccentGreen,
+            modifier = Modifier.weight(1f),
+            testTag = "stat_shift_card"
+          )
+        }
       }
     }
 
     // 3. Quick Action Buttons
     item {
-      Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-        modifier = Modifier.fillMaxWidth()
-      ) {
-        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-          Text(
-            text = "Campus Operations",
-            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onSurface
-          )
+      ScrollEntranceItem(index = 2) {
+        Card(
+          shape = RoundedCornerShape(16.dp),
+          colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+          modifier = Modifier.fillMaxWidth()
+        ) {
+          Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(
+              text = "Campus Operations",
+              style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+              color = MaterialTheme.colorScheme.onSurface
+            )
 
-          Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-          ) {
-            QuickActionButton(
-              title = "New Task",
-              icon = Icons.Default.AddCircleOutline,
-              color = Color(0xFF7C3AED),
-              onClick = onOpenAddDutyDialog
-            )
-            QuickActionButton(
-              title = "All Duties",
-              icon = Icons.Default.Checklist,
-              color = Color(0xFF2563EB),
-              onClick = onNavigateToDuties
-            )
-            QuickActionButton(
-              title = "Campus Safety",
-              icon = Icons.Default.Shield,
-              color = Color(0xFFDC2626),
-              onClick = onNavigateToDuties
-            )
-            QuickActionButton(
-              title = "Notices",
-              icon = Icons.Default.Campaign,
-              color = Color(0xFF059669),
-              onClick = onNavigateToNotices
-            )
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+              QuickActionButton(
+                title = "New Task",
+                icon = Icons.Default.AddCircleOutline,
+                color = Color(0xFF7C3AED),
+                onClick = onOpenAddDutyDialog
+              )
+              QuickActionButton(
+                title = "All Duties",
+                icon = Icons.Default.Checklist,
+                color = Color(0xFF2563EB),
+                onClick = onNavigateToDuties
+              )
+              QuickActionButton(
+                title = "Campus Safety",
+                icon = Icons.Default.Shield,
+                color = Color(0xFFDC2626),
+                onClick = onNavigateToDuties
+              )
+              QuickActionButton(
+                title = "Notices",
+                icon = Icons.Default.Campaign,
+                color = Color(0xFF059669),
+                onClick = onNavigateToNotices
+              )
+            }
           }
         }
       }
@@ -129,61 +135,69 @@ fun StaffDashboardScreen(
 
     // 4. Assigned Duties Checklist (Interactive)
     item {
-      Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-      ) {
+      ScrollEntranceItem(index = 3) {
         Row(
-          verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.spacedBy(8.dp)
+          modifier = Modifier.fillMaxWidth(),
+          horizontalArrangement = Arrangement.SpaceBetween,
+          verticalAlignment = Alignment.CenterVertically
         ) {
-          Icon(
-            imageVector = Icons.Default.Checklist,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary
-          )
-          Text(
-            text = "Today's Operational Duties",
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-          )
-        }
+          Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+          ) {
+            Icon(
+              imageVector = Icons.Default.Checklist,
+              contentDescription = null,
+              tint = MaterialTheme.colorScheme.primary
+            )
+            Text(
+              text = "Today's Operational Duties",
+              style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+            )
+          }
 
-        TextButton(onClick = onNavigateToDuties) {
-          Text("Manage (${duties.size})")
+          TextButton(onClick = onNavigateToDuties) {
+            Text("Manage (${duties.size})")
+          }
         }
       }
     }
 
     items(duties.take(4)) { duty ->
-      DutyTaskItemCard(
-        duty = duty,
-        onStatusChange = { newStatus -> onUpdateDutyStatus(duty.id, newStatus) }
-      )
+      ScrollEntranceItem(index = 4) {
+        DutyTaskItemCard(
+          duty = duty,
+          onStatusChange = { newStatus -> onUpdateDutyStatus(duty.id, newStatus) }
+        )
+      }
     }
 
     // 5. School Circulars
     item {
-      Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-      ) {
-        Text(
-          text = "School Bulletins & Notices",
-          style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-        )
-        TextButton(onClick = onNavigateToNotices) {
-          Text("View All")
+      ScrollEntranceItem(index = 5) {
+        Row(
+          modifier = Modifier.fillMaxWidth(),
+          horizontalArrangement = Arrangement.SpaceBetween,
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          Text(
+            text = "School Bulletins & Notices",
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+          )
+          TextButton(onClick = onNavigateToNotices) {
+            Text("View All")
+          }
         }
       }
     }
 
     items(notices.take(2)) { notice ->
-      NoticeCard(
-        notice = notice,
-        onNoticeClick = onNoticeClick
-      )
+      ScrollEntranceItem(index = 6) {
+        NoticeCard(
+          notice = notice,
+          onNoticeClick = onNoticeClick
+        )
+      }
     }
 
     item {

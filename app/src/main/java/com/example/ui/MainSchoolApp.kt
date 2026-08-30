@@ -115,9 +115,9 @@ fun MainSchoolApp(
   // Compulsory Notification Permission Setup on App Launch / Installation
   NotificationPermissionHandler()
 
-  // Compulsory authentication on every app launch - requires successful login before accessing app
+  // Persistent authentication across app restarts - stays logged in until explicit logout
   var showSplash by remember { mutableStateOf(true) }
-  var isAuthenticated by remember { mutableStateOf(false) }
+  val isAuthenticated by viewModel.isAuthenticated.collectAsState()
   var isLoggingIn by remember { mutableStateOf(false) }
   var loginErrorMessage by remember { mutableStateOf<String?>(null) }
   var currentTab by remember { mutableStateOf(NavigationTab.DASHBOARD) }
@@ -170,20 +170,30 @@ fun MainSchoolApp(
           errorMessage = loginErrorMessage,
           isLoading = isLoggingIn,
           networkState = networkState,
-          onLogin = { username, password, _ ->
+          onLogin = { username, password, role ->
             coroutineScope.launch {
               isLoggingIn = true
               loginErrorMessage = null
-              kotlinx.coroutines.delay(500)
-              val result = viewModel.login(username, password)
-              result.onSuccess {
+              val localResult = viewModel.login(username, password)
+              if (localResult.isSuccess) {
                 loginErrorMessage = null
-                isAuthenticated = true
                 currentTab = NavigationTab.DASHBOARD
                 isLoggingIn = false
-              }.onFailure { error ->
-                loginErrorMessage = error.message ?: "Authentication failed. Please check your credentials."
-                isLoggingIn = false
+              } else {
+                viewModel.signInWithFirebaseEmail(
+                  email = username,
+                  pass = password,
+                  role = role,
+                  onSuccess = {
+                    loginErrorMessage = null
+                    currentTab = NavigationTab.DASHBOARD
+                    isLoggingIn = false
+                  },
+                  onError = { errorMsg ->
+                    loginErrorMessage = errorMsg
+                    isLoggingIn = false
+                  }
+                )
               }
             }
           },
@@ -194,7 +204,6 @@ fun MainSchoolApp(
               kotlinx.coroutines.delay(400)
               viewModel.switchRole(role)
               loginErrorMessage = null
-              isAuthenticated = true
               currentTab = NavigationTab.DASHBOARD
               isLoggingIn = false
             }
@@ -288,7 +297,6 @@ fun MainSchoolApp(
       onSignOut = {
         viewModel.logout()
         loginErrorMessage = null
-        isAuthenticated = false
       },
       onRetryConnection = { viewModel.retryNetworkConnection() },
       onToggleSimulatedOffline = { viewModel.setSimulatedOffline(it) },
@@ -633,7 +641,6 @@ fun MainSchoolApp(
             onSignOut = {
               viewModel.logout()
               loginErrorMessage = null
-              isAuthenticated = false
             }
           )
         }
@@ -647,10 +654,12 @@ fun MainSchoolApp(
             onSignOut = {
               viewModel.logout()
               loginErrorMessage = null
-              isAuthenticated = false
             },
             onResetDatabase = {
               viewModel.resetDatabaseToDefaults()
+            },
+            onSyncWithCloud = {
+              viewModel.triggerCloudSync()
             },
             onOpenNotificationCenter = {
               showNotificationCenterSheet = true

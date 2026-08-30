@@ -64,79 +64,90 @@ fun StudentDashboardScreen(
     ) {
       // 1. User Profile Header
       item {
-        UserProfileHeader(
-          user = profile.user,
-          subtitle = "Class ${profile.grade}-${profile.section} • Roll #${profile.rollNo} • ${profile.houseName}",
-          schoolSession = "Academic Session 2026–2027",
-          testTag = "student_user_profile_header"
-        )
+        ScrollEntranceItem(index = 0) {
+          UserProfileHeader(
+            user = profile.user,
+            subtitle = "Class ${profile.grade}-${profile.section} • Roll #${profile.rollNo} • ${profile.houseName}",
+            schoolSession = "Academic Session 2026–2027",
+            testTag = "student_user_profile_header"
+          )
+        }
       }
 
     // 2. Key Academic Quick Stats Card (Attendance, Assignments, Announcements)
     item {
-      QuickStatsOverviewCard(
-        attendance = AttendanceStatData(
-          percentage = profile.attendancePercentage.toFloat(),
-          statusLabel = if (profile.attendancePercentage >= 90) "Excellent (>90%)" else "Regular",
-          onClick = onNavigateToAttendance
-        ),
-        assignments = AssignmentStatData(
-          pendingCount = pendingHomeworkCount,
-          dueTodayCount = if (pendingHomeworkCount > 0) 1 else 0,
-          onClick = onNavigateToHomework
-        ),
-        announcements = AnnouncementStatData(
-          totalCount = notices.size.coerceAtLeast(3),
-          unreadCount = notices.count { it.isUrgent },
-          latestTitle = notices.firstOrNull()?.title ?: "Annual School Meet Scheduled",
-          onClick = onNavigateToNotices
-        ),
-        testTag = "student_quick_stats_card"
-      )
+      ScrollEntranceItem(index = 1) {
+        QuickStatsOverviewCard(
+          attendance = AttendanceStatData(
+            percentage = profile.attendancePercentage.toFloat(),
+            statusLabel = if (profile.attendancePercentage >= 90) "Excellent (>90%)" else "Regular",
+            onClick = onNavigateToAttendance
+          ),
+          assignments = AssignmentStatData(
+            pendingCount = pendingHomeworkCount,
+            dueTodayCount = if (pendingHomeworkCount > 0) 1 else 0,
+            onClick = onNavigateToHomework
+          ),
+          announcements = AnnouncementStatData(
+            totalCount = notices.size.coerceAtLeast(3),
+            unreadCount = notices.count { it.isUrgent },
+            latestTitle = notices.firstOrNull()?.title ?: "Annual School Meet Scheduled",
+            onClick = onNavigateToNotices
+          ),
+          testTag = "student_quick_stats_card"
+        )
+      }
     }
 
-    // 3. Quick Action Shortcuts
+    // 3. Quick Action Shortcuts (Google Workspace Style)
     item {
-      Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-        modifier = Modifier.fillMaxWidth()
-      ) {
-        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-          Text(
-            text = "Quick Academics",
-            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onSurface
-          )
+      ScrollEntranceItem(index = 2) {
+        Card(
+          shape = RoundedCornerShape(20.dp),
+          colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+          elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+          border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+          modifier = Modifier.fillMaxWidth()
+        ) {
+          Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(
+              text = "Google Academic Shortcuts",
+              style = MaterialTheme.typography.titleSmall.copy(
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp
+              ),
+              color = MaterialTheme.colorScheme.onSurface
+            )
 
-          Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-          ) {
-            QuickActionButton(
-              title = "Timetable",
-              icon = Icons.Default.CalendarMonth,
-              color = Color(0xFF2563EB),
-              onClick = onNavigateToTimetable
-            )
-            QuickActionButton(
-              title = "Homework",
-              icon = Icons.Default.Assignment,
-              color = Color(0xFFD97706),
-              onClick = onNavigateToHomework
-            )
-            QuickActionButton(
-              title = "Attendance",
-              icon = Icons.Default.FactCheck,
-              color = Color(0xFF059669),
-              onClick = onNavigateToAttendance
-            )
-            QuickActionButton(
-              title = "Circulars",
-              icon = Icons.Default.Article,
-              color = Color(0xFF7C3AED),
-              onClick = onNavigateToNotices
-            )
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+              QuickActionButton(
+                title = "Timetable",
+                icon = Icons.Default.CalendarMonth,
+                color = GoogleBlue,
+                onClick = onNavigateToTimetable
+              )
+              QuickActionButton(
+                title = "Classroom",
+                icon = Icons.Default.Assignment,
+                color = GoogleGreen,
+                onClick = onNavigateToHomework
+              )
+              QuickActionButton(
+                title = "Attendance",
+                icon = Icons.Default.FactCheck,
+                color = GoogleYellow,
+                onClick = onNavigateToAttendance
+              )
+              QuickActionButton(
+                title = "Circulars",
+                icon = Icons.Default.Campaign,
+                color = GoogleRed,
+                onClick = onNavigateToNotices
+              )
+            }
           }
         }
       }
@@ -144,67 +155,69 @@ fun StudentDashboardScreen(
 
     // 3.1 Campus ERP Services (Wave 1 Features)
     item {
-      Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        modifier = Modifier.fillMaxWidth().testTag("student_erp_services_card")
-      ) {
-        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-          Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-          ) {
-            Text(
-              text = "Campus ERP Services",
-              style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-              color = MaterialTheme.colorScheme.primary
-            )
-            Surface(
-              color = SchoolGold.copy(alpha = 0.2f),
-              shape = RoundedCornerShape(6.dp)
+      ScrollEntranceItem(index = 3) {
+        Card(
+          shape = RoundedCornerShape(16.dp),
+          colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+          elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+          modifier = Modifier.fillMaxWidth().testTag("student_erp_services_card")
+        ) {
+          Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalArrangement = Arrangement.SpaceBetween,
+              verticalAlignment = Alignment.CenterVertically
             ) {
               Text(
-                text = "WAVE 1 ACTIVE",
-                style = MaterialTheme.typography.labelSmall.copy(
-                  fontWeight = FontWeight.Black,
-                  fontSize = 9.sp
-                ),
-                color = SchoolNavyDark,
-                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                text = "Campus ERP Services",
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.primary
+              )
+              Surface(
+                color = SchoolGold.copy(alpha = 0.2f),
+                shape = RoundedCornerShape(6.dp)
+              ) {
+                Text(
+                  text = "WAVE 1 ACTIVE",
+                  style = MaterialTheme.typography.labelSmall.copy(
+                    fontWeight = FontWeight.Black,
+                    fontSize = 9.sp
+                  ),
+                  color = SchoolNavyDark,
+                  modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                )
+              }
+            }
+
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+              QuickActionButton(
+                title = "Calendar",
+                icon = Icons.Default.EventNote,
+                color = Color(0xFF0284C7),
+                onClick = onNavigateToCalendar
+              )
+              QuickActionButton(
+                title = "Bus GPS",
+                icon = Icons.Default.DirectionsBus,
+                color = Color(0xFFEA580C),
+                onClick = onNavigateToBusTracking
+              )
+              QuickActionButton(
+                title = "Broadcasts",
+                icon = Icons.Default.Campaign,
+                color = Color(0xFFDC2626),
+                onClick = onNavigateToAnnouncements
+              )
+              QuickActionButton(
+                title = "Directory",
+                icon = Icons.Default.ContactPhone,
+                color = Color(0xFF059669),
+                onClick = onNavigateToDirectory
               )
             }
-          }
-
-          Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-          ) {
-            QuickActionButton(
-              title = "Calendar",
-              icon = Icons.Default.EventNote,
-              color = Color(0xFF0284C7),
-              onClick = onNavigateToCalendar
-            )
-            QuickActionButton(
-              title = "Bus GPS",
-              icon = Icons.Default.DirectionsBus,
-              color = Color(0xFFEA580C),
-              onClick = onNavigateToBusTracking
-            )
-            QuickActionButton(
-              title = "Broadcasts",
-              icon = Icons.Default.Campaign,
-              color = Color(0xFFDC2626),
-              onClick = onNavigateToAnnouncements
-            )
-            QuickActionButton(
-              title = "Directory",
-              icon = Icons.Default.ContactPhone,
-              color = Color(0xFF059669),
-              onClick = onNavigateToDirectory
-            )
           }
         }
       }
@@ -316,90 +329,96 @@ fun StudentDashboardScreen(
       }
     } else {
       items(todayTimetable.take(3)) { entry ->
-        TimetableRowCard(entry = entry)
+        ScrollEntranceItem(index = 4) {
+          TimetableRowCard(entry = entry)
+        }
       }
     }
 
     // 5. Upcoming School Events
     item {
-      Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-      ) {
+      ScrollEntranceItem(index = 5) {
         Row(
-          verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.spacedBy(8.dp)
+          modifier = Modifier.fillMaxWidth(),
+          horizontalArrangement = Arrangement.SpaceBetween,
+          verticalAlignment = Alignment.CenterVertically
         ) {
-          Icon(
-            imageVector = Icons.Default.Celebration,
-            contentDescription = null,
-            tint = SchoolGold
-          )
-          Text(
-            text = "Upcoming School Events",
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-          )
+          Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+          ) {
+            Icon(
+              imageVector = Icons.Default.Celebration,
+              contentDescription = null,
+              tint = SchoolGold
+            )
+            Text(
+              text = "Upcoming School Events",
+              style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+            )
+          }
         }
       }
     }
 
     item {
-      LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-      ) {
-        items(events) { ev ->
-          Card(
-            modifier = Modifier.width(260.dp),
-            shape = RoundedCornerShape(14.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-          ) {
-            Column(
-              modifier = Modifier.padding(14.dp),
-              verticalArrangement = Arrangement.spacedBy(6.dp)
+      ScrollEntranceItem(index = 6) {
+        LazyRow(
+          horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+          items(events) { ev ->
+            Card(
+              modifier = Modifier.width(260.dp),
+              shape = RoundedCornerShape(14.dp),
+              colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+              elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
-              Surface(
-                color = SchoolGold.copy(alpha = 0.15f),
-                shape = RoundedCornerShape(6.dp)
+              Column(
+                modifier = Modifier.padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
               ) {
+                Surface(
+                  color = SchoolGold.copy(alpha = 0.15f),
+                  shape = RoundedCornerShape(6.dp)
+                ) {
+                  Text(
+                    text = ev.date,
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                    color = SchoolGoldDark,
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                  )
+                }
+
                 Text(
-                  text = ev.date,
-                  style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                  color = SchoolGoldDark,
-                  modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                  text = ev.title,
+                  style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                  color = MaterialTheme.colorScheme.onSurface,
+                  maxLines = 1
                 )
-              }
 
-              Text(
-                text = ev.title,
-                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1
-              )
-
-              Text(
-                text = ev.description,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 2
-              )
-
-              Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-              ) {
-                Icon(
-                  imageVector = Icons.Default.Place,
-                  contentDescription = null,
-                  tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                  modifier = Modifier.size(14.dp)
-                )
                 Text(
-                  text = ev.location,
-                  style = MaterialTheme.typography.labelSmall,
-                  color = MaterialTheme.colorScheme.onSurfaceVariant
+                  text = ev.description,
+                  style = MaterialTheme.typography.bodySmall,
+                  color = MaterialTheme.colorScheme.onSurfaceVariant,
+                  maxLines = 2
                 )
+
+                Row(
+                  verticalAlignment = Alignment.CenterVertically,
+                  horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                  Icon(
+                    imageVector = Icons.Default.Place,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(14.dp)
+                  )
+                  Text(
+                    text = ev.location,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                  )
+                }
               }
             }
           }
@@ -409,37 +428,41 @@ fun StudentDashboardScreen(
 
     // 6. Latest Notices Preview
     item {
-      Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-      ) {
+      ScrollEntranceItem(index = 7) {
         Row(
-          verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.spacedBy(8.dp)
+          modifier = Modifier.fillMaxWidth(),
+          horizontalArrangement = Arrangement.SpaceBetween,
+          verticalAlignment = Alignment.CenterVertically
         ) {
-          Icon(
-            imageVector = Icons.Default.Notifications,
-            contentDescription = null,
-            tint = SchoolAccentBlue
-          )
-          Text(
-            text = "Latest Notices",
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-          )
-        }
+          Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+          ) {
+            Icon(
+              imageVector = Icons.Default.Notifications,
+              contentDescription = null,
+              tint = SchoolAccentBlue
+            )
+            Text(
+              text = "Latest Notices",
+              style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+            )
+          }
 
-        TextButton(onClick = onNavigateToNotices) {
-          Text("View All (${notices.size})")
+          TextButton(onClick = onNavigateToNotices) {
+            Text("View All (${notices.size})")
+          }
         }
       }
     }
 
     items(notices.take(2)) { notice ->
-      NoticeCard(
-        notice = notice,
-        onNoticeClick = onNoticeClick
-      )
+      ScrollEntranceItem(index = 8) {
+        NoticeCard(
+          notice = notice,
+          onNoticeClick = onNoticeClick
+        )
+      }
     }
 
     item {
@@ -465,8 +488,8 @@ fun QuickActionButton(
   ) {
     Box(
       modifier = Modifier
-        .size(48.dp)
-        .clip(RoundedCornerShape(14.dp))
+        .size(52.dp)
+        .clip(RoundedCornerShape(16.dp))
         .background(color.copy(alpha = 0.12f)),
       contentAlignment = Alignment.Center
     ) {
@@ -479,7 +502,10 @@ fun QuickActionButton(
     }
     Text(
       text = title,
-      style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+      style = MaterialTheme.typography.labelSmall.copy(
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 11.sp
+      ),
       color = MaterialTheme.colorScheme.onSurface
     )
   }
@@ -492,34 +518,35 @@ fun TimetableRowCard(
 ) {
   Card(
     modifier = modifier.fillMaxWidth(),
-    shape = RoundedCornerShape(12.dp),
+    shape = RoundedCornerShape(16.dp),
     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
   ) {
     Row(
       modifier = Modifier
         .fillMaxWidth()
-        .padding(12.dp),
+        .padding(14.dp),
       verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.spacedBy(12.dp)
+      horizontalArrangement = Arrangement.spacedBy(14.dp)
     ) {
       Surface(
-        color = MaterialTheme.colorScheme.primaryContainer,
-        shape = RoundedCornerShape(8.dp)
+        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+        shape = RoundedCornerShape(12.dp)
       ) {
         Column(
-          modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+          modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
           horizontalAlignment = Alignment.CenterHorizontally
         ) {
           Text(
             text = "P${entry.periodNumber}",
-            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onPrimaryContainer
+            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.ExtraBold),
+            color = MaterialTheme.colorScheme.primary
           )
           Text(
             text = entry.startTime.substringBefore(" "),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+            color = MaterialTheme.colorScheme.primary
           )
         }
       }
@@ -527,7 +554,10 @@ fun TimetableRowCard(
       Column(modifier = Modifier.weight(1f)) {
         Text(
           text = entry.subjectName,
-          style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+          style = MaterialTheme.typography.titleSmall.copy(
+            fontWeight = FontWeight.Bold,
+            fontSize = 15.sp
+          ),
           color = MaterialTheme.colorScheme.onSurface
         )
         Text(
@@ -538,12 +568,12 @@ fun TimetableRowCard(
       }
 
       Surface(
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        shape = RoundedCornerShape(6.dp)
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
+        shape = RoundedCornerShape(8.dp)
       ) {
         Text(
           text = entry.roomNo,
-          style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+          style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
           color = MaterialTheme.colorScheme.onSurfaceVariant,
           modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
         )

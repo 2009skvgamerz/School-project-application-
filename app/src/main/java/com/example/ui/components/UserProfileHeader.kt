@@ -45,31 +45,36 @@ fun UserProfileHeader(
   onProfileClick: (() -> Unit)? = null,
   testTag: String = "user_profile_header"
 ) {
+  val roleGradient = when (user.role) {
+    UserRole.STUDENT -> listOf(Color(0xFF1A73E8), Color(0xFF4285F4), Color(0xFF174EA6))
+    UserRole.TEACHER -> listOf(Color(0xFF1E8E3E), Color(0xFF34A853), Color(0xFF137333))
+    UserRole.STAFF -> listOf(Color(0xFF9334E6), Color(0xFFA142F4), Color(0xFF7627BB))
+    UserRole.DRIVER -> listOf(Color(0xFFE8710A), Color(0xFFFA903E), Color(0xFFB05000))
+    UserRole.ADMIN -> listOf(Color(0xFFEA8600), Color(0xFFF9AB00), Color(0xFFB06000))
+    UserRole.DEVELOPER -> listOf(Color(0xFF0F9D58), Color(0xFF00796B), Color(0xFF004D40))
+  }
+
   Card(
     modifier = modifier
       .fillMaxWidth()
       .testTag(testTag)
       .then(if (onProfileClick != null) Modifier.clickable { onProfileClick() } else Modifier),
-    shape = RoundedCornerShape(20.dp),
+    shape = RoundedCornerShape(24.dp),
     colors = CardDefaults.cardColors(
       containerColor = MaterialTheme.colorScheme.surface
     ),
     elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
-    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
   ) {
     Box(
       modifier = Modifier
         .fillMaxWidth()
         .background(
-          brush = Brush.horizontalGradient(
-            colors = listOf(
-              SchoolNavyPrimary,
-              Color(0xFF1E40AF),
-              Color(0xFF1E3A8A)
-            )
+          brush = Brush.linearGradient(
+            colors = roleGradient
           )
         )
-        .padding(18.dp)
+        .padding(20.dp)
     ) {
       Column(
         verticalArrangement = Arrangement.spacedBy(14.dp)
@@ -80,13 +85,13 @@ fun UserProfileHeader(
           verticalAlignment = Alignment.CenterVertically,
           horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-          // Profile Icon / Avatar
+          // Google Classroom Style Avatar
           Box(
             modifier = Modifier
-              .size(54.dp)
+              .size(56.dp)
               .clip(CircleShape)
-              .background(Color.White.copy(alpha = 0.2f))
-              .border(2.dp, SchoolGoldLight.copy(alpha = 0.8f), CircleShape)
+              .background(Color.White.copy(alpha = 0.22f))
+              .border(2.5.dp, Color.White.copy(alpha = 0.85f), CircleShape)
               .testTag("${testTag}_avatar"),
             contentAlignment = Alignment.Center
           ) {
@@ -113,15 +118,18 @@ fun UserProfileHeader(
             verticalArrangement = Arrangement.spacedBy(2.dp)
           ) {
             Text(
-              text = "Welcome,",
-              style = MaterialTheme.typography.labelMedium,
-              color = Color.White.copy(alpha = 0.75f)
+              text = "Welcome to St. Joseph's,",
+              style = MaterialTheme.typography.labelSmall.copy(
+                fontWeight = FontWeight.Medium,
+                letterSpacing = 0.3.sp
+              ),
+              color = Color.White.copy(alpha = 0.85f)
             )
             Text(
               text = user.fullName,
               style = MaterialTheme.typography.titleLarge.copy(
-                fontWeight = FontWeight.Bold,
-                fontSize = 19.sp
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 20.sp
               ),
               color = Color.White,
               maxLines = 1,
@@ -136,8 +144,8 @@ fun UserProfileHeader(
             if (!cleanSubtitle.isNullOrBlank()) {
               Text(
                 text = cleanSubtitle,
-                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
-                color = SchoolGoldLight,
+                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                color = Color.White.copy(alpha = 0.92f),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
               )
@@ -157,14 +165,27 @@ fun UserProfileHeader(
             horizontalAlignment = Alignment.End,
             verticalArrangement = Arrangement.spacedBy(6.dp)
           ) {
-            RoleBadge(role = user.role)
+            Surface(
+              shape = RoundedCornerShape(20.dp),
+              color = Color.White.copy(alpha = 0.25f)
+            ) {
+              Text(
+                text = user.role.label,
+                style = MaterialTheme.typography.labelSmall.copy(
+                  fontWeight = FontWeight.ExtraBold,
+                  fontSize = 11.sp
+                ),
+                color = Color.White,
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+              )
+            }
 
             Surface(
-              shape = RoundedCornerShape(6.dp),
-              color = SchoolAccentGreen.copy(alpha = 0.25f)
+              shape = RoundedCornerShape(20.dp),
+              color = Color.White.copy(alpha = 0.2f)
             ) {
               Row(
-                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
               ) {
@@ -172,13 +193,13 @@ fun UserProfileHeader(
                   modifier = Modifier
                     .size(6.dp)
                     .clip(CircleShape)
-                    .background(SchoolAccentGreen)
+                    .background(Color(0xFF81C995))
                 )
                 Text(
                   text = statusLabel,
                   style = MaterialTheme.typography.labelSmall.copy(
                     fontWeight = FontWeight.Bold,
-                    fontSize = 9.sp
+                    fontSize = 9.5.sp
                   ),
                   color = Color.White
                 )
@@ -187,7 +208,7 @@ fun UserProfileHeader(
           }
         }
 
-        HorizontalDivider(color = Color.White.copy(alpha = 0.2f))
+        HorizontalDivider(color = Color.White.copy(alpha = 0.22f))
 
         // Bottom Row: Current School Session Pill
         Row(
@@ -196,20 +217,20 @@ fun UserProfileHeader(
           verticalAlignment = Alignment.CenterVertically
         ) {
           Surface(
-            shape = RoundedCornerShape(12.dp),
-            color = Color.White.copy(alpha = 0.15f),
+            shape = RoundedCornerShape(20.dp),
+            color = Color.White.copy(alpha = 0.2f),
             modifier = Modifier.testTag("${testTag}_session")
           ) {
             Row(
-              modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+              modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
               verticalAlignment = Alignment.CenterVertically,
               horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
               Icon(
                 imageVector = Icons.Default.CalendarToday,
                 contentDescription = null,
-                tint = SchoolGoldLight,
-                modifier = Modifier.size(14.dp)
+                tint = Color.White,
+                modifier = Modifier.size(13.dp)
               )
               Text(
                 text = schoolSession,
@@ -223,21 +244,31 @@ fun UserProfileHeader(
           }
 
           if (onProfileClick != null) {
-            Row(
-              verticalAlignment = Alignment.CenterVertically,
-              horizontalArrangement = Arrangement.spacedBy(2.dp)
+            Surface(
+              shape = RoundedCornerShape(20.dp),
+              color = Color.White.copy(alpha = 0.2f),
+              modifier = Modifier.clickable { onProfileClick() }
             ) {
-              Text(
-                text = "View Profile",
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                color = SchoolGoldLight
-              )
-              Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = SchoolGoldLight,
-                modifier = Modifier.size(14.dp)
-              )
+              Row(
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+              ) {
+                Text(
+                  text = "View Profile",
+                  style = MaterialTheme.typography.labelSmall.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 11.sp
+                  ),
+                  color = Color.White
+                )
+                Icon(
+                  imageVector = Icons.Default.ChevronRight,
+                  contentDescription = null,
+                  tint = Color.White,
+                  modifier = Modifier.size(14.dp)
+                )
+              }
             }
           }
         }

@@ -68,6 +68,8 @@ fun NotificationPermissionHandler(
     }
   }
 
+  var isDismissed by remember { mutableStateOf(false) }
+
   // Auto-check on lifecycle resume (e.g. user went to Settings and returned)
   DisposableEffect(lifecycleOwner) {
     val observer = LifecycleEventObserver { _, event ->
@@ -97,9 +99,10 @@ fun NotificationPermissionHandler(
     }
   }
 
-  // If permission is not granted on Android 13+, show the compulsory notification prompt
-  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !hasPermission) {
+  // If permission is not granted on Android 13+, show the notification prompt
+  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !hasPermission && !isDismissed) {
     CompulsoryNotificationPermissionDialog(
+      onDismiss = { isDismissed = true },
       onRequestPermission = {
         permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
       },
@@ -124,15 +127,16 @@ fun NotificationPermissionHandler(
 
 @Composable
 fun CompulsoryNotificationPermissionDialog(
+  onDismiss: () -> Unit,
   onRequestPermission: () -> Unit,
   onOpenSettings: () -> Unit,
   modifier: Modifier = Modifier
 ) {
   Dialog(
-    onDismissRequest = { /* Non-cancellable compulsory setup */ },
+    onDismissRequest = onDismiss,
     properties = DialogProperties(
-      dismissOnBackPress = false,
-      dismissOnClickOutside = false,
+      dismissOnBackPress = true,
+      dismissOnClickOutside = true,
       usePlatformDefaultWidth = false
     )
   ) {
@@ -191,14 +195,14 @@ fun CompulsoryNotificationPermissionDialog(
             textAlign = TextAlign.Center
           )
           Surface(
-            color = SchoolAccentRed.copy(alpha = 0.12f),
+            color = SchoolNavyPrimary.copy(alpha = 0.12f),
             shape = RoundedCornerShape(6.dp)
           ) {
             Text(
-              text = "REQUIRED FOR SCHOOL APP",
+              text = "CAMPUS COMMUNICATIONS",
               style = MaterialTheme.typography.labelSmall.copy(
                 fontWeight = FontWeight.Bold,
-                color = SchoolAccentRed,
+                color = SchoolNavyPrimary,
                 fontSize = 10.sp
               ),
               modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
@@ -207,7 +211,7 @@ fun CompulsoryNotificationPermissionDialog(
         }
 
         Text(
-          text = "To ensure students, teachers, and parents receive real-time campus communications, please allow notifications for:",
+          text = "Stay updated with real-time circulars, homework assignments, timetable adjustments, and attendance alerts.",
           style = MaterialTheme.typography.bodyMedium,
           color = MaterialTheme.colorScheme.onSurfaceVariant,
           textAlign = TextAlign.Center
@@ -277,21 +281,19 @@ fun CompulsoryNotificationPermissionDialog(
             )
           }
 
-          OutlinedButton(
-            onClick = onOpenSettings,
+          TextButton(
+            onClick = onDismiss,
             modifier = Modifier
               .fillMaxWidth()
               .height(44.dp)
-              .testTag("open_settings_permission_btn"),
+              .testTag("skip_permission_btn"),
             shape = RoundedCornerShape(12.dp)
           ) {
-            Icon(
-              imageVector = Icons.Default.Settings,
-              contentDescription = null,
-              modifier = Modifier.size(16.dp)
+            Text(
+              "Continue to App (Maybe Later)",
+              style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+              color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text("Open Device Settings", style = MaterialTheme.typography.labelMedium)
           }
         }
       }

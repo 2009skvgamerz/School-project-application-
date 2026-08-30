@@ -1,5 +1,6 @@
 package com.example.ui.dashboard
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -15,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.model.*
 import com.example.ui.components.*
 import com.example.ui.theme.*
@@ -42,56 +44,62 @@ fun TeacherDashboardScreen(
   ) {
     // 1. User Profile Header
     item {
-      UserProfileHeader(
-        user = profile.user,
-        subtitle = "${profile.department} • Class Teacher (${profile.classTeacherOf ?: "Class 10-A"}) • Emp #${profile.employeeId}",
-        schoolSession = "Academic Session 2026–2027",
-        testTag = "teacher_user_profile_header"
-      )
+      ScrollEntranceItem(index = 0) {
+        UserProfileHeader(
+          user = profile.user,
+          subtitle = "${profile.department} • Class Teacher (${profile.classTeacherOf ?: "Class 10-A"}) • Emp #${profile.employeeId}",
+          schoolSession = "Academic Session 2026–2027",
+          testTag = "teacher_user_profile_header"
+        )
+      }
     }
 
     // 2. Quick Action Buttons for Teacher Operations
     item {
-      Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-        modifier = Modifier.fillMaxWidth()
-      ) {
-        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-          Text(
-            text = "Teacher Quick Actions",
-            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onSurface
-          )
+      ScrollEntranceItem(index = 1) {
+        Card(
+          shape = RoundedCornerShape(18.dp),
+          colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+          elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+          border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+          modifier = Modifier.fillMaxWidth()
+        ) {
+          Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(
+              text = "Teacher Quick Actions",
+              style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+              color = MaterialTheme.colorScheme.onSurface
+            )
 
-          Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-          ) {
-            QuickActionButton(
-              title = "Daily Roll Call",
-              icon = Icons.Default.FactCheck,
-              color = Color(0xFF059669),
-              onClick = { onOpenMarkAttendance(profile.classTeacherOf ?: "Class 10-A") }
-            )
-            QuickActionButton(
-              title = "Assign HW",
-              icon = Icons.Default.PostAdd,
-              color = Color(0xFFD97706),
-              onClick = onOpenAssignHomeworkDialog
-            )
-            QuickActionButton(
-              title = "Post Notice",
-              icon = Icons.Default.Campaign,
-              color = Color(0xFF2563EB),
-              onClick = onOpenPostNoticeDialog
-            )
-            QuickActionButton(
-              title = "My Classes",
-              icon = Icons.Default.Groups,
-              color = Color(0xFF7C3AED),
-              onClick = onNavigateToClasses
-            )
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+              QuickActionButton(
+                title = "Daily Roll Call",
+                icon = Icons.Default.FactCheck,
+                color = GoogleGreen,
+                onClick = { onOpenMarkAttendance(profile.classTeacherOf ?: "Class 10-A") }
+              )
+              QuickActionButton(
+                title = "Assign HW",
+                icon = Icons.Default.PostAdd,
+                color = GoogleYellow,
+                onClick = onOpenAssignHomeworkDialog
+              )
+              QuickActionButton(
+                title = "Post Notice",
+                icon = Icons.Default.Campaign,
+                color = GoogleBlue,
+                onClick = onOpenPostNoticeDialog
+              )
+              QuickActionButton(
+                title = "My Classes",
+                icon = Icons.Default.Groups,
+                color = GooglePurple,
+                onClick = onNavigateToClasses
+              )
+            }
           }
         }
       }
@@ -99,108 +107,118 @@ fun TeacherDashboardScreen(
 
     // 3. Faculty Teaching & Class Quick Stats Card
     item {
-      QuickStatsOverviewCard(
-        attendance = AttendanceStatData(
-          percentage = 96f,
-          presentDays = 119,
-          totalDays = 124,
-          statusLabel = "Roll Call Today (96%)",
-          onClick = { onOpenMarkAttendance(profile.classTeacherOf ?: "Class 10-A") }
-        ),
-        assignments = AssignmentStatData(
-          pendingCount = 4,
-          dueTodayCount = 2,
-          nextTitle = "Physics Assignment #3 Grading",
-          onClick = onOpenAssignHomeworkDialog
-        ),
-        announcements = AnnouncementStatData(
-          totalCount = notices.size.coerceAtLeast(4),
-          unreadCount = notices.count { it.isUrgent },
-          latestTitle = notices.firstOrNull()?.title ?: "Faculty Meeting at 3:30 PM",
-          onClick = onNavigateToNotices
-        ),
-        testTag = "teacher_quick_stats_card"
-      )
+      ScrollEntranceItem(index = 2) {
+        QuickStatsOverviewCard(
+          attendance = AttendanceStatData(
+            percentage = 96f,
+            presentDays = 119,
+            totalDays = 124,
+            statusLabel = "Roll Call Today (96%)",
+            onClick = { onOpenMarkAttendance(profile.classTeacherOf ?: "Class 10-A") }
+          ),
+          assignments = AssignmentStatData(
+            pendingCount = 4,
+            dueTodayCount = 2,
+            nextTitle = "Physics Assignment #3 Grading",
+            onClick = onOpenAssignHomeworkDialog
+          ),
+          announcements = AnnouncementStatData(
+            totalCount = notices.size.coerceAtLeast(4),
+            unreadCount = notices.count { it.isUrgent },
+            latestTitle = notices.firstOrNull()?.title ?: "Faculty Meeting at 3:30 PM",
+            onClick = onNavigateToNotices
+          ),
+          testTag = "teacher_quick_stats_card"
+        )
+      }
     }
 
     // 4. Today's Teaching Schedule
     item {
-      Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-      ) {
+      ScrollEntranceItem(index = 3) {
         Row(
-          verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.spacedBy(8.dp)
+          modifier = Modifier.fillMaxWidth(),
+          horizontalArrangement = Arrangement.SpaceBetween,
+          verticalAlignment = Alignment.CenterVertically
         ) {
-          Icon(
-            imageVector = Icons.Default.Schedule,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary
-          )
-          Text(
-            text = "Today's Teaching Schedule",
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-          )
+          Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+          ) {
+            Icon(
+              imageVector = Icons.Default.Schedule,
+              contentDescription = null,
+              tint = MaterialTheme.colorScheme.primary
+            )
+            Text(
+              text = "Today's Teaching Schedule",
+              style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+            )
+          }
         }
       }
     }
 
     items(todaySchedule.take(3)) { entry ->
-      Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-      ) {
-        Row(
-          modifier = Modifier
-            .fillMaxWidth()
-            .padding(14.dp),
-          verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.spacedBy(12.dp)
+      ScrollEntranceItem(index = 4) {
+        Card(
+          modifier = Modifier.fillMaxWidth(),
+          shape = RoundedCornerShape(16.dp),
+          colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+          elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+          border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
         ) {
-          Surface(
-            color = SchoolAccentGreen.copy(alpha = 0.12f),
-            shape = RoundedCornerShape(8.dp)
+          Row(
+            modifier = Modifier
+              .fillMaxWidth()
+              .padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
           ) {
-            Column(
-              modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-              horizontalAlignment = Alignment.CenterHorizontally
+            Surface(
+              color = SchoolAccentGreen.copy(alpha = 0.12f),
+              shape = RoundedCornerShape(10.dp)
             ) {
+              Column(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+              ) {
+                Text(
+                  text = "P${entry.periodNumber}",
+                  style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.ExtraBold),
+                  color = SchoolAccentGreen
+                )
+                Text(
+                  text = entry.startTime,
+                  style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                  color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+              }
+            }
+
+            Column(modifier = Modifier.weight(1f)) {
               Text(
-                text = "Period ${entry.periodNumber}",
-                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                color = SchoolAccentGreen
+                text = "${entry.subjectName} • ${entry.className}",
+                style = MaterialTheme.typography.titleSmall.copy(
+                  fontWeight = FontWeight.Bold,
+                  fontSize = 15.sp
+                ),
+                color = MaterialTheme.colorScheme.onSurface
               )
               Text(
-                text = entry.startTime,
-                style = MaterialTheme.typography.labelSmall,
+                text = "Location: ${entry.roomNo}",
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
               )
             }
-          }
 
-          Column(modifier = Modifier.weight(1f)) {
-            Text(
-              text = "${entry.subjectName} • ${entry.className}",
-              style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-              color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-              text = "Location: ${entry.roomNo}",
-              style = MaterialTheme.typography.bodySmall,
-              color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-          }
-
-          Button(
-            onClick = { onOpenMarkAttendance(entry.className) },
-            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
-            shape = RoundedCornerShape(8.dp)
-          ) {
-            Text("Attendance", style = MaterialTheme.typography.labelSmall)
+            Button(
+              onClick = { onOpenMarkAttendance(entry.className) },
+              contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+              shape = RoundedCornerShape(10.dp)
+            ) {
+              Text("Attendance", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+            }
           }
         }
       }
@@ -208,73 +226,81 @@ fun TeacherDashboardScreen(
 
     // 5. Assigned Classes Roster
     item {
-      Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-      ) {
+      ScrollEntranceItem(index = 5) {
         Row(
-          verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.spacedBy(8.dp)
+          modifier = Modifier.fillMaxWidth(),
+          horizontalArrangement = Arrangement.SpaceBetween,
+          verticalAlignment = Alignment.CenterVertically
         ) {
-          Icon(
-            imageVector = Icons.Default.Groups,
-            contentDescription = null,
-            tint = SchoolGold
-          )
-          Text(
-            text = "Assigned Classes",
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-          )
-        }
+          Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+          ) {
+            Icon(
+              imageVector = Icons.Default.Groups,
+              contentDescription = null,
+              tint = SchoolGold
+            )
+            Text(
+              text = "Assigned Classes",
+              style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+            )
+          }
 
-        TextButton(onClick = onNavigateToClasses) {
-          Text("Manage All")
+          TextButton(onClick = onNavigateToClasses) {
+            Text("Manage All")
+          }
         }
       }
     }
 
     items(classesList.take(3)) { cls ->
-      Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-      ) {
-        Row(
-          modifier = Modifier
-            .fillMaxWidth()
-            .padding(14.dp),
-          verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.SpaceBetween
+      ScrollEntranceItem(index = 6) {
+        Card(
+          modifier = Modifier.fillMaxWidth(),
+          shape = RoundedCornerShape(16.dp),
+          colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+          elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+          border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
         ) {
-          Column {
-            Text(
-              text = "${cls.name}-${cls.section}",
-              style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
-            )
-            Text(
-              text = "${cls.totalStudents} Students  •  Room ${cls.roomNo}",
-              style = MaterialTheme.typography.bodySmall,
-              color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-          }
-
-          Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            OutlinedButton(
-              onClick = onOpenAssignHomeworkDialog,
-              contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
-              shape = RoundedCornerShape(8.dp)
-            ) {
-              Text("Assign HW", style = MaterialTheme.typography.labelSmall)
+          Row(
+            modifier = Modifier
+              .fillMaxWidth()
+              .padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+          ) {
+            Column {
+              Text(
+                text = "${cls.name}-${cls.section}",
+                style = MaterialTheme.typography.titleSmall.copy(
+                  fontWeight = FontWeight.Bold,
+                  fontSize = 15.sp
+                )
+              )
+              Text(
+                text = "${cls.totalStudents} Students • Room ${cls.roomNo}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+              )
             }
 
-            Button(
-              onClick = { onOpenMarkAttendance("${cls.name}-${cls.section}") },
-              contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
-              shape = RoundedCornerShape(8.dp)
-            ) {
-              Text("Attendance", style = MaterialTheme.typography.labelSmall)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+              OutlinedButton(
+                onClick = onOpenAssignHomeworkDialog,
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                shape = RoundedCornerShape(10.dp)
+              ) {
+                Text("Assign HW", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold))
+              }
+
+              Button(
+                onClick = { onOpenMarkAttendance("${cls.name}-${cls.section}") },
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                shape = RoundedCornerShape(10.dp)
+              ) {
+                Text("Attendance", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+              }
             }
           }
         }
@@ -283,26 +309,30 @@ fun TeacherDashboardScreen(
 
     // 6. Notices
     item {
-      Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-      ) {
-        Text(
-          text = "Faculty Circulars & Notices",
-          style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-        )
-        TextButton(onClick = onNavigateToNotices) {
-          Text("View All")
+      ScrollEntranceItem(index = 7) {
+        Row(
+          modifier = Modifier.fillMaxWidth(),
+          horizontalArrangement = Arrangement.SpaceBetween,
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          Text(
+            text = "Faculty Circulars & Notices",
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+          )
+          TextButton(onClick = onNavigateToNotices) {
+            Text("View All")
+          }
         }
       }
     }
 
     items(notices.take(2)) { notice ->
-      NoticeCard(
-        notice = notice,
-        onNoticeClick = onNoticeClick
-      )
+      ScrollEntranceItem(index = 8) {
+        NoticeCard(
+          notice = notice,
+          onNoticeClick = onNoticeClick
+        )
+      }
     }
 
     item {

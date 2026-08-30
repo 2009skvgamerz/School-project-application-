@@ -5,8 +5,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.SchoolRepository
 import com.example.data.local.AppDatabase
+import com.example.data.local.SessionPreferences
 import com.example.data.local.entity.AttendanceEntity
 import com.example.model.*
+import com.example.util.NotificationAudienceFilter
+import com.example.util.SystemNotificationHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
@@ -24,6 +27,36 @@ class SchoolViewModel(
   // App Theme Mode (System, Light, Dark)
   private val _themeMode = MutableStateFlow(AppThemeMode.SYSTEM)
   val themeMode: StateFlow<AppThemeMode> = _themeMode.asStateFlow()
+
+  // Session Preferences for persistent login across app launches
+  private var sessionPreferences: SessionPreferences? = null
+  private val _isAuthenticated = MutableStateFlow(true)
+  val isAuthenticated: StateFlow<Boolean> = _isAuthenticated.asStateFlow()
+
+  // Firebase Auth and Firestore Services
+  private var firebaseAuthService: com.example.data.auth.FirebaseAuthService? = null
+  private var firestoreService: com.example.data.firestore.FirestoreService? = null
+
+  // Tracking observed IDs to prevent duplicate alerts on initial app start
+  private val knownNoticeIds = mutableSetOf<String>()
+  private val knownAttendanceIds = mutableSetOf<String>()
+  private val knownAnnouncementIds = mutableSetOf<String>()
+  private val knownHomeworkIds = mutableSetOf<String>()
+  private var isInitialNoticeLoad = true
+  private var isInitialAttendanceLoad = true
+  private var isInitialAnnouncementLoad = true
+  private var isInitialHomeworkLoad = true
+
+  // Auth Loading & Status State
+  private val _isAuthLoading = MutableStateFlow(false)
+  val isAuthLoading: StateFlow<Boolean> = _isAuthLoading.asStateFlow()
+
+  private val _authErrorMessage = MutableStateFlow<String?>(null)
+  val authErrorMessage: StateFlow<String?> = _authErrorMessage.asStateFlow()
+
+  fun clearAuthError() {
+    _authErrorMessage.value = null
+  }
 
   // Network Connectivity State
   private var networkMonitor: com.example.util.NetworkConnectivityMonitor? = null
@@ -75,6 +108,262 @@ class SchoolViewModel(
 
   fun initializeWithContext(context: Context) {
     appContext = context.applicationContext
+
+    // Restore persistent session
+    if (sessionPreferences == null) {
+      val session = SessionPreferences(context.applicationContext)
+      sessionPreferences = session
+      if (session.isLoggedIn()) {
+        val savedUser = session.getSavedUser()
+        if (savedUser != null) {
+          repository.loginWithUser(savedUser)
+          _isAuthenticated.value = true
+        } else {
+          repository.loginAsRole(UserRole.STUDENT)
+          _isAuthenticated.value = true
+        }
+      } else {
+        _isAuthenticated.value = false
+      }
+    }
+
+    if (firebaseAuthService == null) {
+      try {
+        firebaseAuthService = com.example.data.auth.FirebaseAuthService(context.applicationContext)
+      } catch (e: Exception) {
+        android.util.Log.w("SchoolViewModel", "Firebase Auth init failed gracefully: ${e.message}")
+      }
+    }
+    if (firestoreService == null) {
+      try {
+        val fService = com.example.data.firestore.FirestoreService(context.applicationContext)
+        firestoreService = fService
+
+        // 1. Listen for real-time cloud notices from Firestore with Audience Filtering
+        viewModelScope.launch {
+          try {
+            fService.observeNotices().collect { cloudNotices ->
+              if (cloudNotices.isNotEmpty()) {
+                if (isInitialNoticeLoad) {
+                  knownNoticeIds.addAll(cloudNotices.map { it.id })
+                  isInitialNoticeLoad = false
+                  cloudNotices.forEach { repository.publishNotice(it) }
+                } else {
+                  cloudNotices.forEach { cloudNotice ->
+                    if (!knownNoticeIds.contains(cloudNotice.id)) {
+                      knownNoticeIds.add(cloudNotice.id)
+                      repository.publishNotice(cloudNotice)
+
+                      // Evaluate Targeted Audience
+                      val user = repository.currentUser.value
+                      val sProf = repository.currentStudentProfile.value
+                      if (NotificationAudienceFilter.shouldReceiveNotice(cloudNotice, user, sProf)) {
+                        val notifType = when (cloudNotice.category) {
+                          NoticeCategory.ACADEMIC -> NotificationType.ACADEMIC
+                          NoticeCategory.EVENT -> NotificationType.EVENT
+                          NoticeCategory.SPORTS -> NotificationType.EVENT
+                          else -> NotificationType.NOTICE
+                        }
+                        val appNotif = AppNotification(
+                          id = "notif_circ_${cloudNotice.id}",
+                          title = if (cloudNotice.isUrgent) "🚨 Urgent Circular: ${cloudNotice.title}" else "📢 New Circular: ${cloudNotice.title}",
+                          message = cloudNotice.content,
+                          timeAgo = "Just now",
+                          type = notifType,
+                          isRead = false,
+                          actionRoute = "notices",
+                          isUrgent = cloudNotice.isUrgent
+                        )
+                        repository.addNotification(appNotif)
+
+                        appContext?.let { ctx ->
+                          SystemNotificationHelper.showSystemNotification(
+                            context = ctx,
+                            title = if (cloudNotice.isUrgent) "🚨 Urgent: ${cloudNotice.title}" else "📢 Circular: ${cloudNotice.title}",
+                            message = cloudNotice.content,
+                            type = notifType,
+                            actionRoute = "notices",
+                            isUrgent = cloudNotice.isUrgent
+                          )
+                        }
+                      }
+                    } else {
+                      repository.publishNotice(cloudNotice)
+                    }
+                  }
+                }
+              }
+            }
+          } catch (e: Exception) {
+            android.util.Log.w("SchoolViewModel", "observeNotices error: ${e.message}")
+          }
+        }
+
+        // 2. Listen for real-time attendance updates from Firestore with Student Targeting
+        viewModelScope.launch {
+          try {
+            fService.observeAttendance().collect { records ->
+              if (records.isNotEmpty()) {
+                if (isInitialAttendanceLoad) {
+                  knownAttendanceIds.addAll(records.map { it.id })
+                  isInitialAttendanceLoad = false
+                  records.forEach { repository.syncAttendanceRecord(it) }
+                } else {
+                  records.forEach { record ->
+                    if (!knownAttendanceIds.contains(record.id)) {
+                      knownAttendanceIds.add(record.id)
+                      repository.syncAttendanceRecord(record)
+
+                      val user = repository.currentUser.value
+                      val sProf = repository.currentStudentProfile.value
+                      if (NotificationAudienceFilter.shouldReceiveAttendanceNotification(record, user, sProf)) {
+                        val appNotif = AppNotification(
+                          id = "notif_att_${record.id}",
+                          title = "📋 Daily Attendance Marked (${record.className})",
+                          message = "${record.studentName} marked as ${record.status.label} for ${record.date}.",
+                          timeAgo = "Just now",
+                          type = NotificationType.ATTENDANCE,
+                          isRead = false,
+                          actionRoute = "attendance",
+                          isUrgent = false
+                        )
+                        repository.addNotification(appNotif)
+
+                        appContext?.let { ctx ->
+                          SystemNotificationHelper.showSystemNotification(
+                            context = ctx,
+                            title = "📋 Attendance Update (${record.className})",
+                            message = "${record.studentName} was marked ${record.status.label} for ${record.date}",
+                            type = NotificationType.ATTENDANCE,
+                            actionRoute = "attendance",
+                            isUrgent = false
+                          )
+                        }
+                      }
+                    } else {
+                      repository.syncAttendanceRecord(record)
+                    }
+                  }
+                }
+              }
+            }
+          } catch (e: Exception) {
+            android.util.Log.w("SchoolViewModel", "observeAttendance error: ${e.message}")
+          }
+        }
+
+        // 3. Listen for real-time announcements from Firestore with Audience Filtering
+        viewModelScope.launch {
+          try {
+            fService.observeAnnouncements().collect { announcements ->
+              if (announcements.isNotEmpty()) {
+                if (isInitialAnnouncementLoad) {
+                  knownAnnouncementIds.addAll(announcements.map { it.id })
+                  isInitialAnnouncementLoad = false
+                  announcements.forEach { repository.syncAnnouncement(it) }
+                } else {
+                  announcements.forEach { ann ->
+                    if (!knownAnnouncementIds.contains(ann.id)) {
+                      knownAnnouncementIds.add(ann.id)
+                      repository.syncAnnouncement(ann)
+
+                      val user = repository.currentUser.value
+                      if (NotificationAudienceFilter.shouldReceiveAnnouncement(ann, user)) {
+                        val appNotif = AppNotification(
+                          id = "notif_ann_${ann.id}",
+                          title = if (ann.isEmergency) "🚨 Emergency Alert: ${ann.title}" else "📢 Announcement: ${ann.title}",
+                          message = ann.content,
+                          timeAgo = "Just now",
+                          type = NotificationType.ANNOUNCEMENT,
+                          isRead = false,
+                          actionRoute = "announcements",
+                          isUrgent = ann.isEmergency
+                        )
+                        repository.addNotification(appNotif)
+
+                        appContext?.let { ctx ->
+                          SystemNotificationHelper.showSystemNotification(
+                            context = ctx,
+                            title = if (ann.isEmergency) "🚨 Emergency: ${ann.title}" else "📢 School Alert: ${ann.title}",
+                            message = ann.content,
+                            type = NotificationType.ANNOUNCEMENT,
+                            actionRoute = "announcements",
+                            isUrgent = ann.isEmergency
+                          )
+                        }
+                      }
+                    } else {
+                      repository.syncAnnouncement(ann)
+                    }
+                  }
+                }
+              }
+            }
+          } catch (e: Exception) {
+            android.util.Log.w("SchoolViewModel", "observeAnnouncements error: ${e.message}")
+          }
+        }
+
+        // 4. Listen for real-time homework assignments with Strict Class / Grade Filtering
+        viewModelScope.launch {
+          try {
+            fService.observeHomework().collect { homeworks ->
+              if (homeworks.isNotEmpty()) {
+                if (isInitialHomeworkLoad) {
+                  knownHomeworkIds.addAll(homeworks.map { it.id })
+                  isInitialHomeworkLoad = false
+                  homeworks.forEach { repository.syncHomework(it) }
+                } else {
+                  homeworks.forEach { hw ->
+                    if (!knownHomeworkIds.contains(hw.id)) {
+                      knownHomeworkIds.add(hw.id)
+                      repository.syncHomework(hw)
+
+                      // Evaluate Targeted Class Audience (e.g. 12-A student receives 12-A homework, NOT 10-A)
+                      val user = repository.currentUser.value
+                      val sProf = repository.currentStudentProfile.value
+                      val tProf = repository.currentTeacherProfile.value
+
+                      if (NotificationAudienceFilter.shouldReceiveHomeworkNotification(hw, user, sProf, tProf)) {
+                        val appNotif = AppNotification(
+                          id = "notif_hw_${hw.id}",
+                          title = "📚 New Assignment: ${hw.subjectName} (${hw.className})",
+                          message = "${hw.title}. Due: ${hw.dueDate} (${hw.teacherName})",
+                          timeAgo = "Just now",
+                          type = NotificationType.HOMEWORK,
+                          isRead = false,
+                          actionRoute = "homework",
+                          isUrgent = true
+                        )
+                        repository.addNotification(appNotif)
+
+                        appContext?.let { ctx ->
+                          SystemNotificationHelper.showSystemNotification(
+                            context = ctx,
+                            title = "📚 New Assignment: ${hw.subjectName} (${hw.className})",
+                            message = "${hw.title}. Due: ${hw.dueDate}",
+                            type = NotificationType.HOMEWORK,
+                            actionRoute = "homework",
+                            isUrgent = true
+                          )
+                        }
+                      }
+                    } else {
+                      repository.syncHomework(hw)
+                    }
+                  }
+                }
+              }
+            }
+          } catch (e: Exception) {
+            android.util.Log.w("SchoolViewModel", "observeHomework error: ${e.message}")
+          }
+        }
+      } catch (e: Exception) {
+        android.util.Log.w("SchoolViewModel", "FirestoreService init failed gracefully: ${e.message}")
+      }
+    }
+
     if (networkMonitor == null) {
       val monitor = com.example.util.NetworkConnectivityMonitor(context.applicationContext)
       networkMonitor = monitor
@@ -227,15 +516,165 @@ class SchoolViewModel(
 
   // Actions
   fun login(username: String, password: String): Result<User> {
-    return repository.login(username, password)
+    val res = repository.login(username, password)
+    if (res.isSuccess) {
+      val user = res.getOrThrow()
+      val sProf = repository.currentStudentProfile.value
+      sessionPreferences?.saveUserSession(
+        user = user,
+        className = sProf?.let { "Class ${it.grade}-${it.section}" } ?: "Class 12-A",
+        grade = sProf?.grade ?: "12",
+        section = sProf?.section ?: "A",
+        admissionOrEmpId = sProf?.admissionNo ?: ""
+      )
+      _isAuthenticated.value = true
+    }
+    return res
+  }
+
+  /**
+   * Initiates Google Sign-In with Android Credential Manager and Firebase Auth
+   */
+  fun signInWithGoogle(
+    activityContext: Context,
+    preferredRole: UserRole,
+    onSuccess: (User) -> Unit,
+    onError: (String) -> Unit
+  ) {
+    val authService = firebaseAuthService ?: com.example.data.auth.FirebaseAuthService(activityContext)
+    firebaseAuthService = authService
+
+    viewModelScope.launch {
+      _isAuthLoading.value = true
+      _authErrorMessage.value = null
+      val result = authService.signInWithGoogle(activityContext, preferredRole)
+      _isAuthLoading.value = false
+
+      result.fold(
+        onSuccess = { user ->
+          repository.loginWithUser(user)
+          val sProf = repository.currentStudentProfile.value
+          sessionPreferences?.saveUserSession(
+            user = user,
+            className = sProf?.let { "Class ${it.grade}-${it.section}" } ?: "Class 12-A",
+            grade = sProf?.grade ?: "12",
+            section = sProf?.section ?: "A",
+            admissionOrEmpId = sProf?.admissionNo ?: ""
+          )
+          _isAuthenticated.value = true
+          // Sync profile to Firestore asynchronously
+          viewModelScope.launch {
+            firestoreService?.saveUserProfile(user)
+          }
+          onSuccess(user)
+        },
+        onFailure = { error ->
+          val msg = error.message ?: "Google Sign-In failed."
+          _authErrorMessage.value = msg
+          onError(msg)
+        }
+      )
+    }
+  }
+
+  /**
+   * Signs in with Firebase Email & Password
+   */
+  fun signInWithFirebaseEmail(
+    email: String,
+    pass: String,
+    role: UserRole,
+    onSuccess: (User) -> Unit,
+    onError: (String) -> Unit
+  ) {
+    val authService = firebaseAuthService
+    if (authService == null) {
+      val res = repository.login(email, pass)
+      if (res.isSuccess) {
+        val user = res.getOrThrow()
+        val sProf = repository.currentStudentProfile.value
+        sessionPreferences?.saveUserSession(
+          user = user,
+          className = sProf?.let { "Class ${it.grade}-${it.section}" } ?: "Class 12-A",
+          grade = sProf?.grade ?: "12",
+          section = sProf?.section ?: "A",
+          admissionOrEmpId = sProf?.admissionNo ?: ""
+        )
+        _isAuthenticated.value = true
+        onSuccess(user)
+      } else {
+        onError(res.exceptionOrNull()?.message ?: "Authentication failed")
+      }
+      return
+    }
+
+    viewModelScope.launch {
+      _isAuthLoading.value = true
+      _authErrorMessage.value = null
+      val result = authService.signInWithEmailPassword(email, pass, role)
+      _isAuthLoading.value = false
+
+      result.fold(
+        onSuccess = { user ->
+          repository.loginWithUser(user)
+          val sProf = repository.currentStudentProfile.value
+          sessionPreferences?.saveUserSession(
+            user = user,
+            className = sProf?.let { "Class ${it.grade}-${it.section}" } ?: "Class 12-A",
+            grade = sProf?.grade ?: "12",
+            section = sProf?.section ?: "A",
+            admissionOrEmpId = sProf?.admissionNo ?: ""
+          )
+          _isAuthenticated.value = true
+          onSuccess(user)
+        },
+        onFailure = { error ->
+          // Fallback to local demo auth if email matches demo repository accounts
+          val localRes = repository.login(email, pass)
+          if (localRes.isSuccess) {
+            val user = localRes.getOrThrow()
+            val sProf = repository.currentStudentProfile.value
+            sessionPreferences?.saveUserSession(
+              user = user,
+              className = sProf?.let { "Class ${it.grade}-${it.section}" } ?: "Class 12-A",
+              grade = sProf?.grade ?: "12",
+              section = sProf?.section ?: "A",
+              admissionOrEmpId = sProf?.admissionNo ?: ""
+            )
+            _isAuthenticated.value = true
+            onSuccess(user)
+          } else {
+            val msg = error.message ?: "Sign-in failed."
+            _authErrorMessage.value = msg
+            onError(msg)
+          }
+        }
+      )
+    }
   }
 
   fun logout() {
+    viewModelScope.launch {
+      firebaseAuthService?.signOut()
+    }
+    sessionPreferences?.clearSession()
+    _isAuthenticated.value = false
     repository.logout()
   }
 
   fun switchRole(role: UserRole) {
     repository.loginAsRole(role)
+    repository.currentUser.value?.let { user ->
+      val sProf = repository.currentStudentProfile.value
+      sessionPreferences?.saveUserSession(
+        user = user,
+        className = sProf?.let { "Class ${it.grade}-${it.section}" } ?: "Class 12-A",
+        grade = sProf?.grade ?: "12",
+        section = sProf?.section ?: "A",
+        admissionOrEmpId = sProf?.admissionNo ?: ""
+      )
+      _isAuthenticated.value = true
+    }
   }
 
   fun setSelectedDay(day: DayOfWeek) {
@@ -264,18 +703,14 @@ class SchoolViewModel(
     context: Context? = null
   ) {
     repository.assignHomework(title, description, subjectName, className, dueDate, maxMarks)
-    val ctx = context ?: appContext
-    ctx?.let { c ->
-      com.example.util.SystemNotificationHelper.showSystemNotification(
-        context = c,
-        title = "📚 New Assignment: $subjectName ($className)",
-        message = "$title. Due: $dueDate",
-        type = com.example.model.NotificationType.HOMEWORK,
-        actionRoute = "homework",
-        isUrgent = false
-      )
+    val createdHw = repository.homeworks.value.firstOrNull()
+    if (createdHw != null) {
+      knownHomeworkIds.add(createdHw.id)
+      viewModelScope.launch {
+        firestoreService?.saveHomework(createdHw)
+      }
     }
-    _refreshFeedbackMessage.value = "Homework assigned and notification sent to students."
+    _refreshFeedbackMessage.value = "Homework assigned for $className and synced across devices."
   }
 
   fun publishNotice(
@@ -286,26 +721,14 @@ class SchoolViewModel(
     context: Context? = null
   ) {
     val notice = repository.addNotice(title, content, category, isUrgent)
-    val ctx = context ?: appContext
-    ctx?.let { c ->
-      com.example.util.SystemNotificationHelper.showSystemNotification(
-        context = c,
-        title = if (isUrgent) "🚨 Urgent Announcement: $title" else "📢 New Circular: $title",
-        message = content,
-        type = when (category) {
-          NoticeCategory.ACADEMIC -> com.example.model.NotificationType.ACADEMIC
-          NoticeCategory.EVENT -> com.example.model.NotificationType.EVENT
-          NoticeCategory.SPORTS -> com.example.model.NotificationType.EVENT
-          else -> com.example.model.NotificationType.NOTICE
-        },
-        actionRoute = "notices",
-        isUrgent = isUrgent
-      )
+    knownNoticeIds.add(notice.id)
+    viewModelScope.launch {
+      firestoreService?.publishNotice(notice)
     }
     _refreshFeedbackMessage.value = if (isUrgent) {
-      "🚨 Urgent circular published! Priority heads-up alert broadcasted."
+      "🚨 Urgent circular published! Priority alert broadcasted."
     } else {
-      "📢 Circular published! Heads-Up notification broadcasted to all students & faculty."
+      "📢 Circular published! Cloud broadcast sent to target faculty & students."
     }
   }
 
@@ -375,6 +798,11 @@ class SchoolViewModel(
             }
           }
         }
+      }
+      // 3. Persist to Firestore
+      val updatedRecord = repository.attendanceRecords.value.find { it.studentId == studentId }
+      if (updatedRecord != null) {
+        firestoreService?.saveAttendanceRecord(updatedRecord)
       }
     }
   }
@@ -588,6 +1016,47 @@ class SchoolViewModel(
   // 3. Announcements Actions
   fun addAnnouncement(announcement: SchoolAnnouncement) {
     repository.addAnnouncement(announcement)
+    knownAnnouncementIds.add(announcement.id)
+    viewModelScope.launch {
+      firestoreService?.publishAnnouncement(announcement)
+    }
+  }
+
+  fun triggerCloudSync(onComplete: ((Boolean) -> Unit)? = null) {
+    viewModelScope.launch {
+      _isRefreshing.value = true
+      try {
+        val fService = firestoreService
+        if (fService != null) {
+          // Push current notices
+          repository.notices.value.forEach { notice ->
+            fService.publishNotice(notice)
+          }
+          // Push current announcements
+          repository.announcements.value.forEach { ann ->
+            fService.publishAnnouncement(ann)
+          }
+          // Push current homeworks
+          repository.homeworks.value.forEach { hw ->
+            fService.saveHomework(hw)
+          }
+          // Push current attendance records
+          repository.attendanceRecords.value.forEach { rec ->
+            fService.saveAttendanceRecord(rec)
+          }
+          _refreshFeedbackMessage.value = "☁️ Cloud Sync Complete: All notices, assignments, and attendance synced with Firestore."
+          onComplete?.invoke(true)
+        } else {
+          _refreshFeedbackMessage.value = "Cloud Sync: Offline local cache updated."
+          onComplete?.invoke(false)
+        }
+      } catch (e: Exception) {
+        _refreshFeedbackMessage.value = "Cloud Sync Error: ${e.message}"
+        onComplete?.invoke(false)
+      } finally {
+        _isRefreshing.value = false
+      }
+    }
   }
 
   fun acknowledgeAnnouncement(announcementId: String) {

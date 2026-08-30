@@ -42,139 +42,148 @@ fun AdminDashboardScreen(
   ) {
     // 1. User Profile Header
     item {
-      UserProfileHeader(
-        user = profile.user,
-        subtitle = "${profile.adminRole} • ${profile.officeLocation}",
-        schoolSession = "Academic Session 2026–2027",
-        testTag = "admin_user_profile_header"
-      )
+      ScrollEntranceItem(index = 0) {
+        UserProfileHeader(
+          user = profile.user,
+          subtitle = "${profile.adminRole} • ${profile.officeLocation}",
+          schoolSession = "Academic Session 2026–2027",
+          testTag = "admin_user_profile_header"
+        )
+      }
     }
 
     // 2. Institution Overall Metrics (4-stat grid)
     item {
-      Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Row(
-          modifier = Modifier.fillMaxWidth(),
-          horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-          StatCard(
-            title = "Total Students",
-            value = "1,420",
-            subtitle = "95.2% avg attendance",
-            icon = Icons.Default.School,
-            accentColor = SchoolNavyPrimary,
-            modifier = Modifier.weight(1f),
-            testTag = "admin_stat_students",
-            onClick = onNavigateToManagement
-          )
+      ScrollEntranceItem(index = 1) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+          Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+          ) {
+            StatCard(
+              title = "Total Students",
+              value = "1,420",
+              subtitle = "95.2% avg attendance",
+              icon = Icons.Default.School,
+              accentColor = SchoolNavyPrimary,
+              modifier = Modifier.weight(1f),
+              testTag = "admin_stat_students",
+              onClick = onNavigateToManagement
+            )
 
-          StatCard(
-            title = "Faculty Teachers",
-            value = "84 Active",
-            subtitle = "14 Departments",
-            icon = Icons.Default.MenuBook,
-            accentColor = SchoolAccentGreen,
-            modifier = Modifier.weight(1f),
-            testTag = "admin_stat_teachers",
-            onClick = onNavigateToManagement
-          )
-        }
+            StatCard(
+              title = "Faculty Teachers",
+              value = "84 Active",
+              subtitle = "14 Departments",
+              icon = Icons.Default.MenuBook,
+              accentColor = SchoolAccentGreen,
+              modifier = Modifier.weight(1f),
+              testTag = "admin_stat_teachers",
+              onClick = onNavigateToManagement
+            )
+          }
 
-        Row(
-          modifier = Modifier.fillMaxWidth(),
-          horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-          StatCard(
-            title = "Support Staff",
-            value = "32 Members",
-            subtitle = "Facilities & Transport",
-            icon = Icons.Default.Engineering,
-            accentColor = Color(0xFF7C3AED),
-            modifier = Modifier.weight(1f),
-            testTag = "admin_stat_staff",
-            onClick = onNavigateToManagement
-          )
+          Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+          ) {
+            StatCard(
+              title = "Support Staff",
+              value = "32 Members",
+              subtitle = "Facilities & Transport",
+              icon = Icons.Default.Engineering,
+              accentColor = Color(0xFF7C3AED),
+              modifier = Modifier.weight(1f),
+              testTag = "admin_stat_staff",
+              onClick = onNavigateToManagement
+            )
 
-          StatCard(
-            title = "Total Classes",
-            value = "${classes.size * 6} Sections",
-            subtitle = "Grades 1 to 12",
-            icon = Icons.Default.MeetingRoom,
-            accentColor = SchoolGold,
-            modifier = Modifier.weight(1f),
-            testTag = "admin_stat_classes",
-            onClick = onNavigateToManagement
-          )
+            StatCard(
+              title = "Total Classes",
+              value = "${classes.size * 6} Sections",
+              subtitle = "Grades 1 to 12",
+              icon = Icons.Default.MeetingRoom,
+              accentColor = SchoolGold,
+              modifier = Modifier.weight(1f),
+              testTag = "admin_stat_classes",
+              onClick = onNavigateToManagement
+            )
+          }
         }
       }
     }
 
     // 2.5 Quick Academic Stats Overview Card (Attendance, Assignments, Announcements)
     item {
-      QuickStatsOverviewCard(
-        attendance = AttendanceStatData(
-          percentage = 95.2f,
-          presentDays = 1352,
-          totalDays = 1420,
-          statusLabel = "Institutional Avg 95.2%",
-          onClick = onNavigateToManagement
-        ),
-        assignments = AssignmentStatData(
-          pendingCount = 18,
-          dueTodayCount = 5,
-          nextTitle = "Term Examination Worksheets",
-          onClick = onNavigateToManagement
-        ),
-        announcements = AnnouncementStatData(
-          totalCount = notices.size.coerceAtLeast(6),
-          unreadCount = notices.count { it.isUrgent },
-          latestTitle = notices.firstOrNull()?.title ?: "Parent-Teacher Association Meeting",
-          onClick = onNavigateToNotices
-        ),
-        testTag = "admin_quick_stats_card"
-      )
+      ScrollEntranceItem(index = 2) {
+        QuickStatsOverviewCard(
+          attendance = AttendanceStatData(
+            percentage = 95.2f,
+            presentDays = 1352,
+            totalDays = 1420,
+            statusLabel = "Institutional Avg 95.2%",
+            onClick = onNavigateToManagement
+          ),
+          assignments = AssignmentStatData(
+            pendingCount = 18,
+            dueTodayCount = 5,
+            nextTitle = "Term Examination Worksheets",
+            onClick = onNavigateToManagement
+          ),
+          announcements = AnnouncementStatData(
+            totalCount = notices.size.coerceAtLeast(6),
+            unreadCount = notices.count { it.isUrgent },
+            latestTitle = notices.firstOrNull()?.title ?: "Parent-Teacher Association Meeting",
+            onClick = onNavigateToNotices
+          ),
+          testTag = "admin_quick_stats_card"
+        )
+      }
     }
-    item {
-      Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-        modifier = Modifier.fillMaxWidth()
-      ) {
-        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-          Text(
-            text = "Institutional Governance",
-            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onSurface
-          )
 
-          Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-          ) {
-            QuickActionButton(
-              title = "Broadcast",
-              icon = Icons.Default.Campaign,
-              color = Color(0xFFDC2626),
-              onClick = onOpenBroadcastNoticeDialog
+    item {
+      ScrollEntranceItem(index = 3) {
+        Card(
+          shape = RoundedCornerShape(16.dp),
+          colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+          modifier = Modifier.fillMaxWidth()
+        ) {
+          Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(
+              text = "Institutional Governance",
+              style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+              color = MaterialTheme.colorScheme.onSurface
             )
-            QuickActionButton(
-              title = "Directory",
-              icon = Icons.Default.ContactPhone,
-              color = Color(0xFF2563EB),
-              onClick = onNavigateToManagement
-            )
-            QuickActionButton(
-              title = "Classes",
-              icon = Icons.Default.MeetingRoom,
-              color = Color(0xFF059669),
-              onClick = onNavigateToManagement
-            )
-            QuickActionButton(
-              title = "Audit Logs",
-              icon = Icons.Default.Assessment,
-              color = Color(0xFF7C3AED),
-              onClick = onNavigateToManagement
-            )
+
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+              QuickActionButton(
+                title = "Broadcast",
+                icon = Icons.Default.Campaign,
+                color = Color(0xFFDC2626),
+                onClick = onOpenBroadcastNoticeDialog
+              )
+              QuickActionButton(
+                title = "Directory",
+                icon = Icons.Default.ContactPhone,
+                color = Color(0xFF2563EB),
+                onClick = onNavigateToManagement
+              )
+              QuickActionButton(
+                title = "Classes",
+                icon = Icons.Default.MeetingRoom,
+                color = Color(0xFF059669),
+                onClick = onNavigateToManagement
+              )
+              QuickActionButton(
+                title = "Audit Logs",
+                icon = Icons.Default.Assessment,
+                color = Color(0xFF7C3AED),
+                onClick = onNavigateToManagement
+              )
+            }
           }
         }
       }
@@ -182,68 +191,72 @@ fun AdminDashboardScreen(
 
     // 4. Live Class Attendance Overview
     item {
-      Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-      ) {
+      ScrollEntranceItem(index = 4) {
         Row(
-          verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.spacedBy(8.dp)
+          modifier = Modifier.fillMaxWidth(),
+          horizontalArrangement = Arrangement.SpaceBetween,
+          verticalAlignment = Alignment.CenterVertically
         ) {
-          Icon(
-            imageVector = Icons.Default.FactCheck,
-            contentDescription = null,
-            tint = SchoolAccentGreen
-          )
-          Text(
-            text = "Live Classroom Roster",
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-          )
-        }
+          Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+          ) {
+            Icon(
+              imageVector = Icons.Default.FactCheck,
+              contentDescription = null,
+              tint = SchoolAccentGreen
+            )
+            Text(
+              text = "Live Classroom Roster",
+              style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+            )
+          }
 
-        TextButton(onClick = onNavigateToManagement) {
-          Text("Manage All")
+          TextButton(onClick = onNavigateToManagement) {
+            Text("Manage All")
+          }
         }
       }
     }
 
     items(classes.take(3)) { cls ->
-      Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-      ) {
-        Row(
-          modifier = Modifier
-            .fillMaxWidth()
-            .padding(14.dp),
-          verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.SpaceBetween
+      ScrollEntranceItem(index = 5) {
+        Card(
+          modifier = Modifier.fillMaxWidth(),
+          shape = RoundedCornerShape(12.dp),
+          colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+          elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
         ) {
-          Column {
-            Text(
-              text = "${cls.name}-${cls.section}",
-              style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
-            )
-            Text(
-              text = "Class Teacher: ${cls.classTeacherName} • ${cls.roomNo}",
-              style = MaterialTheme.typography.bodySmall,
-              color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-          }
-
-          Surface(
-            color = SchoolAccentGreen.copy(alpha = 0.12f),
-            shape = RoundedCornerShape(8.dp)
+          Row(
+            modifier = Modifier
+              .fillMaxWidth()
+              .padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
           ) {
-            Text(
-              text = "${cls.averageAttendance}% Present",
-              style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-              color = SchoolAccentGreen,
-              modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-            )
+            Column {
+              Text(
+                text = "${cls.name}-${cls.section}",
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
+              )
+              Text(
+                text = "Class Teacher: ${cls.classTeacherName} • ${cls.roomNo}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+              )
+            }
+
+            Surface(
+              color = SchoolAccentGreen.copy(alpha = 0.12f),
+              shape = RoundedCornerShape(8.dp)
+            ) {
+              Text(
+                text = "${cls.averageAttendance}% Present",
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                color = SchoolAccentGreen,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+              )
+            }
           }
         }
       }
@@ -251,33 +264,37 @@ fun AdminDashboardScreen(
 
     // 5. Recent Official Circulars
     item {
-      Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-      ) {
-        Text(
-          text = "Published Circulars & Notices",
-          style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-        )
-
-        Button(
-          onClick = onOpenBroadcastNoticeDialog,
-          contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
-          shape = RoundedCornerShape(8.dp)
+      ScrollEntranceItem(index = 6) {
+        Row(
+          modifier = Modifier.fillMaxWidth(),
+          horizontalArrangement = Arrangement.SpaceBetween,
+          verticalAlignment = Alignment.CenterVertically
         ) {
-          Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-          Spacer(modifier = Modifier.width(4.dp))
-          Text("New Circular", style = MaterialTheme.typography.labelSmall)
+          Text(
+            text = "Published Circulars & Notices",
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+          )
+
+          Button(
+            onClick = onOpenBroadcastNoticeDialog,
+            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+            shape = RoundedCornerShape(8.dp)
+          ) {
+            Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+            Spacer(modifier = Modifier.width(4.dp))
+            Text("New Circular", style = MaterialTheme.typography.labelSmall)
+          }
         }
       }
     }
 
     items(notices.take(2)) { notice ->
-      NoticeCard(
-        notice = notice,
-        onNoticeClick = onNoticeClick
-      )
+      ScrollEntranceItem(index = 7) {
+        NoticeCard(
+          notice = notice,
+          onNoticeClick = onNoticeClick
+        )
+      }
     }
 
     item {

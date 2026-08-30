@@ -39,6 +39,7 @@ fun SettingsScreen(
   onSwitchRole: () -> Unit,
   onSignOut: () -> Unit,
   onResetDatabase: () -> Unit,
+  onSyncWithCloud: (() -> Unit)? = null,
   onOpenNotificationCenter: (() -> Unit)? = null,
   networkState: com.example.util.NetworkState = com.example.util.NetworkState.Online(),
   isSimulatedOffline: Boolean = false,
@@ -47,6 +48,7 @@ fun SettingsScreen(
   modifier: Modifier = Modifier
 ) {
   var showResetSuccessBanner by remember { mutableStateOf(false) }
+  var showSyncSuccessBanner by remember { mutableStateOf(false) }
   var showResetConfirmDialog by remember { mutableStateOf(false) }
 
   // App Meta constants
@@ -459,6 +461,46 @@ fun SettingsScreen(
             Icon(imageVector = Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
             Spacer(modifier = Modifier.width(8.dp))
             Text("Reload / Reset Demo Data")
+          }
+
+          if (onSyncWithCloud != null) {
+            Button(
+              onClick = {
+                onSyncWithCloud()
+                showSyncSuccessBanner = true
+              },
+              modifier = Modifier.fillMaxWidth().testTag("sync_firestore_cloud_btn"),
+              shape = RoundedCornerShape(10.dp),
+              colors = ButtonDefaults.buttonColors(
+                containerColor = SchoolNavyPrimary,
+                contentColor = Color.White
+              )
+            ) {
+              Icon(imageVector = Icons.Default.CloudSync, contentDescription = null, modifier = Modifier.size(18.dp))
+              Spacer(modifier = Modifier.width(8.dp))
+              Text("Sync All with Cloud Firestore")
+            }
+          }
+
+          AnimatedVisibility(visible = showSyncSuccessBanner) {
+            Surface(
+              color = SchoolAccentGreen.copy(alpha = 0.15f),
+              shape = RoundedCornerShape(8.dp),
+              modifier = Modifier.fillMaxWidth()
+            ) {
+              Row(
+                modifier = Modifier.padding(10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+              ) {
+                Icon(imageVector = Icons.Default.CloudDone, contentDescription = null, tint = SchoolAccentGreen, modifier = Modifier.size(16.dp))
+                Text(
+                  text = "Cloud Firestore sync executed! Notices, attendance & assignments pushed to cloud.",
+                  style = MaterialTheme.typography.bodySmall,
+                  color = SchoolAccentGreen
+                )
+              }
+            }
           }
 
           AnimatedVisibility(visible = showResetSuccessBanner) {

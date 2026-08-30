@@ -1,0 +1,61 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="128dp"
+    android:height="128dp"
+    android:viewportWidth="128"
+    android:viewportHeight="128">
+
+    <!-- Outer Crest / Shield Circle Background -->
+    <path
+        android:fillColor="#0F3875"
+        android:pathData="M64,6 C32,6 6,32 6,64 C6,96 32,122 64,122 C96,122 122,96 122,64 C122,32 96,6 64,6 Z" />
+
+    <!-- Gold Accent Outer Ring -->
+    <path
+        android:strokeColor="#F59E0B"
+        android:strokeWidth="3.5"
+        android:pathData="M64,12 C35.3,12 12,35.3 12,64 C12,92.7 35.3,116 64,116 C92.7,116 116,92.7 116,64 C116,35.3 92.7,12 64,12 Z" />
+
+    <!-- Inner Shield Geometry -->
+    <path
+        android:fillColor="#1E40AF"
+        android:pathData="M64,24 L94,36 L94,68 C94,88 64,104 64,104 C64,104 34,88 34,68 L34,36 Z" />
+
+    <path
+        android:strokeColor="#F59E0B"
+        android:strokeWidth="2.5"
+        android:pathData="M64,24 L94,36 L94,68 C94,88 64,104 64,104 C64,104 34,88 34,68 L34,36 Z" />
+
+    <!-- Graduation Cap / Mortarboard Emblem -->
+    <path
+        android:fillColor="#FBBF24"
+        android:pathData="M64,36 L86,46 L64,56 L42,46 Z" />
+
+    <!-- Cap Base & Tassel -->
+    <path
+        android:fillColor="#F59E0B"
+        android:pathData="M52,52 L52,60 C52,64 76,64 76,60 L76,52 L64,57 Z" />
+    <path
+        android:strokeColor="#FBBF24"
+        android:strokeWidth="1.5"
+        android:pathData="M80,49 L83,62 L81,64 L85,64 L83,62" />
+
+    <!-- Open Book / Wisdom Emblem -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M64,72 C58,68 46,68 42,70 L42,88 C46,86 58,86 64,90 C70,86 82,86 86,88 L86,70 C82,68 70,68 64,72 Z" />
+
+    <!-- Book Spine & Pages Divider -->
+    <path
+        android:strokeColor="#0F3875"
+        android:strokeWidth="1.5"
+        android:pathData="M64,72 L64,90" />
+    <path
+        android:strokeColor="#93C5FD"
+        android:strokeWidth="1"
+        android:pathData="M46,76 L60,76 M46,80 L60,80 M68,76 L82,76 M68,80 L82,80" />
+
+    <!-- Star of Excellence at Top Center -->
+    <path
+        android:fillColor="#FDE047"
+        android:pathData="M64,16 L66,21 L71,21 L67,24 L69,29 L64,26 L59,29 L61,24 L57,21 L62,21 Z" />
+</vector>

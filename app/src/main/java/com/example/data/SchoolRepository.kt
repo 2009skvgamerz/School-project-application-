@@ -142,6 +142,69 @@ class SchoolRepository {
     setUserByRole(demo.role, demo.username, demo.fullName, demo.email)
   }
 
+  fun loginWithUser(user: User) {
+    _currentUser.value = user
+    when (user.role) {
+      UserRole.STUDENT -> {
+        _currentStudentProfile.value = StudentProfile(
+          user = user,
+          admissionNo = "SJ-${user.id.take(8).uppercase()}",
+          grade = "12",
+          section = "A",
+          rollNo = 1,
+          parentName = "Verified Parent / Guardian",
+          parentPhone = user.phone,
+          bloodGroup = "B+ve",
+          attendancePercentage = 97.5,
+          houseName = "St. Francis House (Blue)",
+          busRoute = "Bus 12 - Main Gate"
+        )
+      }
+      UserRole.TEACHER -> {
+        _currentTeacherProfile.value = TeacherProfile(
+          user = user,
+          employeeId = "EMP-${user.id.take(6).uppercase()}",
+          department = "Physical & Chemical Sciences",
+          assignedClasses = listOf("Class 10-A", "Class 10-B", "Class 9-A", "Class 11-Science"),
+          subjectsTaught = listOf("Physics", "Science Lab", "General Science"),
+          qualification = "M.Sc. Physics, B.Ed (Gold Medalist)",
+          isClassTeacher = true,
+          classTeacherOf = "Class 10-A"
+        )
+      }
+      UserRole.STAFF -> {
+        _currentStaffProfile.value = StaffProfile(
+          user = user,
+          employeeId = "STF-${user.id.take(6).uppercase()}",
+          department = "Facilities & Operations",
+          duties = listOf("Campus Supervision", "Lab Support", "Safety Protocol Oversight"),
+          shiftTiming = "08:00 AM - 04:30 PM"
+        )
+      }
+      UserRole.DRIVER -> {
+        _currentDriverProfile.value = DriverProfile(
+          user = user,
+          driverId = "DRV-${user.id.take(6).uppercase()}",
+          assignedBusNo = "Bus #12",
+          shift = "Morning Shift (06:45 AM - 09:30 AM)"
+        )
+      }
+      UserRole.ADMIN -> {
+        _currentAdminProfile.value = AdminProfile(
+          user = user,
+          employeeId = "ADM-${user.id.take(6).uppercase()}",
+          adminRole = "Principal & System Administrator"
+        )
+      }
+      UserRole.DEVELOPER -> {
+        _currentDeveloperProfile.value = DeveloperProfile(
+          user = user,
+          devId = "DEV-${user.id.take(6).uppercase()}"
+        )
+      }
+    }
+  }
+
   private fun setUserByRole(role: UserRole, username: String, fullName: String, email: String) {
     val user = User(
       id = "usr_${role.name.lowercase()}_01",
@@ -288,6 +351,19 @@ class SchoolRepository {
     return newNotice
   }
 
+  fun publishNotice(notice: Notice) {
+    _notices.update { list ->
+      val index = list.indexOfFirst { it.id == notice.id }
+      if (index != -1) {
+        val updated = list.toMutableList()
+        updated[index] = notice
+        updated
+      } else {
+        listOf(notice) + list
+      }
+    }
+  }
+
   fun submitHomework(homeworkId: String, note: String) {
     _homeworks.update { list ->
       list.map { hw ->
@@ -355,6 +431,45 @@ class SchoolRepository {
         if (rec.className.equals(className, ignoreCase = true) || className.isEmpty()) {
           rec.copy(status = status, markedBy = markedBy)
         } else rec
+      }
+    }
+  }
+
+  fun syncAnnouncement(announcement: SchoolAnnouncement) {
+    _announcements.update { list ->
+      val index = list.indexOfFirst { it.id == announcement.id }
+      if (index != -1) {
+        val updated = list.toMutableList()
+        updated[index] = announcement
+        updated
+      } else {
+        listOf(announcement) + list
+      }
+    }
+  }
+
+  fun syncAttendanceRecord(record: AttendanceRecord) {
+    _attendanceRecords.update { list ->
+      val index = list.indexOfFirst { it.id == record.id || it.studentId == record.studentId }
+      if (index != -1) {
+        val updated = list.toMutableList()
+        updated[index] = record
+        updated
+      } else {
+        list + record
+      }
+    }
+  }
+
+  fun syncHomework(hw: Homework) {
+    _homeworks.update { list ->
+      val index = list.indexOfFirst { it.id == hw.id }
+      if (index != -1) {
+        val updated = list.toMutableList()
+        updated[index] = hw
+        updated
+      } else {
+        listOf(hw) + list
       }
     }
   }

@@ -3,6 +3,7 @@ package com.example.ui.screens
 import androidx.compose.animation.*
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -19,6 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.model.*
 import com.example.ui.theme.*
 
@@ -184,15 +186,24 @@ fun HomeworkCard(
   onSubmitClick: () -> Unit,
   modifier: Modifier = Modifier
 ) {
+  val subjectColor = when {
+    homework.subjectName.contains("Math", ignoreCase = true) -> Color(0xFF1A73E8)
+    homework.subjectName.contains("Physic", ignoreCase = true) || homework.subjectName.contains("Scien", ignoreCase = true) -> Color(0xFF0D9488)
+    homework.subjectName.contains("Chem", ignoreCase = true) -> Color(0xFF7C3AED)
+    homework.subjectName.contains("Eng", ignoreCase = true) -> Color(0xFFD97706)
+    else -> MaterialTheme.colorScheme.primary
+  }
+
   Card(
     modifier = modifier.fillMaxWidth(),
-    shape = RoundedCornerShape(14.dp),
+    shape = RoundedCornerShape(18.dp),
     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
   ) {
     Column(
       modifier = Modifier.padding(16.dp),
-      verticalArrangement = Arrangement.spacedBy(10.dp)
+      verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
       Row(
         modifier = Modifier.fillMaxWidth(),
@@ -204,48 +215,57 @@ fun HomeworkCard(
           horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
           Surface(
-            color = MaterialTheme.colorScheme.primaryContainer,
-            shape = RoundedCornerShape(6.dp)
+            color = subjectColor.copy(alpha = 0.12f),
+            shape = RoundedCornerShape(8.dp)
           ) {
             Text(
               text = homework.subjectName,
-              style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-              color = MaterialTheme.colorScheme.onPrimaryContainer,
-              modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+              style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.ExtraBold),
+              color = subjectColor,
+              modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
             )
           }
 
-          Text(
-            text = homework.className,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-          )
+          Surface(
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
+            shape = RoundedCornerShape(8.dp)
+          ) {
+            Text(
+              text = homework.className,
+              style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+              color = MaterialTheme.colorScheme.onSurfaceVariant,
+              modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp)
+            )
+          }
         }
 
         Surface(
           color = when(homework.status) {
             HomeworkStatus.PENDING -> SchoolGold.copy(alpha = 0.15f)
-            HomeworkStatus.SUBMITTED -> Color(0xFF2563EB).copy(alpha = 0.15f)
+            HomeworkStatus.SUBMITTED -> Color(0xFF1A73E8).copy(alpha = 0.15f)
             HomeworkStatus.EVALUATED -> SchoolAccentGreen.copy(alpha = 0.15f)
           },
-          shape = RoundedCornerShape(6.dp)
+          shape = RoundedCornerShape(8.dp)
         ) {
           Text(
             text = homework.status.label,
             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
             color = when(homework.status) {
               HomeworkStatus.PENDING -> SchoolGoldDark
-              HomeworkStatus.SUBMITTED -> Color(0xFF2563EB)
+              HomeworkStatus.SUBMITTED -> Color(0xFF1A73E8)
               HomeworkStatus.EVALUATED -> SchoolAccentGreen
             },
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
           )
         }
       }
 
       Text(
         text = homework.title,
-        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+        style = MaterialTheme.typography.titleMedium.copy(
+          fontWeight = FontWeight.Bold,
+          fontSize = 16.sp
+        ),
         color = MaterialTheme.colorScheme.onSurface
       )
 
@@ -257,58 +277,84 @@ fun HomeworkCard(
 
       if (homework.submissionNote.isNotBlank()) {
         Surface(
-          color = MaterialTheme.colorScheme.surfaceVariant,
-          shape = RoundedCornerShape(8.dp),
+          color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+          shape = RoundedCornerShape(10.dp),
           modifier = Modifier.fillMaxWidth()
         ) {
           Row(
-            modifier = Modifier.padding(8.dp),
+            modifier = Modifier.padding(10.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
           ) {
-            Icon(imageVector = Icons.Default.Info, contentDescription = null, modifier = Modifier.size(16.dp), tint = SchoolNavyPrimary)
+            Icon(
+              imageVector = Icons.Default.Info,
+              contentDescription = null,
+              modifier = Modifier.size(16.dp),
+              tint = MaterialTheme.colorScheme.primary
+            )
             Text(
               text = homework.submissionNote,
-              style = MaterialTheme.typography.bodySmall
+              style = MaterialTheme.typography.bodySmall,
+              color = MaterialTheme.colorScheme.onSurface
             )
           }
         }
       }
 
-      HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+      HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
 
       Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
       ) {
-        Column {
-          Text(
-            text = "Due: ${homework.dueDate}",
-            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-            color = if (homework.status == HomeworkStatus.PENDING) Color(0xFFDC2626) else MaterialTheme.colorScheme.onSurfaceVariant
+        Row(
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+          Icon(
+            imageVector = Icons.Default.Schedule,
+            contentDescription = null,
+            tint = if (homework.status == HomeworkStatus.PENDING) Color(0xFFDC2626) else MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(15.dp)
           )
-          Text(
-            text = "Teacher: ${homework.teacherName}  •  ${homework.maxMarks} Marks",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-          )
+          Column {
+            Text(
+              text = "Due: ${homework.dueDate}",
+              style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+              color = if (homework.status == HomeworkStatus.PENDING) Color(0xFFDC2626) else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+              text = "${homework.teacherName} • ${homework.maxMarks} Marks",
+              style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.5.sp),
+              color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+          }
         }
 
         if (userRole == UserRole.STUDENT && homework.status == HomeworkStatus.PENDING) {
           Button(
             onClick = onSubmitClick,
-            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-            shape = RoundedCornerShape(8.dp)
+            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+            shape = RoundedCornerShape(10.dp),
+            colors = ButtonDefaults.buttonColors(
+              containerColor = MaterialTheme.colorScheme.primary
+            )
           ) {
-            Text("Submit", style = MaterialTheme.typography.labelSmall)
+            Text("Submit", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
           }
         } else if (userRole == UserRole.TEACHER) {
-          Text(
-            text = "${homework.submissionsCount}/${homework.totalStudents} Submitted",
-            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-            color = SchoolAccentGreen
-          )
+          Surface(
+            shape = RoundedCornerShape(8.dp),
+            color = SchoolAccentGreen.copy(alpha = 0.12f)
+          ) {
+            Text(
+              text = "${homework.submissionsCount}/${homework.totalStudents} Submissions",
+              style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+              color = SchoolAccentGreen,
+              modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+            )
+          }
         }
       }
     }

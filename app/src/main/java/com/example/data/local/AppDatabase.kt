@@ -55,11 +55,11 @@ abstract class AppDatabase : RoomDatabase() {
       scope: CoroutineScope = CoroutineScope(Dispatchers.IO)
     ): AppDatabase {
       return INSTANCE ?: synchronized(this) {
-        val instance = Room.databaseBuilder(
+        val instance = Room.inMemoryDatabaseBuilder(
           context.applicationContext,
-          AppDatabase::class.java,
-          DATABASE_NAME
+          AppDatabase::class.java
         )
+          .fallbackToDestructiveMigration()
           .addCallback(AppDatabaseCallback(scope))
           .build()
         INSTANCE = instance

@@ -75,115 +75,119 @@ fun DriverDashboardScreen(
   ) {
     // 0. User Profile Header
     item {
-      Box(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp)) {
-        UserProfileHeader(
-          user = driverProfile.user,
-          subtitle = "Bus #${driverProfile.assignedBusNo.removePrefix("Bus #")} • DL: ${driverProfile.licenseNo}",
-          schoolSession = "Academic Session 2026–2027",
-          statusLabel = "PILOT ACTIVE",
-          testTag = "driver_user_profile_header"
-        )
+      ScrollEntranceItem(index = 0) {
+        Box(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp)) {
+          UserProfileHeader(
+            user = driverProfile.user,
+            subtitle = "Bus #${driverProfile.assignedBusNo.removePrefix("Bus #")} • DL: ${driverProfile.licenseNo}",
+            schoolSession = "Academic Session 2026–2027",
+            statusLabel = "PILOT ACTIVE",
+            testTag = "driver_user_profile_header"
+          )
+        }
       }
     }
 
     // 1. TODAY'S OPERATING VEHICLE & ROUTE CARD
     item {
-      Box(
-        modifier = Modifier
-          .fillMaxWidth()
-          .padding(horizontal = 16.dp, vertical = 8.dp)
-      ) {
-        Card(
-          shape = RoundedCornerShape(20.dp),
-          colors = CardDefaults.cardColors(
-            containerColor = Color.Transparent
-          ),
-          elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-          modifier = Modifier.fillMaxWidth()
+      ScrollEntranceItem(index = 1) {
+        Box(
+          modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
-          Box(
-            modifier = Modifier
-              .fillMaxWidth()
-              .background(
-                brush = Brush.horizontalGradient(
-                  colors = listOf(
-                    Color(0xFFC2410C),
-                    Color(0xFFEA580C)
+          Card(
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(
+              containerColor = Color.Transparent
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+            modifier = Modifier.fillMaxWidth()
+          ) {
+            Box(
+              modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                  brush = Brush.horizontalGradient(
+                    colors = listOf(
+                      Color(0xFFC2410C),
+                      Color(0xFFEA580C)
+                    )
                   )
                 )
-              )
-              .padding(18.dp)
-          ) {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-              Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-              ) {
-                Surface(
-                  color = Color.Black.copy(alpha = 0.25f),
-                  shape = RoundedCornerShape(8.dp)
+                .padding(18.dp)
+            ) {
+              Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(
+                  modifier = Modifier.fillMaxWidth(),
+                  horizontalArrangement = Arrangement.SpaceBetween,
+                  verticalAlignment = Alignment.CenterVertically
                 ) {
-                  Text(
-                    text = "OPERATING VEHICLE & ROUTE",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                      fontWeight = FontWeight.Bold,
-                      letterSpacing = 1.sp,
-                      fontSize = 10.sp
+                  Surface(
+                    color = Color.Black.copy(alpha = 0.25f),
+                    shape = RoundedCornerShape(8.dp)
+                  ) {
+                    Text(
+                      text = "OPERATING VEHICLE & ROUTE",
+                      style = MaterialTheme.typography.labelSmall.copy(
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp,
+                        fontSize = 10.sp
+                      ),
+                      color = SchoolGoldLight,
+                      modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                  }
+
+                  // Quick Change Bus Vehicle Button
+                  FilledTonalButton(
+                    onClick = { showBusVehicleSelectorDialog = true },
+                    colors = ButtonDefaults.filledTonalButtonColors(
+                      containerColor = Color.White,
+                      contentColor = Color(0xFFC2410C)
                     ),
-                    color = SchoolGoldLight,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                  )
+                    shape = RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                    modifier = Modifier.testTag("driver_switch_bus_button")
+                  ) {
+                    Icon(Icons.Default.Tune, contentDescription = null, modifier = Modifier.size(14.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("Switch Bus", fontWeight = FontWeight.Bold, fontSize = 11.5.sp)
+                  }
                 }
 
-                // Quick Change Bus Vehicle Button
-                FilledTonalButton(
-                  onClick = { showBusVehicleSelectorDialog = true },
-                  colors = ButtonDefaults.filledTonalButtonColors(
-                    containerColor = Color.White,
-                    contentColor = Color(0xFFC2410C)
-                  ),
-                  shape = RoundedCornerShape(12.dp),
-                  contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                  modifier = Modifier.testTag("driver_switch_bus_button")
+                Row(
+                  modifier = Modifier.fillMaxWidth(),
+                  horizontalArrangement = Arrangement.SpaceBetween,
+                  verticalAlignment = Alignment.CenterVertically
                 ) {
-                  Icon(Icons.Default.Tune, contentDescription = null, modifier = Modifier.size(14.dp))
-                  Spacer(Modifier.width(4.dp))
-                  Text("Switch Bus", fontWeight = FontWeight.Bold, fontSize = 11.5.sp)
-                }
-              }
+                  Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                      text = "${activeRoute?.routeNumber ?: driverProfile.assignedBusNo} • ${activeRoute?.busRegistration ?: driverProfile.busRegistration}",
+                      style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
+                      color = Color.White
+                    )
+                    Text(
+                      text = activeRoute?.routeName ?: "Gandhi Nagar - Indiranagar Express",
+                      style = MaterialTheme.typography.bodyMedium,
+                      color = Color.White.copy(alpha = 0.9f)
+                    )
+                  }
 
-              Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-              ) {
-                Column(modifier = Modifier.weight(1f)) {
-                  Text(
-                    text = "${activeRoute?.routeNumber ?: driverProfile.assignedBusNo} • ${activeRoute?.busRegistration ?: driverProfile.busRegistration}",
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
-                    color = Color.White
-                  )
-                  Text(
-                    text = activeRoute?.routeName ?: "Gandhi Nagar - Indiranagar Express",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.9f)
-                  )
-                }
-
-                // Live Map Shortcut
-                IconButton(
-                  onClick = onOpenLiveMap,
-                  modifier = Modifier
-                    .size(44.dp)
-                    .background(Color.White.copy(alpha = 0.2f), CircleShape)
-                    .testTag("driver_open_map_btn")
-                ) {
-                  Icon(
-                    imageVector = Icons.Default.Map,
-                    contentDescription = "Open In-App Map",
-                    tint = Color.White
-                  )
+                  // Live Map Shortcut
+                  IconButton(
+                    onClick = onOpenLiveMap,
+                    modifier = Modifier
+                      .size(44.dp)
+                      .background(Color.White.copy(alpha = 0.2f), CircleShape)
+                      .testTag("driver_open_map_btn")
+                  ) {
+                    Icon(
+                      imageVector = Icons.Default.Map,
+                      contentDescription = "Open In-App Map",
+                      tint = Color.White
+                    )
+                  }
                 }
               }
             }
