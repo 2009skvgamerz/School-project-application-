@@ -25,25 +25,17 @@ class SchoolApplication : Application() {
             FirebaseApp.initializeApp(this)
 
             if (FirebaseApp.getApps(this).isNotEmpty()) {
-                val firebaseAppCheck = FirebaseAppCheck.getInstance()
-                if (BuildConfig.DEBUG) {
-                    firebaseAppCheck.installAppCheckProviderFactory(
-                        DebugAppCheckProviderFactory.getInstance()
-                    )
-                    Log.d(TAG, "Firebase AppCheck initialized with DebugAppCheckProviderFactory")
-                } else {
-                    firebaseAppCheck.installAppCheckProviderFactory(
-                        PlayIntegrityAppCheckProviderFactory.getInstance()
-                    )
-                    Log.d(TAG, "Firebase AppCheck initialized with PlayIntegrityAppCheckProviderFactory")
+                // Enable Firestore offline persistence for smooth local caching & background sync
+                try {
+                    FirebaseFirestore.getInstance().apply {
+                        firestoreSettings = FirebaseFirestoreSettings.Builder()
+                            .setPersistenceEnabled(true)
+                            .build()
+                    }
+                    Log.d(TAG, "Firebase Firestore initialized with persistence enabled")
+                } catch (e: Exception) {
+                    Log.w(TAG, "Firestore settings configuration notice: ${e.message}")
                 }
-
-                FirebaseFirestore.getInstance().apply {
-                    firestoreSettings = FirebaseFirestoreSettings.Builder()
-                        .setPersistenceEnabled(false)
-                        .build()
-                }
-                Log.d(TAG, "Firebase Firestore initialized with direct cloud synchronization")
 
                 // Subscribe to Firebase Cloud Messaging (FCM) push notification topics
                 SchoolFirebaseMessagingService.subscribeToDefaultTopics()

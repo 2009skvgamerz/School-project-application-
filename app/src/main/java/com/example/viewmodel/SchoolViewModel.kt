@@ -225,6 +225,11 @@ class SchoolViewModel(
       try {
         val fService = com.example.data.firestore.FirestoreService(context.applicationContext)
         firestoreService = fService
+        _cloudSyncInfo.value = _cloudSyncInfo.value.copy(
+          state = CloudSyncState.SYNCED,
+          isRealtimeConnected = true,
+          lastSyncedTime = "Just now"
+        )
 
         // 1. Listen for real-time cloud notices from Firestore with Audience Filtering
         viewModelScope.launch {

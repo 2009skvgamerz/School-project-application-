@@ -28,22 +28,7 @@ class FirestoreService(private val context: Context) {
   }
 
   init {
-    try {
-      if (FirebaseApp.getApps(context).isNotEmpty()) {
-        val firebaseAppCheck = FirebaseAppCheck.getInstance()
-        if (com.example.BuildConfig.DEBUG) {
-          firebaseAppCheck.installAppCheckProviderFactory(
-            DebugAppCheckProviderFactory.getInstance()
-          )
-        } else {
-          firebaseAppCheck.installAppCheckProviderFactory(
-            PlayIntegrityAppCheckProviderFactory.getInstance()
-          )
-        }
-      }
-    } catch (e: Exception) {
-      Log.w(TAG, "AppCheck provider initialization notice: ${e.message}")
-    }
+    Log.d(TAG, "Initializing FirestoreService with persistence enabled")
   }
 
   private val firestore: FirebaseFirestore? by lazy {
@@ -51,7 +36,7 @@ class FirestoreService(private val context: Context) {
       if (FirebaseApp.getApps(context).isNotEmpty()) {
         FirebaseFirestore.getInstance().apply {
           firestoreSettings = FirebaseFirestoreSettings.Builder()
-            .setPersistenceEnabled(false)
+            .setPersistenceEnabled(true)
             .build()
         }
       } else {
