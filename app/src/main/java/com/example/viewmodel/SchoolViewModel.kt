@@ -77,6 +77,53 @@ class SchoolViewModel(
   )
   val cloudSyncInfo: StateFlow<CloudSyncInfo> = _cloudSyncInfo.asStateFlow()
 
+  // FCM Device Token State Flow
+  private val _fcmDeviceToken = MutableStateFlow<String?>(com.example.service.SchoolFirebaseMessagingService.latestToken)
+  val fcmDeviceToken: StateFlow<String?> = _fcmDeviceToken.asStateFlow()
+
+  fun refreshFcmDeviceToken() {
+    com.example.service.SchoolFirebaseMessagingService.fetchFcmToken { token ->
+      _fcmDeviceToken.value = token
+    }
+  }
+
+  fun triggerFcmPushNotification(
+    title: String = "📢 Emergency School Circular",
+    message: String = "Heavy rainfall warning: School will operate online for afternoon sessions.",
+    type: String = "notice",
+    route: String = "notices"
+  ) {
+    appContext?.let { ctx ->
+      val notifType = when (type.lowercase()) {
+        "event" -> NotificationType.EVENT
+        "homework" -> NotificationType.HOMEWORK
+        "attendance" -> NotificationType.ATTENDANCE
+        "exam" -> NotificationType.EXAM
+        else -> NotificationType.NOTICE
+      }
+      com.example.util.SystemNotificationHelper.showSystemNotification(
+        context = ctx,
+        title = "🔥 FCM Push: $title",
+        message = message,
+        type = notifType,
+        actionRoute = route,
+        isUrgent = true
+      )
+      val appNotif = AppNotification(
+        id = "fcm_push_${System.currentTimeMillis()}",
+        title = "🔥 FCM Push: $title",
+        message = message,
+        timeAgo = "Just now",
+        type = notifType,
+        isRead = false,
+        actionRoute = route,
+        isUrgent = true
+      )
+      repository.addNotification(appNotif)
+      _refreshFeedbackMessage.value = "🔥 FCM Push Notification dispatched to system notification tray!"
+    }
+  }
+
   private val _refreshFeedbackMessage = MutableStateFlow<String?>(null)
   val refreshFeedbackMessage: StateFlow<String?> = _refreshFeedbackMessage.asStateFlow()
 

@@ -17,8 +17,8 @@ android {
     applicationId = "com.aistudio.stjosephsschool.kxpqla"
     minSdk = 24
     targetSdk = 36
-    versionCode = 25
-    versionName = "2.5.0"
+    versionCode = 30
+    versionName = "3.0.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
@@ -104,6 +104,7 @@ dependencies {
   // Firestore and Firebase Auth with Google Sign-In via Credential Manager
   implementation(libs.firebase.firestore)
   implementation(libs.firebase.auth)
+  implementation(libs.firebase.messaging)
   implementation(libs.androidx.credentials)
   implementation(libs.androidx.credentials.play.services)
   implementation(libs.googleid)

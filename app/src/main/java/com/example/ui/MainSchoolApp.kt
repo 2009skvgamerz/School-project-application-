@@ -89,6 +89,7 @@ fun MainSchoolApp(
   val isSimulatedOffline by viewModel.isSimulatedOffline.collectAsState()
   val cloudSyncInfo by viewModel.cloudSyncInfo.collectAsState()
   val refreshFeedbackMessage by viewModel.refreshFeedbackMessage.collectAsState()
+  val fcmDeviceToken by viewModel.fcmDeviceToken.collectAsState()
 
   val snackbarHostState = remember { SnackbarHostState() }
 
@@ -1166,6 +1167,15 @@ fun MainSchoolApp(
   if (showNotificationCenterSheet) {
     NotificationCenterSheet(
       notifications = notifications,
+      fcmDeviceToken = fcmDeviceToken,
+      onTriggerFcmPush = { title, msg, type, route ->
+        viewModel.triggerFcmPushNotification(
+          title = title,
+          message = msg,
+          type = type,
+          route = route
+        )
+      },
       onDismiss = { showNotificationCenterSheet = false },
       onMarkAsRead = { notifId ->
         viewModel.markNotificationAsRead(notifId)

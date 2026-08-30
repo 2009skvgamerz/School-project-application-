@@ -9,10 +9,14 @@ import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderF
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 
+import com.example.service.SchoolFirebaseMessagingService
+import com.example.util.SystemNotificationHelper
+
 class SchoolApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        SystemNotificationHelper.createNotificationChannel(this)
         initFirebase()
     }
 
@@ -40,9 +44,15 @@ class SchoolApplication : Application() {
                         .build()
                 }
                 Log.d(TAG, "Firebase Firestore initialized with direct cloud synchronization")
+
+                // Subscribe to Firebase Cloud Messaging (FCM) push notification topics
+                SchoolFirebaseMessagingService.subscribeToDefaultTopics()
+                SchoolFirebaseMessagingService.fetchFcmToken { token ->
+                    Log.d(TAG, "Initial FCM Device Token: $token")
+                }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error initializing Firebase / AppCheck: ${e.message}", e)
+            Log.e(TAG, "Error initializing Firebase / AppCheck / FCM: ${e.message}", e)
         }
     }
 

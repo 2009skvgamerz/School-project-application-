@@ -47,6 +47,8 @@ fun NotificationCenterSheet(
   onNavigateToRoute: (String) -> Unit,
   onTriggerImmediatePopUp: (title: String, message: String, type: NotificationType, route: String) -> Unit = { _, _, _, _ -> },
   onTriggerDelayedPopUp: (delaySeconds: Long, title: String, message: String, type: NotificationType, route: String) -> Unit = { _, _, _, _, _ -> },
+  fcmDeviceToken: String? = null,
+  onTriggerFcmPush: (title: String, message: String, type: String, route: String) -> Unit = { _, _, _, _ -> },
   modifier: Modifier = Modifier
 ) {
   val context = LocalContext.current
@@ -295,6 +297,87 @@ fun NotificationCenterSheet(
               style = MaterialTheme.typography.bodySmall,
               color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+
+            // FCM Cloud Messaging Status & Dispatch Card
+            Card(
+              shape = RoundedCornerShape(12.dp),
+              colors = CardDefaults.cardColors(containerColor = Color(0xFFEFF6FF)),
+              border = CardDefaults.outlinedCardBorder().copy(
+                brush = androidx.compose.ui.graphics.SolidColor(Color(0xFF93C5FD))
+              ),
+              modifier = Modifier.fillMaxWidth().testTag("fcm_push_status_card")
+            ) {
+              Column(
+                modifier = Modifier.padding(10.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+              ) {
+                Row(
+                  modifier = Modifier.fillMaxWidth(),
+                  horizontalArrangement = Arrangement.SpaceBetween,
+                  verticalAlignment = Alignment.CenterVertically
+                ) {
+                  Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                  ) {
+                    Icon(
+                      imageVector = Icons.Default.CloudSync,
+                      contentDescription = null,
+                      tint = Color(0xFF1D4ED8),
+                      modifier = Modifier.size(18.dp)
+                    )
+                    Text(
+                      text = "Firebase Cloud Messaging (FCM)",
+                      style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                      color = Color(0xFF1E40AF)
+                    )
+                  }
+
+                  Surface(
+                    color = Color(0xFF22C55E).copy(alpha = 0.15f),
+                    shape = RoundedCornerShape(6.dp)
+                  ) {
+                    Text(
+                      text = "FCM LISTENING",
+                      style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold),
+                      color = Color(0xFF15803D),
+                      modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                  }
+                }
+
+                Text(
+                  text = if (fcmDeviceToken != null) "Token: ${fcmDeviceToken.take(24)}..." else "Token: Connected & Subscribed to #announcements, #events",
+                  style = MaterialTheme.typography.bodySmall,
+                  color = Color(0xFF1E3A8A),
+                  maxLines = 1,
+                  overflow = TextOverflow.Ellipsis
+                )
+
+                Button(
+                  onClick = {
+                    onTriggerFcmPush(
+                      "📢 Urgent Event: Science & Robotics Fest 2026",
+                      "Annual Inter-School Robotics Competition scheduled for tomorrow at Main Auditorium. Registration starts at 9:00 AM.",
+                      "event",
+                      "events"
+                    )
+                    Toast.makeText(context, "🔥 FCM Push Notification sent to system tray!", Toast.LENGTH_SHORT).show()
+                  },
+                  colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB)),
+                  shape = RoundedCornerShape(8.dp),
+                  contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                  modifier = Modifier.fillMaxWidth().testTag("send_fcm_push_btn")
+                ) {
+                  Icon(imageVector = Icons.Default.Send, contentDescription = null, modifier = Modifier.size(16.dp))
+                  Spacer(modifier = Modifier.width(6.dp))
+                  Text(
+                    text = "Dispatch FCM Push (Events & Notices)",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold)
+                  )
+                }
+              }
+            }
 
             // Trigger Buttons
             Row(

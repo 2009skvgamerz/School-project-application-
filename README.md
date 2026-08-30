@@ -25,9 +25,15 @@ A native Android **School ERP & Student Information System** built with **Jetpac
 ## 🚀 What's New in Release v3.0.0
 
 > **Previous Release:** `v2.5.0` ([Commit f28b8b3](https://github.com/2009skvgamerz/School-project-application-/tree/f28b8b301bbaec3814cfeefb61e5bd02594296cf)) → **Current Release:** `v3.0.0`
-> *(Google Material You Floating Search Bar Pill, Real-Time Cloud Sync Indicator & Telemetry, Instant Startup Engine, and Complete M3 Design Refresh)*
+> *(Firebase Cloud Messaging (FCM) Integration, Google Material You Floating Search Bar Pill, Real-Time Cloud Sync Indicator & Telemetry, Instant Startup Engine, and Complete M3 Design Refresh)*
 
-1. **☁️ Real-Time Cloud Sync Indicator Component & Telemetry Dialog**
+1. **🔔 Firebase Cloud Messaging (FCM) Push Notifications & System Tray Alerting**
+   - Implemented native `FirebaseMessagingService` integration (`SchoolFirebaseMessagingService`) enabling cloud-to-device push notification delivery for critical school circulars, urgent notices, and campus events.
+   - Built automatic FCM registration and device token distribution stored as `StateFlow` state (`fcmDeviceToken`) in `SchoolViewModel`.
+   - Connected `NotificationCenterSheet` with a dedicated **FCM Push Dispatcher** button for real-time testing of system-tray alerts across device locks and home screens.
+   - Standardized notification payload mapping with local `SystemNotificationHelper` for instant heads-up banners outside the application context.
+
+2. **☁️ Real-Time Cloud Sync Indicator Component & Telemetry Dialog**
    - Added an interactive **Cloud Sync** indicator icon button to the TopAppBar that dynamically tracks Google Cloud Firestore connection state:
      - 🟢 **Synced**: Solid green cloud check icon confirming active real-time connection.
      - 🔵 **Syncing**: Rotating blue sync animation during active background updates or force refreshes.
@@ -35,20 +41,20 @@ A native Android **School ERP & Student Information System** built with **Jetpac
      - 🔴 **Sync Alert**: Red alert badge for connection interruptions.
    - Tapping the icon opens the **Google Cloud Sync Telemetry Sheet** displaying live synchronization provider info, Room SQLite cache metrics, last synced timestamp, real-time listener state, and a **"Force Sync Now"** manual action button.
 
-2. **🎨 Google Material You (M3) Expressive Top Bar & Surface Redesign**
+3. **🎨 Google Material You (M3) Expressive Top Bar & Surface Redesign**
    - Transformed the top navigation into Google's signature **Floating Search Bar Pill** (`RoundedCornerShape(28.dp)`) with built-in search trigger, drawer navigation toggle, notification bell badging, role switcher, and Google Account profile avatar ring.
    - Standardized layout cards, modal sheets, and stat metrics to Google M3 tonal container surfaces (`surfaceContainerLow`) with 20.dp–28.dp rounded corners and subtle outline borders.
    - Enhanced bottom navigation bar with Material 3 indicator pills and unread notification badge counters.
 
-3. **⚡ Sub-Second Instant Launch & Session Engine**
+4. **⚡ Sub-Second Instant Launch & Session Engine**
    - Streamlined application initialization sequence with a 600ms splash transition and instant session restoration in `SchoolViewModel`, ensuring the app opens directly to the active ERP dashboard without cold-boot delays.
 
-4. **👤 Universal `UserProfileHeader` & Role Cockpits** *(Carried from v2.5.0)*
+5. **👤 Universal `UserProfileHeader` & Role Cockpits**
    - Universal profile banner across Student, Teacher, Operations Staff, Transport Driver, Admin, and Developer dashboards with role badges, session indicators, and contextual metadata.
    - Optimized Driver cockpit with focused vehicle route cards, active bus switcher, and in-app GPS map shortcuts.
 
-5. **🏷️ Release v3.0.0 Standardization**
-   - Updated `app_version` in `strings.xml` and `metadata.json` to officially declare release `v3.0.0`.
+6. **🏷️ Release v3.0.0 Official Publication**
+   - Updated `versionName` to `3.0.0` in `build.gradle.kts`, `app_version` in `strings.xml`, and updated `metadata.json` for AI Studio release sync.
 
 ---
 

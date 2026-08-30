@@ -53,7 +53,7 @@ fun SettingsScreen(
 
   // App Meta constants
   val appVersion = com.example.BuildConfig.VERSION_NAME
-  val buildNumber = "2026.08.23.1"
+  val buildNumber = "2026.08.30.1"
   val releaseChannel = "Enterprise Production"
   val composeVersion = "Jetpack Compose M3 (Material 3)"
   val databaseEngine = "Room SQLite Database v1"
