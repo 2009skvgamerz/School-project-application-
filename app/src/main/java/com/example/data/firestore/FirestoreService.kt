@@ -4,6 +4,9 @@ import android.content.Context
 import android.util.Log
 import com.example.model.*
 import com.google.firebase.FirebaseApp
+import com.google.firebase.appcheck.FirebaseAppCheck
+import com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory
+import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.google.firebase.firestore.SetOptions
@@ -22,6 +25,25 @@ class FirestoreService(private val context: Context) {
     private const val COLLECTION_ANNOUNCEMENTS = "announcements"
     private const val COLLECTION_HOMEWORK = "homework"
     private const val COLLECTION_EVENTS = "events"
+  }
+
+  init {
+    try {
+      if (FirebaseApp.getApps(context).isNotEmpty()) {
+        val firebaseAppCheck = FirebaseAppCheck.getInstance()
+        if (com.example.BuildConfig.DEBUG) {
+          firebaseAppCheck.installAppCheckProviderFactory(
+            DebugAppCheckProviderFactory.getInstance()
+          )
+        } else {
+          firebaseAppCheck.installAppCheckProviderFactory(
+            PlayIntegrityAppCheckProviderFactory.getInstance()
+          )
+        }
+      }
+    } catch (e: Exception) {
+      Log.w(TAG, "AppCheck provider initialization notice: ${e.message}")
+    }
   }
 
   private val firestore: FirebaseFirestore? by lazy {
