@@ -790,7 +790,7 @@ fun LoginScreen(
                 color = MaterialTheme.colorScheme.primary
               )
               Text(
-                text = "Email: ithelpdesk@stjosephs.edu\nPhone: +91 (080) 2221-4567\nOffice: Main Academic Block, Room 104",
+                text = "Email: ithelpdesk@stjosephshosur.edu.in\nPhone: +91 4344 276544\nOffice: Main Academic Block, SIPCOT Campus, Hosur",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface
               )

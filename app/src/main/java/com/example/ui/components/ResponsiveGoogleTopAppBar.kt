@@ -115,224 +115,182 @@ fun ResponsiveGoogleTopAppBar(
   BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
     val isExpandedLayout = maxWidth >= 680.dp
 
-    Surface(
-      color = MaterialTheme.colorScheme.surface,
-      tonalElevation = 2.dp,
-      shadowElevation = 3.dp,
-      border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+    Box(
       modifier = Modifier
         .fillMaxWidth()
+        .background(MaterialTheme.colorScheme.background)
+        .padding(horizontal = 12.dp, vertical = 6.dp)
         .testTag("responsive_google_top_app_bar")
     ) {
-      if (isSearchActive && !isExpandedLayout) {
-        // Full Mobile Search Bar Overlay
-        Row(
-          modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 6.dp),
-          verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-          IconButton(
-            onClick = {
-              isSearchActive = false
-              searchQuery = ""
-              focusManager.clearFocus()
-            },
-            modifier = Modifier.testTag("close_search_btn")
-          ) {
-            Icon(
-              imageVector = Icons.Default.ArrowBack,
-              contentDescription = "Back",
-              tint = MaterialTheme.colorScheme.onSurface
-            )
-          }
-
-          TextField(
-            value = searchQuery,
-            onValueChange = { searchQuery = it },
-            placeholder = {
-              Text(
-                "Search homework, circulars, teachers...",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-              )
-            },
-            leadingIcon = {
-              Icon(
-                imageVector = Icons.Default.Search,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(20.dp)
-              )
-            },
-            trailingIcon = {
-              if (searchQuery.isNotEmpty()) {
-                IconButton(onClick = { searchQuery = "" }) {
-                  Icon(
-                    imageVector = Icons.Default.Clear,
-                    contentDescription = "Clear search",
-                    modifier = Modifier.size(18.dp)
-                  )
-                }
-              }
-            },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-            keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
-            colors = TextFieldDefaults.colors(
-              focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-              unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
-              focusedIndicatorColor = Color.Transparent,
-              unfocusedIndicatorColor = Color.Transparent,
-              disabledIndicatorColor = Color.Transparent
-            ),
-            shape = RoundedCornerShape(24.dp),
-            modifier = Modifier
-              .weight(1f)
-              .testTag("mobile_search_text_field")
-          )
-        }
-      } else {
-        // Standard Responsive TopAppBar
-        Row(
-          modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-          verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-          // Left: Drawer Navigation & Branding
+      Surface(
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        tonalElevation = 2.dp,
+        shadowElevation = 2.dp,
+        shape = RoundedCornerShape(28.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
+        modifier = Modifier.fillMaxWidth()
+      ) {
+        if (isSearchActive) {
+          // Full Search Bar Mode inside Floating Pill
           Row(
+            modifier = Modifier
+              .fillMaxWidth()
+              .height(52.dp)
+              .padding(horizontal = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.then(if (isExpandedLayout) Modifier.widthIn(max = 240.dp) else Modifier.weight(1f, fill = false))
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
           ) {
             IconButton(
-              onClick = onNavigationIconClick,
-              modifier = Modifier
-                .size(42.dp)
-                .testTag("navigation_drawer_toggle_btn")
+              onClick = {
+                isSearchActive = false
+                searchQuery = ""
+                focusManager.clearFocus()
+              },
+              modifier = Modifier.testTag("close_search_btn")
             ) {
               Icon(
-                imageVector = Icons.Default.Menu,
-                contentDescription = "Open Navigation Drawer",
+                imageVector = Icons.Default.ArrowBack,
+                contentDescription = "Back",
                 tint = MaterialTheme.colorScheme.onSurface
               )
             }
 
-            Box(
-              modifier = Modifier
-                .size(38.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(
-                  brush = Brush.linearGradient(
-                    listOf(SchoolNavyPrimary, Color(0xFF1E3A8A))
-                  )
-                ),
-              contentAlignment = Alignment.Center
-            ) {
-              Icon(
-                imageVector = Icons.Default.School,
-                contentDescription = null,
-                tint = SchoolGold,
-                modifier = Modifier.size(22.dp)
-              )
-            }
-
-            Column(verticalArrangement = Arrangement.Center) {
-              Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-              ) {
+            TextField(
+              value = searchQuery,
+              onValueChange = { searchQuery = it },
+              placeholder = {
                 Text(
-                  text = "St. Joseph's",
-                  style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = 0.2.sp
-                  ),
-                  color = MaterialTheme.colorScheme.onSurface,
+                  "Search in St. Joseph's ERP...",
+                  style = MaterialTheme.typography.bodyMedium,
+                  color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                   maxLines = 1,
                   overflow = TextOverflow.Ellipsis
                 )
-                NetworkStatusBarBadge(
-                  networkState = networkState,
-                  modifier = Modifier.testTag("top_bar_network_status_badge")
-                )
-              }
-              Text(
-                text = currentTab.label,
-                style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-              )
-            }
-          }
-
-          // Center: Google Expressive Search Bar (Expanded Desktop/Tablet layout or quick pill)
-          if (isExpandedLayout) {
-            Surface(
-              onClick = { isSearchActive = true },
-              shape = RoundedCornerShape(28.dp),
-              color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-              border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
-              modifier = Modifier
-                .widthIn(min = 280.dp, max = 460.dp)
-                .height(44.dp)
-                .testTag("expanded_search_bar_pill")
-            ) {
-              Row(
-                modifier = Modifier
-                  .fillMaxSize()
-                  .padding(horizontal = 16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-              ) {
+              },
+              leadingIcon = {
                 Icon(
                   imageVector = Icons.Default.Search,
                   contentDescription = null,
                   tint = MaterialTheme.colorScheme.primary,
                   modifier = Modifier.size(20.dp)
                 )
-                Text(
-                  text = if (searchQuery.isNotBlank()) searchQuery else "Search homework, circulars, classes...",
-                  style = MaterialTheme.typography.bodyMedium,
-                  color = if (searchQuery.isNotBlank()) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                  maxLines = 1,
-                  overflow = TextOverflow.Ellipsis,
-                  modifier = Modifier.weight(1f)
-                )
-                if (searchQuery.isNotBlank()) {
-                  IconButton(
-                    onClick = { searchQuery = "" },
-                    modifier = Modifier.size(24.dp)
-                  ) {
+              },
+              trailingIcon = {
+                if (searchQuery.isNotEmpty()) {
+                  IconButton(onClick = { searchQuery = "" }) {
                     Icon(
                       imageVector = Icons.Default.Clear,
-                      contentDescription = "Clear",
-                      modifier = Modifier.size(16.dp)
+                      contentDescription = "Clear search",
+                      modifier = Modifier.size(18.dp)
                     )
                   }
                 }
+              },
+              singleLine = true,
+              keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+              keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
+              colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color.Transparent,
+                unfocusedContainerColor = Color.Transparent,
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+                disabledIndicatorColor = Color.Transparent
+              ),
+              modifier = Modifier
+                .weight(1f)
+                .testTag("mobile_search_text_field")
+            )
+          }
+        } else {
+          // Standard Google Floating Pill TopAppBar
+          Row(
+            modifier = Modifier
+              .fillMaxWidth()
+              .height(54.dp)
+              .padding(horizontal = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+          ) {
+            // Left: Navigation Drawer Button & School Branding
+            Row(
+              verticalAlignment = Alignment.CenterVertically,
+              horizontalArrangement = Arrangement.spacedBy(6.dp),
+              modifier = Modifier.weight(1f, fill = false)
+            ) {
+              IconButton(
+                onClick = onNavigationIconClick,
+                modifier = Modifier
+                  .size(40.dp)
+                  .testTag("navigation_drawer_toggle_btn")
+              ) {
+                Icon(
+                  imageVector = Icons.Default.Menu,
+                  contentDescription = "Open Navigation Drawer",
+                  tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+              }
+
+              // Search Trigger Bar Area (Clicking anywhere in center opens search like Google Workspace)
+              Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier
+                  .weight(1f)
+                  .clip(RoundedCornerShape(20.dp))
+                  .clickable { isSearchActive = true }
+                  .padding(vertical = 6.dp, horizontal = 6.dp)
+              ) {
+                Box(
+                  modifier = Modifier
+                    .size(32.dp)
+                    .clip(CircleShape)
+                    .background(
+                      brush = Brush.linearGradient(
+                        listOf(SchoolNavyPrimary, Color(0xFF1E3A8A))
+                      )
+                    ),
+                  contentAlignment = Alignment.Center
+                ) {
+                  Icon(
+                    imageVector = Icons.Default.School,
+                    contentDescription = null,
+                    tint = SchoolGold,
+                    modifier = Modifier.size(18.dp)
+                  )
+                }
+
+                Column(verticalArrangement = Arrangement.Center) {
+                  Text(
+                    text = "St. Joseph's ERP",
+                    style = MaterialTheme.typography.titleMedium.copy(
+                      fontWeight = FontWeight.Bold,
+                      fontSize = 14.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                  )
+                  Text(
+                    text = if (isExpandedLayout) "Search homework, circulars, classes..." else currentTab.label,
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.5.sp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                  )
+                }
               }
             }
-          }
 
-          // Right: Action Icons + Google Account Profile Avatar
-          Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-          ) {
-            // Search button on compact mobile screens
-            if (!isExpandedLayout) {
+            // Right: Action Buttons + Google Account Profile Chip
+            Row(
+              verticalAlignment = Alignment.CenterVertically,
+              horizontalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+              // Search Glass Button
               IconButton(
                 onClick = { isSearchActive = true },
                 modifier = Modifier
-                  .size(42.dp)
+                  .size(38.dp)
                   .testTag("open_search_btn")
               ) {
                 Icon(
@@ -341,111 +299,73 @@ fun ResponsiveGoogleTopAppBar(
                   tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
               }
-            }
 
-            // Role Switcher Button
-            IconButton(
-              onClick = onOpenRoleSwitcher,
-              modifier = Modifier
-                .size(42.dp)
-                .testTag("switch_role_top_bar_btn")
-            ) {
-              Box(
+              // Role Switcher Button
+              IconButton(
+                onClick = onOpenRoleSwitcher,
                 modifier = Modifier
-                  .size(34.dp)
-                  .clip(RoundedCornerShape(10.dp))
-                  .background(
-                    if (currentUser.role == UserRole.DEVELOPER)
-                      Color(0xFF10B981).copy(alpha = 0.15f)
-                    else
-                      MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
-                  ),
-                contentAlignment = Alignment.Center
+                  .size(38.dp)
+                  .testTag("switch_role_top_bar_btn")
               ) {
                 Icon(
                   imageVector = if (currentUser.role == UserRole.DEVELOPER) Icons.Default.Terminal else Icons.Default.SwapHoriz,
                   contentDescription = "Switch Role",
-                  tint = if (currentUser.role == UserRole.DEVELOPER) Color(0xFF059669) else MaterialTheme.colorScheme.primary,
-                  modifier = Modifier.size(18.dp)
+                  tint = roleColor,
+                  modifier = Modifier.size(20.dp)
                 )
               }
-            }
 
-            // Developer God Mode Terminal Shortcut
-            if (currentUser.role == UserRole.DEVELOPER) {
+              // Notification Bell with Badge
               IconButton(
-                onClick = onOpenDeveloperTerminal,
+                onClick = onOpenNotificationCenter,
                 modifier = Modifier
-                  .size(42.dp)
-                  .testTag("dev_terminal_top_bar_btn")
+                  .size(38.dp)
+                  .testTag("top_bar_notification_bell")
               ) {
-                Icon(
-                  imageVector = Icons.Default.Terminal,
-                  contentDescription = "Developer God Mode",
-                  tint = Color(0xFF10B981)
-                )
-              }
-            }
-
-            // Notification Bell with Badge
-            IconButton(
-              onClick = onOpenNotificationCenter,
-              modifier = Modifier
-                .size(42.dp)
-                .testTag("notifications_bell_btn")
-            ) {
-              BadgedBox(
-                badge = {
-                  if (unreadNotificationsCount > 0) {
-                    Badge(
-                      containerColor = Color(0xFFDC2626),
-                      contentColor = Color.White
-                    ) {
-                      Text(
-                        if (unreadNotificationsCount > 9) "9+" else "$unreadNotificationsCount",
-                        fontWeight = FontWeight.Bold
-                      )
+                BadgedBox(
+                  badge = {
+                    if (unreadNotificationsCount > 0) {
+                      Badge(
+                        containerColor = GoogleRed,
+                        contentColor = Color.White
+                      ) {
+                        Text(
+                          text = if (unreadNotificationsCount > 9) "9+" else unreadNotificationsCount.toString(),
+                          fontSize = 9.sp,
+                          fontWeight = FontWeight.Bold
+                        )
+                      }
                     }
                   }
+                ) {
+                  Icon(
+                    imageVector = Icons.Default.Notifications,
+                    contentDescription = "Notifications",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp)
+                  )
                 }
-              ) {
-                Icon(
-                  imageVector = if (unreadNotificationsCount > 0) Icons.Default.Notifications else Icons.Default.NotificationsNone,
-                  contentDescription = "Notifications",
-                  tint = if (unreadNotificationsCount > 0) Color(0xFFDC2626) else MaterialTheme.colorScheme.onSurfaceVariant
-                )
               }
-            }
 
-            Spacer(modifier = Modifier.width(4.dp))
-
-            // Google Account Profile Avatar Button
-            Surface(
-              onClick = { showGoogleAccountDialog = true },
-              shape = CircleShape,
-              color = Color.Transparent,
-              border = BorderStroke(2.dp, roleColor.copy(alpha = 0.8f)),
-              modifier = Modifier
-                .size(38.dp)
-                .testTag("profile_top_bar_avatar_btn")
-            ) {
+              // Google Profile Avatar Ring
               Box(
                 modifier = Modifier
-                  .fillMaxSize()
-                  .background(
-                    brush = Brush.radialGradient(
-                      listOf(roleColor, roleColor.copy(alpha = 0.85f))
-                    )
-                  ),
+                  .padding(start = 4.dp, end = 2.dp)
+                  .size(34.dp)
+                  .clip(CircleShape)
+                  .border(2.dp, roleColor, CircleShape)
+                  .background(roleColor.copy(alpha = 0.15f))
+                  .clickable { showGoogleAccountDialog = true }
+                  .testTag("google_account_profile_avatar_chip"),
                 contentAlignment = Alignment.Center
               ) {
                 Text(
-                  text = currentUser.avatarInitials,
-                  style = MaterialTheme.typography.labelMedium.copy(
+                  text = currentUser.fullName.take(1).uppercase(),
+                  style = MaterialTheme.typography.titleMedium.copy(
                     fontWeight = FontWeight.ExtraBold,
-                    fontSize = 13.sp
+                    fontSize = 14.sp
                   ),
-                  color = Color.White
+                  color = roleColor
                 )
               }
             }

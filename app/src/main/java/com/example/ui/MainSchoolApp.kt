@@ -124,7 +124,7 @@ fun MainSchoolApp(
   val coroutineScope = rememberCoroutineScope()
 
   LaunchedEffect(Unit) {
-    kotlinx.coroutines.delay(1000)
+    kotlinx.coroutines.delay(2000)
     showSplash = false
   }
 
@@ -152,7 +152,7 @@ fun MainSchoolApp(
   AnimatedContent(
     targetState = when {
       showSplash -> 0
-      !isAuthenticated -> 1
+      (!isAuthenticated || isLoggingIn) -> 1
       else -> 2
     },
     transitionSpec = {
@@ -176,6 +176,7 @@ fun MainSchoolApp(
               loginErrorMessage = null
               val localResult = viewModel.login(username, password)
               if (localResult.isSuccess) {
+                kotlinx.coroutines.delay(1400)
                 loginErrorMessage = null
                 currentTab = NavigationTab.DASHBOARD
                 isLoggingIn = false
@@ -185,9 +186,12 @@ fun MainSchoolApp(
                   pass = password,
                   role = role,
                   onSuccess = {
-                    loginErrorMessage = null
-                    currentTab = NavigationTab.DASHBOARD
-                    isLoggingIn = false
+                    coroutineScope.launch {
+                      kotlinx.coroutines.delay(1400)
+                      loginErrorMessage = null
+                      currentTab = NavigationTab.DASHBOARD
+                      isLoggingIn = false
+                    }
                   },
                   onError = { errorMsg ->
                     loginErrorMessage = errorMsg
@@ -201,8 +205,8 @@ fun MainSchoolApp(
             coroutineScope.launch {
               isLoggingIn = true
               loginErrorMessage = null
-              kotlinx.coroutines.delay(400)
               viewModel.switchRole(role)
+              kotlinx.coroutines.delay(1400)
               loginErrorMessage = null
               currentTab = NavigationTab.DASHBOARD
               isLoggingIn = false

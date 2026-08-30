@@ -72,21 +72,21 @@ fun DashboardCard(
     modifier = modifier
       .fillMaxWidth()
       .testTag(testTag),
-    shape = RoundedCornerShape(18.dp),
+    shape = RoundedCornerShape(24.dp),
     colors = CardDefaults.cardColors(
-      containerColor = MaterialTheme.colorScheme.surface
+      containerColor = MaterialTheme.colorScheme.surfaceContainerLow
     ),
     elevation = CardDefaults.cardElevation(
-      defaultElevation = 2.dp,
+      defaultElevation = 1.dp,
       pressedElevation = 4.dp
     ),
-    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
   ) {
     Column(
       modifier = Modifier
         .fillMaxWidth()
-        .padding(16.dp),
-      verticalArrangement = Arrangement.spacedBy(12.dp)
+        .padding(18.dp),
+      verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
       // Header Section
       Row(
@@ -99,6 +99,15 @@ fun DashboardCard(
           horizontalArrangement = Arrangement.spacedBy(10.dp),
           modifier = Modifier.weight(1f)
         ) {
+          // Subtle vertical accent bar for premium structural alignment
+          Box(
+            modifier = Modifier
+              .width(4.dp)
+              .height(20.dp)
+              .clip(CircleShape)
+              .background(accentColor)
+          )
+
           if (icon != null) {
             Box(
               modifier = Modifier

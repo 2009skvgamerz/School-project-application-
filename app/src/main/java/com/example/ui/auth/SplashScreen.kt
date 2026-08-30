@@ -39,6 +39,15 @@ fun SplashScreen(
     label = "scale"
   )
 
+  var statusText by remember { mutableStateOf("Connecting to Cloud Services...") }
+
+  LaunchedEffect(Unit) {
+    kotlinx.coroutines.delay(800)
+    statusText = "Syncing Real-Time ERP Data..."
+    kotlinx.coroutines.delay(700)
+    statusText = "Ready"
+  }
+
   Box(
     modifier = modifier
       .fillMaxSize()
@@ -61,24 +70,37 @@ fun SplashScreen(
     ) {
       Box(
         modifier = Modifier
-          .size(130.dp)
+          .size(136.dp)
           .scale(scale)
           .clip(CircleShape)
-          .background(Color.White)
-          .padding(3.dp),
+          .background(
+            brush = Brush.radialGradient(
+              colors = listOf(SchoolGoldLight.copy(alpha = 0.4f), Color.Transparent)
+            )
+          )
+          .padding(4.dp),
         contentAlignment = Alignment.Center
       ) {
-        Image(
-          painter = painterResource(id = R.drawable.school_logo),
-          contentDescription = "School Emblem",
-          contentScale = ContentScale.Fit,
+        Box(
           modifier = Modifier
             .fillMaxSize()
             .clip(CircleShape)
-        )
+            .background(Color.White)
+            .padding(4.dp),
+          contentAlignment = Alignment.Center
+        ) {
+          Image(
+            painter = painterResource(id = R.drawable.school_logo),
+            contentDescription = "School Emblem",
+            contentScale = ContentScale.Fit,
+            modifier = Modifier
+              .fillMaxSize()
+              .clip(CircleShape)
+          )
+        }
       }
 
-      Spacer(modifier = Modifier.height(8.dp))
+      Spacer(modifier = Modifier.height(4.dp))
 
       Text(
         text = "ST. JOSEPH'S SCHOOL",
@@ -104,7 +126,7 @@ fun SplashScreen(
         )
       }
 
-      Spacer(modifier = Modifier.height(24.dp))
+      Spacer(modifier = Modifier.height(20.dp))
 
       CircularProgressIndicator(
         color = SchoolGoldLight,
@@ -113,9 +135,17 @@ fun SplashScreen(
       )
 
       Text(
-        text = "School Management System Prototype",
-        style = MaterialTheme.typography.bodySmall,
-        color = Color.White.copy(alpha = 0.7f)
+        text = statusText,
+        style = MaterialTheme.typography.bodySmall.copy(
+          fontWeight = FontWeight.Medium
+        ),
+        color = Color.White.copy(alpha = 0.85f)
+      )
+
+      Text(
+        text = "St. Joseph's ERP Cloud Engine",
+        style = MaterialTheme.typography.labelSmall,
+        color = Color.White.copy(alpha = 0.5f)
       )
     }
   }

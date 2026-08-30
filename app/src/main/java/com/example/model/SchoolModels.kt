@@ -381,8 +381,8 @@ data class BusStop(
   val skipReason: String? = null,
   val isExtraDetourStop: Boolean = false,
   val studentCount: Int = 4,
-  val latitude: Double = 12.9716,
-  val longitude: Double = 77.5946,
+  val latitude: Double = 12.7463,
+  val longitude: Double = 77.8073,
   val passengers: List<BusPassenger> = emptyList()
 )
 
@@ -406,11 +406,11 @@ data class BusRoute(
   val studentsOnboard: Int = 34,
   val stops: List<BusStop>,
   val progressPercent: Float = 0.60f,
-  val currentLatitude: Double = 12.9569,
-  val currentLongitude: Double = 77.6660,
+  val currentLatitude: Double = 12.7440,
+  val currentLongitude: Double = 77.8010,
   val currentHeadingDegrees: Float = 65f,
-  val schoolLatitude: Double = 12.9820,
-  val schoolLongitude: Double = 77.6200,
+  val schoolLatitude: Double = 12.74632,
+  val schoolLongitude: Double = 77.80728,
   val morningTripTime: String = "07:15 AM - 08:20 AM",
   val eveningTripTime: String = "03:30 PM - 04:45 PM",
   val activeDetourAlert: String? = null,

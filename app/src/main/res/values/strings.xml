@@ -1,6 +1,11 @@
 <resources>
     <string name="app_name">St. Joseph\'s</string>
-    <string name="school_full_name">St. Joseph\'s School</string>
+    <string name="school_full_name">St. Joseph Matriculation Hr. Sec. School</string>
+    <string name="school_short_name">St. Joseph\'s School</string>
     <string name="school_motto">Shine and Let Shine</string>
+    <string name="school_address">SIPCOT, Gandhi Nagar Rd, Mookondapalli, Hosur, Tamil Nadu 635126</string>
+    <string name="school_phone">+91 4344 276544</string>
+    <string name="school_email">info@stjosephshosur.edu.in</string>
+    <string name="school_it_email">ithelpdesk@stjosephshosur.edu.in</string>
     <string name="app_version">v2.5.0</string>
 </resources>

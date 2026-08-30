@@ -40,7 +40,7 @@ import com.example.ui.theme.SchoolNavyDark
 import com.example.ui.theme.SchoolNavyPrimary
 
 enum class MapLayerType(val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
-  STREET("Street", Icons.Default.Map),
+  STREET("Google Maps", Icons.Default.Map),
   SATELLITE("Satellite", Icons.Default.SatelliteAlt),
   DARK("Dark Nav", Icons.Default.DarkMode)
 }
@@ -145,6 +145,9 @@ fun InAppBusMapView(
             builtInZoomControls = false
             displayZoomControls = false
             cacheMode = WebSettings.LOAD_DEFAULT
+            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+            allowFileAccess = true
+            allowContentAccess = true
           }
           webChromeClient = WebChromeClient()
           webViewClient = object : WebViewClient() {
@@ -163,7 +166,7 @@ fun InAppBusMapView(
             },
             "AndroidApp"
           )
-          loadDataWithBaseURL("https://maps.stjosephs.edu", mapHtml, "text/html", "UTF-8", null)
+          loadDataWithBaseURL("https://maps.google.com", mapHtml, "text/html", "UTF-8", null)
           webViewRef = this
         }
       },
@@ -546,7 +549,7 @@ fun launchGoogleMapsLocation(context: Context, lat: Double, lng: Double, label: 
 fun shareBusLiveLocation(context: Context, route: BusRoute) {
   val mapsLink = "https://maps.google.com/?q=${route.currentLatitude},${route.currentLongitude}"
   val message = """
-    📍 Live GPS Tracker - St. Joseph's Academy
+    📍 Live GPS Tracker - St. Joseph Matriculation Hr. Sec. School
     🚌 Bus: ${route.routeNumber} (${route.busRegistration})
     🗺️ Route: ${route.routeName}
     📍 Current Location: ${route.currentLocationName}
@@ -690,20 +693,20 @@ private fun buildMapHtml(
     var schoolLat = $schoolLat;
     var schoolLng = $schoolLng;
 
-    // Tile layers (CartoDB / OpenStreetMap)
-    var streetLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-      maxZoom: 19,
-      attribution: '&copy; CARTO &copy; OSM'
+    // Tile layers (Google Maps Tile Engine)
+    var streetLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+      maxZoom: 20,
+      attribution: '&copy; Google Maps'
     });
 
-    var satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      maxZoom: 19,
-      attribution: '&copy; Esri &copy; USGS'
+    var satelliteLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+      maxZoom: 20,
+      attribution: '&copy; Google Maps'
     });
 
-    var darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      maxZoom: 19,
-      attribution: '&copy; CARTO &copy; OSM'
+    var darkLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+      maxZoom: 20,
+      attribution: '&copy; Google Maps'
     });
 
     var map = L.map('map', {

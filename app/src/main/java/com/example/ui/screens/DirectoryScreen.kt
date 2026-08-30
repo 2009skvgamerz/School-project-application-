@@ -578,7 +578,7 @@ private fun launchEmail(context: Context, emailAddress: String, recipientName: S
   try {
     val intent = Intent(Intent.ACTION_SENDTO).apply {
       data = Uri.parse("mailto:$emailAddress")
-      putExtra(Intent.EXTRA_SUBJECT, "Query regarding St. Joseph's Academy")
+      putExtra(Intent.EXTRA_SUBJECT, "Query regarding St. Joseph Matriculation Hr. Sec. School")
       flags = Intent.FLAG_ACTIVITY_NEW_TASK
     }
     context.startActivity(intent)

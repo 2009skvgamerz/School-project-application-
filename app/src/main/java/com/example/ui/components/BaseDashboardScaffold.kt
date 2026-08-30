@@ -171,16 +171,18 @@ fun BaseDashboardScaffold(
       bottomBar = {
         if (visibleBottomTabs.isNotEmpty()) {
           Surface(
-            tonalElevation = 4.dp,
-            shadowElevation = 8.dp,
-            color = MaterialTheme.colorScheme.surface,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+            tonalElevation = 3.dp,
+            shadowElevation = 4.dp,
+            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
           ) {
             NavigationBar(
               containerColor = Color.Transparent,
               tonalElevation = 0.dp,
               modifier = Modifier
                 .fillMaxWidth()
+                .windowInsetsPadding(WindowInsets.navigationBars)
                 .testTag("base_dashboard_bottom_bar")
             ) {
               visibleBottomTabs.forEach { tab ->
@@ -201,7 +203,7 @@ fun BaseDashboardScaffold(
                     } else if (tab == NavigationTab.NOTICES && unreadNotificationsCount > 0) {
                       BadgedBox(badge = {
                         Badge(
-                          containerColor = Color(0xFFDC2626),
+                          containerColor = GoogleRed,
                           contentColor = Color.White
                         ) {
                           Text("$unreadNotificationsCount", fontWeight = FontWeight.Bold)
@@ -217,20 +219,20 @@ fun BaseDashboardScaffold(
                     Text(
                       text = tab.label,
                       style = MaterialTheme.typography.labelSmall.copy(
-                        fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                         letterSpacing = 0.2.sp,
-                        fontSize = 10.5.sp
+                        fontSize = 11.sp
                       )
                     )
                   },
                   selected = isSelected,
                   onClick = { onTabSelected(tab) },
                   colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = MaterialTheme.colorScheme.primary,
-                    selectedTextColor = MaterialTheme.colorScheme.primary,
-                    indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
-                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
-                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                    selectedIconColor = SchoolNavyOnContainer,
+                    selectedTextColor = MaterialTheme.colorScheme.onSurface,
+                    indicatorColor = SchoolNavyContainer,
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f)
                   ),
                   modifier = Modifier.testTag("nav_tab_${tab.name.lowercase()}")
                 )

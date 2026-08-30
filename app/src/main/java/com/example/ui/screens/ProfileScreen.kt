@@ -411,12 +411,12 @@ fun ProfileScreen(
           verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
           Text(
-            text = "St. Joseph's School Campus",
+            text = "St. Joseph Matriculation Hr. Sec. School",
             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
             color = MaterialTheme.colorScheme.onSurface
           )
           Text(
-            text = "St. Joseph's High School Campus, Museum Road, Bengaluru, Karnataka 560025\nGeneral Enquiries: +91 (080) 2221-4416 • info@stjosephs.edu\nIT Helpdesk: ithelpdesk@stjosephs.edu",
+            text = "SIPCOT, Gandhi Nagar Rd, Mookondapalli, Hosur, Tamil Nadu 635126\nGeneral Enquiries: +91 4344 276544 • info@stjosephshosur.edu.in\nIT Helpdesk: ithelpdesk@stjosephshosur.edu.in",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
           )

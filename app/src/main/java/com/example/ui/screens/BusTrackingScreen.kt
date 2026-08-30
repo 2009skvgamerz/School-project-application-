@@ -51,7 +51,8 @@ import com.example.ui.theme.SchoolNavyDark
 import com.example.ui.theme.SchoolNavyPrimary
 
 enum class BusTrackingViewMode(val label: String, val icon: ImageVector) {
-  IN_APP_MAP("In-App Google Map", Icons.Default.Map),
+  IN_APP_MAP("Google Maps Live", Icons.Default.Map),
+  EMBED_MAP("Google Direct", Icons.Default.Public),
   TACTICAL_RADAR("Tactical Radar", Icons.Default.Sensors)
 }
 
@@ -396,45 +397,66 @@ fun BusTrackingScreen(
                 .height(300.dp)
                 .background(Color(0xFF0F172A))
             ) {
-              if (viewMode == BusTrackingViewMode.IN_APP_MAP) {
-                InAppBusMapView(
-                  route = activeRoute,
-                  onStopClick = { selectedStopForModal = it },
-                  onOpenGoogleMapsApp = {
-                    launchGoogleMapsNavigation(
-                      context = context,
-                      originLat = activeRoute.currentLatitude,
-                      originLng = activeRoute.currentLongitude,
-                      destLat = activeRoute.schoolLatitude,
-                      destLng = activeRoute.schoolLongitude,
-                      waypoints = activeRoute.stops
-                    )
-                  },
-                  onShareLiveLocation = {
-                    shareBusLiveLocation(context, activeRoute)
-                  },
-                  isFollowBusEnabled = isFollowBusEnabled,
-                  onToggleFollowBus = { isFollowBusEnabled = it },
-                  modifier = Modifier.fillMaxSize()
-                )
-              } else {
-                Box(
-                  modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                      brush = Brush.verticalGradient(
-                        colors = listOf(SchoolNavyDark, Color(0xFF0F172A))
+              when (viewMode) {
+                BusTrackingViewMode.IN_APP_MAP -> {
+                  InAppBusMapView(
+                    route = activeRoute,
+                    onStopClick = { selectedStopForModal = it },
+                    onOpenGoogleMapsApp = {
+                      launchGoogleMapsNavigation(
+                        context = context,
+                        originLat = activeRoute.currentLatitude,
+                        originLng = activeRoute.currentLongitude,
+                        destLat = activeRoute.schoolLatitude,
+                        destLng = activeRoute.schoolLongitude,
+                        waypoints = activeRoute.stops
                       )
-                    )
-                    .padding(16.dp)
-                ) {
-                  LiveRouteRadarCanvas(
-                    progressPercent = activeRoute.progressPercent,
-                    currentSpeed = activeRoute.currentSpeedKmH,
-                    status = activeRoute.status,
-                    stopsCount = activeRoute.stops.size,
+                    },
+                    onShareLiveLocation = {
+                      shareBusLiveLocation(context, activeRoute)
+                    },
+                    isFollowBusEnabled = isFollowBusEnabled,
+                    onToggleFollowBus = { isFollowBusEnabled = it },
                     modifier = Modifier.fillMaxSize()
                   )
+                }
+                BusTrackingViewMode.EMBED_MAP -> {
+                  val embedUrl = "https://maps.google.com/maps?q=${activeRoute.currentLatitude},${activeRoute.currentLongitude}&z=15&output=embed"
+                  androidx.compose.ui.viewinterop.AndroidView(
+                    factory = { ctx ->
+                      android.webkit.WebView(ctx).apply {
+                        settings.javaScriptEnabled = true
+                        settings.domStorageEnabled = true
+                        settings.mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                        webViewClient = android.webkit.WebViewClient()
+                        loadUrl(embedUrl)
+                      }
+                    },
+                    update = { view ->
+                      view.loadUrl(embedUrl)
+                    },
+                    modifier = Modifier.fillMaxSize().testTag("gmaps_embed_webview")
+                  )
+                }
+                BusTrackingViewMode.TACTICAL_RADAR -> {
+                  Box(
+                    modifier = Modifier
+                      .fillMaxSize()
+                      .background(
+                        brush = Brush.verticalGradient(
+                          colors = listOf(SchoolNavyDark, Color(0xFF0F172A))
+                        )
+                      )
+                      .padding(16.dp)
+                  ) {
+                    LiveRouteRadarCanvas(
+                      progressPercent = activeRoute.progressPercent,
+                      currentSpeed = activeRoute.currentSpeedKmH,
+                      status = activeRoute.status,
+                      stopsCount = activeRoute.stops.size,
+                      modifier = Modifier.fillMaxSize()
+                    )
+                  }
                 }
               }
 

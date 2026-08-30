@@ -34,12 +34,12 @@ fun StatCard(
     modifier = modifier
       .then(if (testTag.isNotEmpty()) Modifier.testTag(testTag) else Modifier)
       .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier),
-    shape = RoundedCornerShape(16.dp),
+    shape = RoundedCornerShape(20.dp),
     colors = CardDefaults.cardColors(
-      containerColor = MaterialTheme.colorScheme.surface
+      containerColor = MaterialTheme.colorScheme.surfaceContainerLow
     ),
-    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp, pressedElevation = 4.dp),
-    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp, pressedElevation = 4.dp),
+    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
   ) {
     Row(
       modifier = Modifier
@@ -50,8 +50,8 @@ fun StatCard(
     ) {
       Box(
         modifier = Modifier
-          .size(46.dp)
-          .clip(RoundedCornerShape(12.dp))
+          .size(48.dp)
+          .clip(RoundedCornerShape(14.dp))
           .background(accentColor.copy(alpha = 0.12f)),
         contentAlignment = Alignment.Center
       ) {
@@ -66,23 +66,27 @@ fun StatCard(
       Column(modifier = Modifier.weight(1f)) {
         Text(
           text = title,
-          style = MaterialTheme.typography.bodySmall,
+          style = MaterialTheme.typography.bodySmall.copy(
+            fontWeight = FontWeight.Medium,
+            letterSpacing = 0.2.sp
+          ),
           color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
           text = value,
           style = MaterialTheme.typography.titleLarge.copy(
-            fontWeight = FontWeight.Bold,
-            fontSize = 20.sp
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = 21.sp
           ),
           color = MaterialTheme.colorScheme.onSurface
         )
         if (subtitle != null) {
           Text(
             text = subtitle,
-            style = MaterialTheme.typography.labelSmall,
-            color = accentColor,
-            fontWeight = FontWeight.Medium
+            style = MaterialTheme.typography.labelSmall.copy(
+              fontWeight = FontWeight.SemiBold
+            ),
+            color = accentColor
           )
         }
       }
