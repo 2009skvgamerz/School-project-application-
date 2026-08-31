@@ -308,10 +308,12 @@ fun MainSchoolApp(
       onToggleSimulatedOffline = { viewModel.setSimulatedOffline(it) },
       isSimulatedOffline = isSimulatedOffline,
       cloudSyncInfo = cloudSyncInfo,
-      onTriggerCloudSync = { viewModel.triggerManualCloudSync() },
       snackbarHostState = snackbarHostState
     ) { innerPadding ->
-      Box(
+      ConditionalPullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = { viewModel.refreshData() },
+        enabled = currentTab != NavigationTab.SETTINGS,
         modifier = Modifier
           .fillMaxSize()
           .padding(innerPadding)
@@ -665,9 +667,6 @@ fun MainSchoolApp(
             },
             onResetDatabase = {
               viewModel.resetDatabaseToDefaults()
-            },
-            onSyncWithCloud = {
-              viewModel.triggerCloudSync()
             },
             onOpenNotificationCenter = {
               showNotificationCenterSheet = true
@@ -1248,5 +1247,30 @@ fun MainSchoolApp(
   }
       }
     }
+  }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ConditionalPullToRefreshBox(
+  isRefreshing: Boolean,
+  onRefresh: () -> Unit,
+  enabled: Boolean,
+  modifier: Modifier = Modifier,
+  content: @Composable BoxScope.() -> Unit
+) {
+  if (enabled) {
+    androidx.compose.material3.pulltorefresh.PullToRefreshBox(
+      isRefreshing = isRefreshing,
+      onRefresh = onRefresh,
+      modifier = modifier,
+      content = content
+    )
+  } else {
+    Box(
+      modifier = modifier,
+      contentAlignment = Alignment.TopStart,
+      content = content
+    )
   }
 }

@@ -675,10 +675,6 @@ fun ResponsiveGoogleTopAppBar(
       cloudSyncInfo = cloudSyncInfo,
       isSimulatedOffline = isSimulatedOffline,
       onDismiss = { showCloudSyncDialog = false },
-      onForceSync = {
-        onTriggerCloudSync()
-        showCloudSyncDialog = false
-      },
       onToggleSimulatedOffline = onToggleSimulatedOffline
     )
   }
@@ -943,7 +939,6 @@ fun GoogleCloudSyncDetailsDialog(
   cloudSyncInfo: CloudSyncInfo,
   isSimulatedOffline: Boolean,
   onDismiss: () -> Unit,
-  onForceSync: () -> Unit,
   onToggleSimulatedOffline: ((Boolean) -> Unit)? = null,
   modifier: Modifier = Modifier
 ) {
@@ -1081,25 +1076,17 @@ fun GoogleCloudSyncDetailsDialog(
     },
     confirmButton = {
       Button(
-        onClick = onForceSync,
+        onClick = onDismiss,
         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
         shape = RoundedCornerShape(14.dp)
       ) {
         Icon(
-          imageVector = Icons.Default.Refresh,
+          imageVector = Icons.Default.CloudDone,
           contentDescription = null,
           modifier = Modifier.size(18.dp)
         )
         Spacer(modifier = Modifier.width(6.dp))
-        Text("Force Sync Now")
-      }
-    },
-    dismissButton = {
-      TextButton(
-        onClick = onDismiss,
-        shape = RoundedCornerShape(14.dp)
-      ) {
-        Text("Close")
+        Text("Done")
       }
     }
   )

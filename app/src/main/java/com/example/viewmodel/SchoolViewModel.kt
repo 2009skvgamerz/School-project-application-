@@ -477,6 +477,48 @@ class SchoolViewModel(
         }
       }
     }
+
+    // Launch background synchronization loop running every 10 seconds
+    viewModelScope.launch {
+      while (true) {
+        kotlinx.coroutines.delay(10000)
+        val isOffline = _isSimulatedOffline.value || _networkState.value is com.example.util.NetworkState.Offline
+        if (!isOffline) {
+          val fService = firestoreService
+          if (fService != null) {
+            try {
+              // Push notices
+              repository.notices.value.forEach { notice ->
+                fService.publishNotice(notice)
+              }
+              // Push announcements
+              repository.announcements.value.forEach { ann ->
+                fService.publishAnnouncement(ann)
+              }
+              // Push homeworks
+              repository.homeworks.value.forEach { hw ->
+                fService.saveHomework(hw)
+              }
+              // Push attendance
+              repository.attendanceRecords.value.forEach { rec ->
+                fService.saveAttendanceRecord(rec)
+              }
+
+              val formatter = java.text.SimpleDateFormat("hh:mm a", java.util.Locale.getDefault())
+              val timeStr = formatter.format(java.util.Date())
+              _cloudSyncInfo.value = CloudSyncInfo(
+                state = CloudSyncState.SYNCED,
+                lastSyncedTime = "Auto-synced at $timeStr",
+                pendingChangesCount = 0,
+                isRealtimeConnected = true
+              )
+            } catch (e: Exception) {
+              android.util.Log.w("SchoolViewModel", "Auto background sync execution notice: ${e.message}")
+            }
+          }
+        }
+      }
+    }
   }
 
   init {
