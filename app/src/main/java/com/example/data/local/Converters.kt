@@ -2,6 +2,7 @@ package com.example.data.local
 
 import androidx.room.TypeConverter
 import com.example.model.AttendanceStatus
+import com.example.model.NotificationType
 
 /**
  * Type converters for Room database to persist complex data types
@@ -31,6 +32,20 @@ class Converters {
       if (value != null) AttendanceStatus.valueOf(value) else AttendanceStatus.FULL_DAY
     } catch (e: Exception) {
       AttendanceStatus.FULL_DAY
+    }
+  }
+
+  @TypeConverter
+  fun fromNotificationType(type: NotificationType?): String {
+    return type?.name ?: NotificationType.ACADEMIC.name
+  }
+
+  @TypeConverter
+  fun toNotificationType(value: String?): NotificationType {
+    return try {
+      if (value != null) NotificationType.valueOf(value) else NotificationType.ACADEMIC
+    } catch (e: Exception) {
+      NotificationType.ACADEMIC
     }
   }
 }

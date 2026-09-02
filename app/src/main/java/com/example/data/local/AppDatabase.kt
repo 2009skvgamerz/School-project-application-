@@ -7,12 +7,15 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.data.local.dao.AttendanceDao
+import com.example.data.local.dao.NotificationDao
 import com.example.data.local.dao.StudentDao
 import com.example.data.local.dao.TeacherDao
 import com.example.data.local.entity.AttendanceEntity
+import com.example.data.local.entity.NotificationEntity
 import com.example.data.local.entity.StudentEntity
 import com.example.data.local.entity.TeacherEntity
 import com.example.model.AttendanceStatus
+import com.example.model.NotificationType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -24,12 +27,14 @@ import kotlinx.coroutines.launch
  * - 'students' (StudentEntity)
  * - 'teachers' (TeacherEntity)
  * - 'attendance_records' (AttendanceEntity)
+ * - 'received_notifications' (NotificationEntity)
  */
 @Database(
   entities = [
     StudentEntity::class,
     TeacherEntity::class,
-    AttendanceEntity::class
+    AttendanceEntity::class,
+    NotificationEntity::class
   ],
   version = 1,
   exportSchema = false
@@ -40,6 +45,7 @@ abstract class AppDatabase : RoomDatabase() {
   abstract fun studentDao(): StudentDao
   abstract fun teacherDao(): TeacherDao
   abstract fun attendanceDao(): AttendanceDao
+  abstract fun notificationDao(): NotificationDao
 
   companion object {
     const val DATABASE_NAME = "st_josephs_school_app.db"
@@ -68,7 +74,7 @@ abstract class AppDatabase : RoomDatabase() {
     }
 
     /**
-     * Database callback to seed initial Students, Teachers, and Attendance records upon creation.
+     * Database callback to seed initial Students, Teachers, Attendance, and Notification records upon creation.
      */
     private class AppDatabaseCallback(
       private val scope: CoroutineScope
@@ -84,12 +90,13 @@ abstract class AppDatabase : RoomDatabase() {
     }
 
     /**
-     * Seeds initial records for Students, Teachers, and Daily Attendance into Room.
+     * Seeds initial records for Students, Teachers, Daily Attendance, and Offline Notifications into Room.
      */
     suspend fun populateInitialData(database: AppDatabase) {
       val studentDao = database.studentDao()
       val teacherDao = database.teacherDao()
       val attendanceDao = database.attendanceDao()
+      val notificationDao = database.notificationDao()
 
       // 1. Initial Student Entities across multiple classes
       val initialStudents = listOf(
@@ -214,6 +221,63 @@ abstract class AppDatabase : RoomDatabase() {
         AttendanceEntity("att_403", "std_403", "Charlotte Young", 3, "Class 11-Science", "Today", AttendanceStatus.FULL_DAY, "Dr. Rachel Green (Class Teacher)")
       )
       attendanceDao.insertRecords(initialAttendance)
+
+      // 4. Initial Received Notifications & Announcements for Local Offline History
+      val initialNotifications = listOf(
+        NotificationEntity(
+          id = "notif_init_1",
+          title = "🚨 Heavy Rainfall Alert & Campus Schedule",
+          message = "Due to continuous heavy rains, afternoon laboratory sessions for Classes 10-12 will transition online.",
+          timeAgo = "10m ago",
+          timestamp = System.currentTimeMillis() - 600000L,
+          type = NotificationType.NOTICE,
+          isRead = false,
+          actionRoute = "announcements",
+          targetId = "ann_1",
+          isUrgent = true,
+          channelId = "channel_emergency_notices"
+        ),
+        NotificationEntity(
+          id = "notif_init_2",
+          title = "📚 Physics Chapter 4: Electromagnetic Waves",
+          message = "Complete numerical problems 1 to 15 from Page 142. Submission due Friday.",
+          timeAgo = "1h ago",
+          timestamp = System.currentTimeMillis() - 3600000L,
+          type = NotificationType.HOMEWORK,
+          isRead = false,
+          actionRoute = "homework",
+          targetId = "hw_1",
+          isUrgent = false,
+          channelId = "channel_academic_updates"
+        ),
+        NotificationEntity(
+          id = "notif_init_3",
+          title = "📅 Annual Inter-School Science & AI Expo 2026",
+          message = "Exhibit submissions and prototype demos are open at the Main Auditorium.",
+          timeAgo = "3h ago",
+          timestamp = System.currentTimeMillis() - 10800000L,
+          type = NotificationType.EVENT,
+          isRead = true,
+          actionRoute = "calendar",
+          targetId = "ev_2",
+          isUrgent = false,
+          channelId = "channel_school_events"
+        ),
+        NotificationEntity(
+          id = "notif_init_4",
+          title = "✅ Morning Attendance Marked",
+          message = "Your attendance for today has been marked as Full Day Present (FD).",
+          timeAgo = "5h ago",
+          timestamp = System.currentTimeMillis() - 18000000L,
+          type = NotificationType.ATTENDANCE,
+          isRead = true,
+          actionRoute = "attendance",
+          targetId = null,
+          isUrgent = false,
+          channelId = "channel_academic_updates"
+        )
+      )
+      notificationDao.insertNotifications(initialNotifications)
     }
   }
 }

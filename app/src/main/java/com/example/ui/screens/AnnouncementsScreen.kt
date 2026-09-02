@@ -41,12 +41,24 @@ fun AnnouncementsScreen(
   userRole: UserRole,
   onAddAnnouncement: (SchoolAnnouncement) -> Unit,
   onAcknowledgeAnnouncement: (String) -> Unit,
+  initialSelectedAnnouncementId: String? = null,
   modifier: Modifier = Modifier
 ) {
   var selectedFilter by remember { mutableStateOf<AnnouncementPriority?>(null) }
   var showBroadcastDialog by remember { mutableStateOf(false) }
+  var selectedAnnouncementForDetail by remember { mutableStateOf<SchoolAnnouncement?>(null) }
   var feedbackSnackbarMessage by remember { mutableStateOf<String?>(null) }
   var currentlyPlayingAudioId by remember { mutableStateOf<String?>(null) }
+
+  // Deep Link handler to automatically open announcement detail
+  LaunchedEffect(initialSelectedAnnouncementId, announcements) {
+    if (initialSelectedAnnouncementId != null) {
+      val match = announcements.find { it.id == initialSelectedAnnouncementId }
+      if (match != null) {
+        selectedAnnouncementForDetail = match
+      }
+    }
+  }
 
   val filteredAnnouncements = remember(announcements, selectedFilter) {
     if (selectedFilter == null) {
@@ -169,6 +181,25 @@ fun AnnouncementsScreen(
                   )
                 }
               }
+
+              Surface(
+                color = Color.White.copy(alpha = 0.12f),
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier.weight(1f)
+              ) {
+                Row(
+                  modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                  verticalAlignment = Alignment.CenterVertically,
+                  horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                  Icon(Icons.Default.CloudSync, contentDescription = null, tint = SchoolGold, modifier = Modifier.size(16.dp))
+                  Text(
+                    text = "FCM Live",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                    color = Color.White
+                  )
+                }
+              }
             }
           }
         }
@@ -258,11 +289,27 @@ fun AnnouncementsScreen(
             onAcknowledge = {
               onAcknowledgeAnnouncement(announcement.id)
               feedbackSnackbarMessage = "Broadcast acknowledged: ${announcement.title.take(30)}..."
+            },
+            onClick = {
+              selectedAnnouncementForDetail = announcement
             }
           )
         }
       }
     }
+  }
+
+  // Announcement Detail Dialog (for Deep Linking or Card Tap)
+  selectedAnnouncementForDetail?.let { detail ->
+    AnnouncementDetailDialog(
+      announcement = detail,
+      onDismiss = { selectedAnnouncementForDetail = null },
+      onAcknowledge = {
+        onAcknowledgeAnnouncement(detail.id)
+        selectedAnnouncementForDetail = null
+        feedbackSnackbarMessage = "Broadcast acknowledged!"
+      }
+    )
   }
 
   // Publish Dialog
@@ -279,11 +326,112 @@ fun AnnouncementsScreen(
 }
 
 @Composable
+fun AnnouncementDetailDialog(
+  announcement: SchoolAnnouncement,
+  onDismiss: () -> Unit,
+  onAcknowledge: () -> Unit
+) {
+  val priorityColor = Color(announcement.priority.colorHex)
+  AlertDialog(
+    onDismissRequest = onDismiss,
+    title = {
+      Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+      ) {
+        Box(
+          modifier = Modifier
+            .size(36.dp)
+            .clip(CircleShape)
+            .background(priorityColor.copy(alpha = 0.15f)),
+          contentAlignment = Alignment.Center
+        ) {
+          Icon(
+            if (announcement.isEmergency) Icons.Default.Emergency else Icons.Default.Campaign,
+            contentDescription = null,
+            tint = priorityColor,
+            modifier = Modifier.size(20.dp)
+          )
+        }
+        Text(
+          text = if (announcement.isEmergency) "Emergency Notice" else "Official Broadcast",
+          style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+        )
+      }
+    },
+    text = {
+      Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+      ) {
+        Surface(
+          color = priorityColor.copy(alpha = 0.1f),
+          shape = RoundedCornerShape(8.dp)
+        ) {
+          Text(
+            text = "${announcement.priority.label.uppercase()} • ${announcement.targetAudience.label}",
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+            color = priorityColor,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+          )
+        }
+
+        Text(
+          text = announcement.title,
+          style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+          color = if (announcement.isEmergency) Color(0xFF991B1B) else MaterialTheme.colorScheme.onSurface
+        )
+
+        Text(
+          text = announcement.content,
+          style = MaterialTheme.typography.bodyMedium,
+          lineHeight = 22.sp,
+          color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+        Row(
+          modifier = Modifier.fillMaxWidth(),
+          horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+          Text(
+            text = "Issued by: ${announcement.authorName}",
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold)
+          )
+          Text(
+            text = announcement.date,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+          )
+        }
+      }
+    },
+    confirmButton = {
+      Button(
+        onClick = onAcknowledge,
+        colors = ButtonDefaults.buttonColors(containerColor = SchoolNavyPrimary)
+      ) {
+        Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(16.dp))
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(if (announcement.acknowledgedByCurrentUser) "Acknowledged" else "Acknowledge Notice")
+      }
+    },
+    dismissButton = {
+      TextButton(onClick = onDismiss) {
+        Text("Close")
+      }
+    }
+  )
+}
+
+@Composable
 fun AnnouncementCard(
   announcement: SchoolAnnouncement,
   isPlayingAudio: Boolean,
   onToggleAudio: () -> Unit,
   onAcknowledge: () -> Unit,
+  onClick: (() -> Unit)? = null,
   modifier: Modifier = Modifier
 ) {
   val priorityColor = Color(announcement.priority.colorHex)
@@ -300,7 +448,10 @@ fun AnnouncementCard(
       null
     },
     elevation = CardDefaults.cardElevation(defaultElevation = if (isEmergency) 3.dp else 1.5.dp),
-    modifier = modifier.fillMaxWidth().testTag("announcement_card_${announcement.id}")
+    modifier = modifier
+      .fillMaxWidth()
+      .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
+      .testTag("announcement_card_${announcement.id}")
   ) {
     Column(
       modifier = Modifier
@@ -608,6 +759,17 @@ fun PublishAnnouncementDialog(
           }
         }
 
+        Text(text = "Target Audience:", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+          items(AnnouncementAudience.entries) { aud ->
+            FilterChip(
+              selected = selectedAudience == aud,
+              onClick = { selectedAudience = aud },
+              label = { Text(aud.label, style = MaterialTheme.typography.labelSmall) }
+            )
+          }
+        }
+
         // Emergency Siren checkbox
         Row(
           verticalAlignment = Alignment.CenterVertically,
@@ -616,6 +778,26 @@ fun PublishAnnouncementDialog(
           Checkbox(checked = isEmergency, onCheckedChange = { isEmergency = it })
           Spacer(modifier = Modifier.width(6.dp))
           Text("Flag as Emergency Siren Alert (High Visibility)", style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold, color = Color(0xFFDC2626)))
+        }
+
+        // FCM Cloud Push Notification Indicator
+        Surface(
+          color = Color(0xFFEFF6FF),
+          shape = RoundedCornerShape(8.dp),
+          modifier = Modifier.fillMaxWidth()
+        ) {
+          Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+          ) {
+            Icon(Icons.Default.CloudSync, contentDescription = null, tint = Color(0xFF1D4ED8), modifier = Modifier.size(16.dp))
+            Text(
+              text = "FCM push will broadcast to topic: ${if (isEmergency) "#all_school" else "#announcements"}",
+              style = MaterialTheme.typography.labelSmall,
+              color = Color(0xFF1E40AF)
+            )
+          }
         }
       }
     },

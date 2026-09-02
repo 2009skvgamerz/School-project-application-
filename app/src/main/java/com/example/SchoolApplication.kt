@@ -10,6 +10,8 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 
 import com.example.service.SchoolFirebaseMessagingService
+import com.example.util.BackgroundSyncManager
+import com.example.util.SchoolBackgroundScheduler
 import com.example.util.SystemNotificationHelper
 
 class SchoolApplication : Application() {
@@ -18,6 +20,8 @@ class SchoolApplication : Application() {
         super.onCreate()
         SystemNotificationHelper.createNotificationChannel(this)
         initFirebase()
+        BackgroundSyncManager.initialize(this)
+        SchoolBackgroundScheduler.startContinuousBackgroundAlerts(this, initialDelaySeconds = 30L)
     }
 
     private fun initFirebase() {

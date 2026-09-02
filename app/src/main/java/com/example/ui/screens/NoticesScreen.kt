@@ -33,10 +33,21 @@ fun NoticesScreen(
   onNoticeClick: (Notice) -> Unit,
   onOpenCreateNoticeDialog: () -> Unit,
   canCreateNotice: Boolean,
+  initialSelectedNoticeId: String? = null,
   isRefreshing: Boolean = false,
   onRefresh: () -> Unit = {},
   modifier: Modifier = Modifier
 ) {
+  // Deep Link listener to open notice detail dialog automatically
+  LaunchedEffect(initialSelectedNoticeId, notices) {
+    if (initialSelectedNoticeId != null) {
+      val match = notices.find { it.id == initialSelectedNoticeId }
+      if (match != null) {
+        onNoticeClick(match)
+      }
+    }
+  }
+
   PullToRefreshBox(
     isRefreshing = isRefreshing,
     onRefresh = onRefresh,

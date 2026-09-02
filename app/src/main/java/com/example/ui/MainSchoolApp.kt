@@ -82,14 +82,17 @@ fun MainSchoolApp(
   val sanitizedDirectoryContacts by viewModel.sanitizedDirectoryContacts.collectAsState()
 
   val notifications by viewModel.notifications.collectAsState()
+  val roomNotifications by viewModel.roomNotifications.collectAsState()
   val unreadNotificationsCount by viewModel.unreadNotificationsCount.collectAsState()
   val isRefreshing by viewModel.isRefreshing.collectAsState()
   val deepLinkRoute by viewModel.deepLinkRoute.collectAsState()
+  val deepLinkTargetId by viewModel.deepLinkTargetId.collectAsState()
   val networkState by viewModel.networkState.collectAsState()
   val isSimulatedOffline by viewModel.isSimulatedOffline.collectAsState()
   val cloudSyncInfo by viewModel.cloudSyncInfo.collectAsState()
   val refreshFeedbackMessage by viewModel.refreshFeedbackMessage.collectAsState()
   val fcmDeviceToken by viewModel.fcmDeviceToken.collectAsState()
+  val fcmSubscribedTopics by viewModel.fcmSubscribedTopics.collectAsState()
 
   val snackbarHostState = remember { SnackbarHostState() }
 
@@ -564,6 +567,7 @@ fun MainSchoolApp(
             onNoticeClick = { selectedNoticeDetail = it },
             onOpenCreateNoticeDialog = { showCreateNoticeDialog = true },
             canCreateNotice = currentUser.role != UserRole.STUDENT,
+            initialSelectedNoticeId = deepLinkTargetId,
             isRefreshing = isRefreshing,
             onRefresh = { viewModel.refreshData() }
           )
@@ -574,7 +578,8 @@ fun MainSchoolApp(
             events = calendarEvents,
             userRole = currentUser.role,
             onAddEvent = { viewModel.addCalendarEvent(it) },
-            onToggleReminder = { viewModel.toggleCalendarEventReminder(it) }
+            onToggleReminder = { viewModel.toggleCalendarEventReminder(it) },
+            initialSelectedEventId = deepLinkTargetId
           )
         }
 
@@ -594,7 +599,8 @@ fun MainSchoolApp(
             announcements = announcements,
             userRole = currentUser.role,
             onAddAnnouncement = { viewModel.addAnnouncement(it) },
-            onAcknowledgeAnnouncement = { viewModel.acknowledgeAnnouncement(it) }
+            onAcknowledgeAnnouncement = { viewModel.acknowledgeAnnouncement(it) },
+            initialSelectedAnnouncementId = deepLinkTargetId
           )
         }
 
@@ -1166,14 +1172,11 @@ fun MainSchoolApp(
   if (showNotificationCenterSheet) {
     NotificationCenterSheet(
       notifications = notifications,
+      roomNotifications = roomNotifications,
       fcmDeviceToken = fcmDeviceToken,
-      onTriggerFcmPush = { title, msg, type, route ->
-        viewModel.triggerFcmPushNotification(
-          title = title,
-          message = msg,
-          type = type,
-          route = route
-        )
+      subscribedTopics = fcmSubscribedTopics,
+      onToggleTopic = { topic ->
+        viewModel.toggleTopicSubscription(topic)
       },
       onDismiss = { showNotificationCenterSheet = false },
       onMarkAsRead = { notifId ->
@@ -1184,33 +1187,6 @@ fun MainSchoolApp(
       },
       onDeleteNotification = { notifId ->
         viewModel.deleteNotification(notifId)
-      },
-      onSendTestNotification = {
-        viewModel.sendTestNotification(
-          context = context,
-          showSystemPopUp = true
-        )
-      },
-      onTriggerImmediatePopUp = { title, msg, type, route ->
-        viewModel.sendTestNotification(
-          context = context,
-          title = title,
-          message = msg,
-          type = type,
-          actionRoute = route,
-          isUrgent = true,
-          showSystemPopUp = true
-        )
-      },
-      onTriggerDelayedPopUp = { delaySecs, title, msg, type, route ->
-        viewModel.triggerDelayedSystemPopUp(
-          context = context,
-          delaySeconds = delaySecs,
-          title = title,
-          message = msg,
-          type = type,
-          actionRoute = route
-        )
       },
       onNavigateToRoute = { route ->
         showNotificationCenterSheet = false

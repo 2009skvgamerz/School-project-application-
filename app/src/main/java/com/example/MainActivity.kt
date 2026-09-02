@@ -23,12 +23,14 @@ class MainActivity : ComponentActivity() {
     super.onCreate(savedInstanceState)
     enableEdgeToEdge()
 
-    // Initialize notification channel for heads-up pop-up alerts
-    SystemNotificationHelper.createNotificationChannel(this)
+    // Initialize all notification channels for heads-up alerts & category management
+    SystemNotificationHelper.createNotificationChannels(this)
 
-    // Handle deep link route from notification if launched via notification
-    intent?.getStringExtra(SystemNotificationHelper.EXTRA_TARGET_ROUTE)?.let { route ->
-      viewModel.setDeepLinkRoute(route)
+    // Handle deep link route & specific target ID if launched via notification
+    val targetRoute = intent?.getStringExtra(SystemNotificationHelper.EXTRA_TARGET_ROUTE)
+    val targetId = intent?.getStringExtra(SystemNotificationHelper.EXTRA_TARGET_ID)
+    if (targetRoute != null) {
+      viewModel.setDeepLink(targetRoute, targetId)
     }
 
     setContent {
@@ -49,8 +51,10 @@ class MainActivity : ComponentActivity() {
   override fun onNewIntent(intent: Intent) {
     super.onNewIntent(intent)
     setIntent(intent)
-    intent.getStringExtra(SystemNotificationHelper.EXTRA_TARGET_ROUTE)?.let { route ->
-      viewModel.setDeepLinkRoute(route)
+    val targetRoute = intent.getStringExtra(SystemNotificationHelper.EXTRA_TARGET_ROUTE)
+    val targetId = intent.getStringExtra(SystemNotificationHelper.EXTRA_TARGET_ID)
+    if (targetRoute != null) {
+      viewModel.setDeepLink(targetRoute, targetId)
     }
   }
 }

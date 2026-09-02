@@ -666,6 +666,19 @@ class SchoolRepository {
   // ==================== WAVE 1 ERP METHODS ====================
 
   // 1. Calendar
+  fun syncCalendarEvent(event: CalendarEvent) {
+    _calendarEvents.update { list ->
+      val index = list.indexOfFirst { it.id == event.id }
+      if (index != -1) {
+        val updated = list.toMutableList()
+        updated[index] = event
+        updated
+      } else {
+        listOf(event) + list
+      }
+    }
+  }
+
   fun addCalendarEvent(event: CalendarEvent) {
     _calendarEvents.update { listOf(event) + it }
     addNotification(

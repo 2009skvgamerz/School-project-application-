@@ -42,10 +42,12 @@ class SchoolViewModel(
   private val knownAttendanceIds = mutableSetOf<String>()
   private val knownAnnouncementIds = mutableSetOf<String>()
   private val knownHomeworkIds = mutableSetOf<String>()
+  private val knownCalendarEventIds = mutableSetOf<String>()
   private var isInitialNoticeLoad = true
   private var isInitialAttendanceLoad = true
   private var isInitialAnnouncementLoad = true
   private var isInitialHomeworkLoad = true
+  private var isInitialCalendarEventLoad = true
 
   // Auth Loading & Status State
   private val _isAuthLoading = MutableStateFlow(false)
@@ -77,13 +79,49 @@ class SchoolViewModel(
   )
   val cloudSyncInfo: StateFlow<CloudSyncInfo> = _cloudSyncInfo.asStateFlow()
 
-  // FCM Device Token State Flow
+  // FCM Device Token & Subscribed Topics State Flow
   private val _fcmDeviceToken = MutableStateFlow<String?>(com.example.service.SchoolFirebaseMessagingService.latestToken)
   val fcmDeviceToken: StateFlow<String?> = _fcmDeviceToken.asStateFlow()
+
+  private val _fcmSubscribedTopics = MutableStateFlow<Set<String>>(com.example.service.SchoolFirebaseMessagingService.DEFAULT_TOPICS)
+  val fcmSubscribedTopics: StateFlow<Set<String>> = _fcmSubscribedTopics.asStateFlow()
 
   fun refreshFcmDeviceToken() {
     com.example.service.SchoolFirebaseMessagingService.fetchFcmToken { token ->
       _fcmDeviceToken.value = token
+      if (token != null) {
+        val user = repository.currentUser.value
+        val userId = user?.id ?: "user_default"
+        val role = user?.role?.name ?: "STUDENT"
+        viewModelScope.launch {
+          firestoreService?.registerDeviceToken(userId, token, role, _fcmSubscribedTopics.value.toList())
+        }
+      }
+    }
+    appContext?.let { ctx ->
+      _fcmSubscribedTopics.value = com.example.service.SchoolFirebaseMessagingService.getSubscribedTopics(ctx)
+    }
+  }
+
+  fun toggleTopicSubscription(topic: String) {
+    val current = _fcmSubscribedTopics.value.toMutableSet()
+    val isSubscribed = current.contains(topic)
+    if (isSubscribed) {
+      com.example.service.SchoolFirebaseMessagingService.unsubscribeFromTopic(topic, appContext) { success ->
+        if (success) {
+          current.remove(topic)
+          _fcmSubscribedTopics.value = current
+          _refreshFeedbackMessage.value = "Unsubscribed from #$topic push alerts"
+        }
+      }
+    } else {
+      com.example.service.SchoolFirebaseMessagingService.subscribeToTopic(topic, appContext) { success ->
+        if (success) {
+          current.add(topic)
+          _fcmSubscribedTopics.value = current
+          _refreshFeedbackMessage.value = "🔔 Subscribed to #$topic live push alerts"
+        }
+      }
     }
   }
 
@@ -95,7 +133,8 @@ class SchoolViewModel(
   ) {
     appContext?.let { ctx ->
       val notifType = when (type.lowercase()) {
-        "event" -> NotificationType.EVENT
+        "event", "calendar" -> NotificationType.EVENT
+        "announcement", "broadcast" -> NotificationType.ANNOUNCEMENT
         "homework" -> NotificationType.HOMEWORK
         "attendance" -> NotificationType.ATTENDANCE
         "exam" -> NotificationType.EXAM
@@ -120,7 +159,18 @@ class SchoolViewModel(
         isUrgent = true
       )
       repository.addNotification(appNotif)
-      _refreshFeedbackMessage.value = "🔥 FCM Push Notification dispatched to system notification tray!"
+      _refreshFeedbackMessage.value = "🔥 FCM Push Notification dispatched for $route!"
+      
+      viewModelScope.launch {
+        firestoreService?.recordFcmBroadcast(
+          title = title,
+          body = message,
+          type = type,
+          topic = if (type.contains("event", ignoreCase = true)) "events" else "announcements",
+          targetRoute = route,
+          isUrgent = true
+        )
+      }
     }
   }
 
@@ -200,6 +250,9 @@ class SchoolViewModel(
 
   fun initializeWithContext(context: Context) {
     appContext = context.applicationContext
+
+    // Automatically initialize background network sync & periodic WorkManager worker
+    com.example.util.BackgroundSyncManager.initialize(context.applicationContext)
 
     // Restore persistent session
     if (sessionPreferences == null) {
@@ -451,6 +504,55 @@ class SchoolViewModel(
             android.util.Log.w("SchoolViewModel", "observeHomework error: ${e.message}")
           }
         }
+
+        // 5. Listen for real-time calendar events
+        viewModelScope.launch {
+          try {
+            fService.observeCalendarEvents().collect { events ->
+              if (events.isNotEmpty()) {
+                if (isInitialCalendarEventLoad) {
+                  knownCalendarEventIds.addAll(events.map { it.id })
+                  isInitialCalendarEventLoad = false
+                  events.forEach { repository.syncCalendarEvent(it) }
+                } else {
+                  events.forEach { event ->
+                    if (!knownCalendarEventIds.contains(event.id)) {
+                      knownCalendarEventIds.add(event.id)
+                      repository.syncCalendarEvent(event)
+
+                      val appNotif = AppNotification(
+                        id = "notif_evt_${event.id}",
+                        title = "📅 New School Event: ${event.title}",
+                        message = "${event.formattedDate} • ${event.time} at ${event.location}",
+                        timeAgo = "Just now",
+                        type = NotificationType.EVENT,
+                        isRead = false,
+                        actionRoute = "calendar",
+                        isUrgent = false
+                      )
+                      repository.addNotification(appNotif)
+
+                      appContext?.let { ctx ->
+                        SystemNotificationHelper.showSystemNotification(
+                          context = ctx,
+                          title = "📅 New School Event: ${event.title}",
+                          message = "${event.formattedDate} • ${event.time} at ${event.location}",
+                          type = NotificationType.EVENT,
+                          actionRoute = "calendar",
+                          isUrgent = false
+                        )
+                      }
+                    } else {
+                      repository.syncCalendarEvent(event)
+                    }
+                  }
+                }
+              }
+            }
+          } catch (e: Exception) {
+            android.util.Log.w("SchoolViewModel", "observeCalendarEvents error: ${e.message}")
+          }
+        }
       } catch (e: Exception) {
         android.util.Log.w("SchoolViewModel", "FirestoreService init failed gracefully: ${e.message}")
       }
@@ -478,43 +580,22 @@ class SchoolViewModel(
       }
     }
 
-    // Launch background synchronization loop running every 10 seconds
+    // Launch background synchronization heartbeat running every 15 seconds
     viewModelScope.launch {
       while (true) {
-        kotlinx.coroutines.delay(10000)
+        kotlinx.coroutines.delay(15000)
         val isOffline = _isSimulatedOffline.value || _networkState.value is com.example.util.NetworkState.Offline
         if (!isOffline) {
           val fService = firestoreService
           if (fService != null) {
-            try {
-              // Push notices
-              repository.notices.value.forEach { notice ->
-                fService.publishNotice(notice)
-              }
-              // Push announcements
-              repository.announcements.value.forEach { ann ->
-                fService.publishAnnouncement(ann)
-              }
-              // Push homeworks
-              repository.homeworks.value.forEach { hw ->
-                fService.saveHomework(hw)
-              }
-              // Push attendance
-              repository.attendanceRecords.value.forEach { rec ->
-                fService.saveAttendanceRecord(rec)
-              }
-
-              val formatter = java.text.SimpleDateFormat("hh:mm a", java.util.Locale.getDefault())
-              val timeStr = formatter.format(java.util.Date())
-              _cloudSyncInfo.value = CloudSyncInfo(
-                state = CloudSyncState.SYNCED,
-                lastSyncedTime = "Auto-synced at $timeStr",
-                pendingChangesCount = 0,
-                isRealtimeConnected = true
-              )
-            } catch (e: Exception) {
-              android.util.Log.w("SchoolViewModel", "Auto background sync execution notice: ${e.message}")
-            }
+            val formatter = java.text.SimpleDateFormat("hh:mm a", java.util.Locale.getDefault())
+            val timeStr = formatter.format(java.util.Date())
+            _cloudSyncInfo.value = CloudSyncInfo(
+              state = CloudSyncState.SYNCED,
+              lastSyncedTime = "Synced at $timeStr",
+              pendingChangesCount = 0,
+              isRealtimeConnected = true
+            )
           }
         }
       }
@@ -973,13 +1054,35 @@ class SchoolViewModel(
   private val _deepLinkRoute = MutableStateFlow<String?>(null)
   val deepLinkRoute: StateFlow<String?> = _deepLinkRoute.asStateFlow()
 
+  private val _deepLinkTargetId = MutableStateFlow<String?>(null)
+  val deepLinkTargetId: StateFlow<String?> = _deepLinkTargetId.asStateFlow()
+
+  fun setDeepLink(route: String?, targetId: String? = null) {
+    _deepLinkRoute.value = route
+    _deepLinkTargetId.value = targetId
+  }
+
   fun setDeepLinkRoute(route: String?) {
     _deepLinkRoute.value = route
   }
 
   fun clearDeepLinkRoute() {
     _deepLinkRoute.value = null
+    _deepLinkTargetId.value = null
   }
+
+  fun clearDeepLink() {
+    _deepLinkRoute.value = null
+    _deepLinkTargetId.value = null
+  }
+
+  // Room DB live notification history stream for offline viewing
+  @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+  val roomNotifications: StateFlow<List<com.example.data.local.entity.NotificationEntity>> = _databaseFlow
+    .flatMapLatest { db ->
+      db?.notificationDao()?.getAllNotifications() ?: flowOf(emptyList())
+    }
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
   // Pull-To-Refresh Implementation
   fun refreshData(onComplete: (() -> Unit)? = null) {
@@ -1006,17 +1109,26 @@ class SchoolViewModel(
     }
   }
 
-  // Notification actions
+  // Notification actions with Room DB persistence
   fun markNotificationAsRead(id: String) {
     repository.markNotificationAsRead(id)
+    viewModelScope.launch(Dispatchers.IO) {
+      _databaseFlow.value?.notificationDao()?.markAsRead(id)
+    }
   }
 
   fun markAllNotificationsAsRead() {
     repository.markAllNotificationsAsRead()
+    viewModelScope.launch(Dispatchers.IO) {
+      _databaseFlow.value?.notificationDao()?.markAllAsRead()
+    }
   }
 
   fun deleteNotification(id: String) {
     repository.deleteNotification(id)
+    viewModelScope.launch(Dispatchers.IO) {
+      _databaseFlow.value?.notificationDao()?.deleteNotification(id)
+    }
   }
 
   fun sendTestNotification(
@@ -1093,8 +1205,35 @@ class SchoolViewModel(
   // ==================== WAVE 1 ERP METHODS ====================
 
   // 1. Calendar Actions
-  fun addCalendarEvent(event: CalendarEvent) {
+  fun addCalendarEvent(event: CalendarEvent, broadcastFcmPush: Boolean = true) {
     repository.addCalendarEvent(event)
+    knownCalendarEventIds.add(event.id)
+    viewModelScope.launch {
+      firestoreService?.saveCalendarEvent(event)
+      if (broadcastFcmPush) {
+        firestoreService?.recordFcmBroadcast(
+          title = "📅 New Event: ${event.title}",
+          body = "${event.formattedDate} • ${event.time} at ${event.location}",
+          type = "event",
+          topic = "events",
+          targetRoute = "calendar",
+          isUrgent = false
+        )
+      }
+    }
+    if (broadcastFcmPush) {
+      appContext?.let { ctx ->
+        SystemNotificationHelper.showSystemNotification(
+          context = ctx,
+          title = "📅 Event Alert: ${event.title}",
+          message = "${event.formattedDate} • ${event.time} at ${event.location}",
+          type = NotificationType.EVENT,
+          actionRoute = "calendar",
+          isUrgent = false
+        )
+      }
+    }
+    _refreshFeedbackMessage.value = "📅 Event '${event.title}' scheduled & broadcasted via FCM."
   }
 
   fun toggleCalendarEventReminder(eventId: String): Boolean {
@@ -1148,12 +1287,35 @@ class SchoolViewModel(
   }
 
   // 3. Announcements Actions
-  fun addAnnouncement(announcement: SchoolAnnouncement) {
+  fun addAnnouncement(announcement: SchoolAnnouncement, broadcastFcmPush: Boolean = true) {
     repository.addAnnouncement(announcement)
     knownAnnouncementIds.add(announcement.id)
     viewModelScope.launch {
       firestoreService?.publishAnnouncement(announcement)
+      if (broadcastFcmPush) {
+        firestoreService?.recordFcmBroadcast(
+          title = if (announcement.isEmergency) "🚨 EMERGENCY: ${announcement.title}" else "📢 Announcement: ${announcement.title}",
+          body = announcement.content,
+          type = "announcement",
+          topic = if (announcement.isEmergency) "all_school" else "announcements",
+          targetRoute = "announcements",
+          isUrgent = announcement.isEmergency
+        )
+      }
     }
+    if (broadcastFcmPush) {
+      appContext?.let { ctx ->
+        SystemNotificationHelper.showSystemNotification(
+          context = ctx,
+          title = if (announcement.isEmergency) "🚨 EMERGENCY: ${announcement.title}" else "📢 Announcement: ${announcement.title}",
+          message = announcement.content,
+          type = NotificationType.ANNOUNCEMENT,
+          actionRoute = "announcements",
+          isUrgent = announcement.isEmergency
+        )
+      }
+    }
+    _refreshFeedbackMessage.value = "📢 Broadcast '${announcement.title}' published & pushed to subscribers."
   }
 
   fun triggerCloudSync(onComplete: ((Boolean) -> Unit)? = null) {
@@ -1178,7 +1340,11 @@ class SchoolViewModel(
           repository.attendanceRecords.value.forEach { rec ->
             fService.saveAttendanceRecord(rec)
           }
-          _refreshFeedbackMessage.value = "☁️ Cloud Sync Complete: All notices, assignments, and attendance synced with Firestore."
+          // Push current calendar events
+          repository.calendarEvents.value.forEach { event ->
+            fService.saveCalendarEvent(event)
+          }
+          _refreshFeedbackMessage.value = "☁️ Cloud Sync Complete: All notices, events, assignments, and attendance synced with Firestore."
           onComplete?.invoke(true)
         } else {
           _refreshFeedbackMessage.value = "Cloud Sync: Offline local cache updated."
@@ -1252,6 +1418,11 @@ class SchoolViewModel(
 
   fun broadcastDeveloperNotice(title: String, content: String, isUrgent: Boolean = true) {
     repository.broadcastDeveloperNotice(title, content, isUrgent)
+  }
+
+  fun triggerBackgroundConnectivitySync(context: Context) {
+    com.example.util.BackgroundSyncManager.triggerManualSync(context)
+    _refreshFeedbackMessage.value = "⚡ Background Network Sync Worker executed"
   }
 
   fun resetAllSystemDefaults() {

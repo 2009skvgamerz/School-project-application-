@@ -25,10 +25,28 @@ class FirestoreService(private val context: Context) {
     private const val COLLECTION_ANNOUNCEMENTS = "announcements"
     private const val COLLECTION_HOMEWORK = "homework"
     private const val COLLECTION_EVENTS = "events"
+    private const val COLLECTION_FCM_TOKENS = "fcm_tokens"
+    private const val COLLECTION_FCM_BROADCASTS = "fcm_broadcasts"
   }
 
   init {
     Log.d(TAG, "Initializing FirestoreService with persistence enabled")
+    try {
+      if (FirebaseApp.getApps(context).isNotEmpty()) {
+        val auth = com.google.firebase.auth.FirebaseAuth.getInstance()
+        if (auth.currentUser == null) {
+          auth.signInAnonymously()
+            .addOnSuccessListener {
+              Log.d(TAG, "Firestore anonymous session established for user: ${it.user?.uid}")
+            }
+            .addOnFailureListener { e ->
+              Log.d(TAG, "Firestore anonymous auth fallback note: ${e.message}")
+            }
+        }
+      }
+    } catch (e: Exception) {
+      Log.d(TAG, "Auth init note: ${e.message}")
+    }
   }
 
   private val firestore: FirebaseFirestore? by lazy {
@@ -458,6 +476,161 @@ class FirestoreService(private val context: Context) {
 
     awaitClose {
       subscription.remove()
+    }
+  }
+
+  /**
+   * Publishes or updates a School Calendar Event in Firestore
+   */
+  suspend fun saveCalendarEvent(event: CalendarEvent): Result<Unit> {
+    val db = firestore ?: return Result.failure(IllegalStateException("Firestore is unavailable."))
+    return try {
+      val data = hashMapOf(
+        "id" to event.id,
+        "title" to event.title,
+        "description" to event.description,
+        "date" to event.date,
+        "formattedDate" to event.formattedDate,
+        "time" to event.time,
+        "location" to event.location,
+        "category" to event.category.name,
+        "isHoliday" to event.isHoliday,
+        "targetGrades" to event.targetGrades,
+        "organizer" to event.organizer,
+        "hasReminder" to event.hasReminder,
+        "timestamp" to System.currentTimeMillis()
+      )
+      db.collection(COLLECTION_EVENTS).document(event.id)
+        .set(data, SetOptions.merge())
+        .await()
+      Result.success(Unit)
+    } catch (e: Exception) {
+      Log.w(TAG, "Calendar event save note (${event.id}): ${e.message}")
+      Result.failure(e)
+    }
+  }
+
+  /**
+   * Listens for real-time School Calendar Events updates from Cloud Firestore
+   */
+  fun observeCalendarEvents(): Flow<List<CalendarEvent>> = callbackFlow {
+    val db = firestore
+    if (db == null) {
+      trySend(emptyList())
+      close()
+      return@callbackFlow
+    }
+
+    val subscription = db.collection(COLLECTION_EVENTS)
+      .addSnapshotListener { snapshot, error ->
+        if (error != null) {
+          Log.w(TAG, "Listen error on calendar events: ${error.message}")
+          return@addSnapshotListener
+        }
+
+        if (snapshot != null && !snapshot.isEmpty) {
+          val list = snapshot.documents.mapNotNull { doc ->
+            try {
+              val id = doc.getString("id") ?: doc.id
+              val title = doc.getString("title") ?: ""
+              val description = doc.getString("description") ?: ""
+              val date = doc.getString("date") ?: ""
+              val formattedDate = doc.getString("formattedDate") ?: date
+              val time = doc.getString("time") ?: "09:00 AM"
+              val location = doc.getString("location") ?: "Main Campus"
+              val categoryStr = doc.getString("category") ?: CalendarCategory.ACADEMIC.name
+              val category = try {
+                CalendarCategory.valueOf(categoryStr)
+              } catch (_: Exception) {
+                CalendarCategory.ACADEMIC
+              }
+              val isHoliday = doc.getBoolean("isHoliday") ?: false
+              val targetGrades = doc.getString("targetGrades") ?: "All Classes"
+              val organizer = doc.getString("organizer") ?: "Academic Council"
+              val hasReminder = doc.getBoolean("hasReminder") ?: false
+
+              CalendarEvent(
+                id = id,
+                title = title,
+                description = description,
+                date = date,
+                formattedDate = formattedDate,
+                time = time,
+                location = location,
+                category = category,
+                isHoliday = isHoliday,
+                targetGrades = targetGrades,
+                organizer = organizer,
+                hasReminder = hasReminder
+              )
+            } catch (e: Exception) {
+              null
+            }
+          }
+          trySend(list)
+        }
+      }
+
+    awaitClose {
+      subscription.remove()
+    }
+  }
+
+  /**
+   * Registers or updates an FCM device token in Cloud Firestore for targeted push routing
+   */
+  suspend fun registerDeviceToken(userId: String, token: String, role: String, topics: List<String>): Result<Unit> {
+    val db = firestore ?: return Result.failure(IllegalStateException("Firestore is unavailable."))
+    return try {
+      val data = hashMapOf(
+        "userId" to userId,
+        "fcmToken" to token,
+        "role" to role,
+        "subscribedTopics" to topics,
+        "platform" to "Android",
+        "lastSeen" to System.currentTimeMillis()
+      )
+      db.collection(COLLECTION_FCM_TOKENS).document(token.take(64))
+        .set(data, SetOptions.merge())
+        .await()
+      Result.success(Unit)
+    } catch (e: Exception) {
+      Log.w(TAG, "FCM device token registration note: ${e.message}")
+      Result.failure(e)
+    }
+  }
+
+  /**
+   * Records a dispatched FCM push broadcast message in Firestore for auditing and cross-client telemetry
+   */
+  suspend fun recordFcmBroadcast(
+    broadcastId: String = "fcm_${System.currentTimeMillis()}",
+    title: String,
+    body: String,
+    type: String,
+    topic: String,
+    targetRoute: String,
+    isUrgent: Boolean
+  ): Result<Unit> {
+    val db = firestore ?: return Result.failure(IllegalStateException("Firestore is unavailable."))
+    return try {
+      val data = hashMapOf(
+        "broadcastId" to broadcastId,
+        "title" to title,
+        "body" to body,
+        "type" to type,
+        "topic" to topic,
+        "targetRoute" to targetRoute,
+        "isUrgent" to isUrgent,
+        "timestamp" to System.currentTimeMillis()
+      )
+      db.collection(COLLECTION_FCM_BROADCASTS).document(broadcastId)
+        .set(data, SetOptions.merge())
+        .await()
+      Result.success(Unit)
+    } catch (e: Exception) {
+      Log.w(TAG, "FCM broadcast record note: ${e.message}")
+      Result.failure(e)
     }
   }
 }

@@ -6,6 +6,7 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -35,20 +36,25 @@ import com.example.model.NotificationType
 import com.example.ui.theme.*
 import com.example.util.SystemNotificationHelper
 
+enum class NotificationSheetViewMode(val label: String, val icon: ImageVector) {
+  LIVE_FEED("Live Feed", Icons.Default.NotificationsActive),
+  OFFLINE_ROOM_DB("Room History", Icons.Default.Storage),
+  CHANNELS_PREFS("Channel Prefs", Icons.Default.Tune)
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationCenterSheet(
   notifications: List<AppNotification>,
+  roomNotifications: List<com.example.data.local.entity.NotificationEntity> = emptyList(),
   onDismiss: () -> Unit,
   onMarkAsRead: (String) -> Unit,
   onMarkAllAsRead: () -> Unit,
   onDeleteNotification: (String) -> Unit,
-  onSendTestNotification: () -> Unit,
   onNavigateToRoute: (String) -> Unit,
-  onTriggerImmediatePopUp: (title: String, message: String, type: NotificationType, route: String) -> Unit = { _, _, _, _ -> },
-  onTriggerDelayedPopUp: (delaySeconds: Long, title: String, message: String, type: NotificationType, route: String) -> Unit = { _, _, _, _, _ -> },
   fcmDeviceToken: String? = null,
-  onTriggerFcmPush: (title: String, message: String, type: String, route: String) -> Unit = { _, _, _, _ -> },
+  subscribedTopics: Set<String> = setOf("all_school", "announcements", "events", "exams"),
+  onToggleTopic: (String) -> Unit = {},
   modifier: Modifier = Modifier
 ) {
   val context = LocalContext.current
@@ -62,16 +68,15 @@ fun NotificationCenterSheet(
   ) { isGranted ->
     hasPermission = isGranted
     if (isGranted) {
-      Toast.makeText(context, "System Notification permissions granted! Pop-ups active.", Toast.LENGTH_SHORT).show()
+      Toast.makeText(context, "System Notification permissions granted!", Toast.LENGTH_SHORT).show()
     } else {
       Toast.makeText(context, "Notifications permission was denied. Please enable in Settings.", Toast.LENGTH_LONG).show()
     }
   }
 
+  var activeViewMode by remember { mutableStateOf(NotificationSheetViewMode.LIVE_FEED) }
   var selectedType by remember { mutableStateOf<NotificationType?>(null) }
   var showOnlyUnread by remember { mutableStateOf(false) }
-  var showPopUpTools by remember { mutableStateOf(true) }
-  var delayedCountdownActive by remember { mutableStateOf(false) }
 
   val filteredNotifications = remember(notifications, selectedType, showOnlyUnread) {
     notifications.filter { item ->
@@ -129,7 +134,7 @@ fun NotificationCenterSheet(
               horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
               Text(
-                text = "Live Notifications",
+                text = "Notification Center",
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.onSurface
               )
@@ -143,48 +148,59 @@ fun NotificationCenterSheet(
               }
             }
             Text(
-              text = "System pop-up alerts & institutional bulletins",
+              text = "Live Updates • Room DB • Channels",
               style = MaterialTheme.typography.bodySmall,
               color = MaterialTheme.colorScheme.onSurfaceVariant
             )
           }
         }
 
-        // Action Buttons: Toggle Pop-up tools & Mark All
-        Row(
-          verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-          IconButton(
-            onClick = { showPopUpTools = !showPopUpTools },
-            modifier = Modifier.testTag("toggle_popup_tools_btn")
+        // Action Buttons: Mark All as Read
+        if (unreadCount > 0) {
+          TextButton(
+            onClick = onMarkAllAsRead,
+            contentPadding = PaddingValues(horizontal = 8.dp),
+            modifier = Modifier.testTag("mark_all_read_btn")
           ) {
             Icon(
-              imageVector = if (showPopUpTools) Icons.Default.Campaign else Icons.Outlined.Campaign,
-              contentDescription = "External Pop-up Tools",
-              tint = if (showPopUpTools) SchoolAccentGreen else MaterialTheme.colorScheme.primary
+              imageVector = Icons.Default.DoneAll,
+              contentDescription = null,
+              modifier = Modifier.size(16.dp),
+              tint = SchoolAccentGreen
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+              text = "Read All",
+              style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+              color = SchoolAccentGreen
             )
           }
+        }
+      }
 
-          if (unreadCount > 0) {
-            TextButton(
-              onClick = onMarkAllAsRead,
-              contentPadding = PaddingValues(horizontal = 8.dp),
-              modifier = Modifier.testTag("mark_all_read_btn")
-            ) {
+      Spacer(modifier = Modifier.height(10.dp))
+
+      // View Mode Switcher: Live Feed vs Room DB History vs Channels
+      SingleChoiceSegmentedButtonRow(
+        modifier = Modifier.fillMaxWidth()
+      ) {
+        NotificationSheetViewMode.values().forEachIndexed { index, mode ->
+          SegmentedButton(
+            selected = activeViewMode == mode,
+            onClick = { activeViewMode = mode },
+            shape = SegmentedButtonDefaults.itemShape(index = index, count = NotificationSheetViewMode.values().size),
+            icon = {
               Icon(
-                imageVector = Icons.Default.DoneAll,
+                imageVector = mode.icon,
                 contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = SchoolAccentGreen
-              )
-              Spacer(modifier = Modifier.width(4.dp))
-              Text(
-                text = "Read All",
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                color = SchoolAccentGreen
+                modifier = Modifier.size(14.dp)
               )
             }
+          ) {
+            Text(
+              text = if (mode == NotificationSheetViewMode.OFFLINE_ROOM_DB) "Room DB (${roomNotifications.size})" else mode.label,
+              style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold)
+            )
           }
         }
       }
@@ -240,348 +256,151 @@ fun NotificationCenterSheet(
         Spacer(modifier = Modifier.height(10.dp))
       }
 
-      // 3. Pop-Up Notification Outside The App Control Panel
-      AnimatedVisibility(visible = showPopUpTools) {
-        Card(
-          shape = RoundedCornerShape(14.dp),
-          colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)),
-          border = CardDefaults.outlinedCardBorder().copy(
-            brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary.copy(alpha = 0.25f))
-          ),
-          modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 12.dp)
-            .testTag("external_popup_panel")
-        ) {
-          Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+      // Content based on selected View Mode
+      when (activeViewMode) {
+        NotificationSheetViewMode.LIVE_FEED -> {
+          // Filter chips
+          LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth()
           ) {
-            Row(
-              modifier = Modifier.fillMaxWidth(),
-              horizontalArrangement = Arrangement.SpaceBetween,
-              verticalAlignment = Alignment.CenterVertically
-            ) {
-              Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-              ) {
-                Icon(
-                  imageVector = Icons.Default.OpenInNew,
-                  contentDescription = null,
-                  tint = MaterialTheme.colorScheme.primary,
-                  modifier = Modifier.size(16.dp)
-                )
-                Text(
-                  text = "Pop-Up Window (Outside App)",
-                  style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                  color = MaterialTheme.colorScheme.onSurface
-                )
-              }
-
-              Surface(
-                color = SchoolAccentGreen.copy(alpha = 0.15f),
-                shape = RoundedCornerShape(6.dp)
-              ) {
-                Text(
-                  text = "HEADS-UP BANNER",
-                  style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold),
-                  color = SchoolAccentGreen,
-                  modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                )
-              }
-            }
-
-            Text(
-              text = "Test instant heads-up notifications floating over Android home screen or any other apps.",
-              style = MaterialTheme.typography.bodySmall,
-              color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            // FCM Cloud Messaging Status & Dispatch Card
-            Card(
-              shape = RoundedCornerShape(12.dp),
-              colors = CardDefaults.cardColors(containerColor = Color(0xFFEFF6FF)),
-              border = CardDefaults.outlinedCardBorder().copy(
-                brush = androidx.compose.ui.graphics.SolidColor(Color(0xFF93C5FD))
-              ),
-              modifier = Modifier.fillMaxWidth().testTag("fcm_push_status_card")
-            ) {
-              Column(
-                modifier = Modifier.padding(10.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-              ) {
-                Row(
-                  modifier = Modifier.fillMaxWidth(),
-                  horizontalArrangement = Arrangement.SpaceBetween,
-                  verticalAlignment = Alignment.CenterVertically
-                ) {
-                  Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                  ) {
-                    Icon(
-                      imageVector = Icons.Default.CloudSync,
-                      contentDescription = null,
-                      tint = Color(0xFF1D4ED8),
-                      modifier = Modifier.size(18.dp)
-                    )
-                    Text(
-                      text = "Firebase Cloud Messaging (FCM)",
-                      style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                      color = Color(0xFF1E40AF)
-                    )
-                  }
-
-                  Surface(
-                    color = Color(0xFF22C55E).copy(alpha = 0.15f),
-                    shape = RoundedCornerShape(6.dp)
-                  ) {
-                    Text(
-                      text = "FCM LISTENING",
-                      style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold),
-                      color = Color(0xFF15803D),
-                      modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                    )
-                  }
-                }
-
-                Text(
-                  text = if (fcmDeviceToken != null) "Token: ${fcmDeviceToken.take(24)}..." else "Token: Connected & Subscribed to #announcements, #events",
-                  style = MaterialTheme.typography.bodySmall,
-                  color = Color(0xFF1E3A8A),
-                  maxLines = 1,
-                  overflow = TextOverflow.Ellipsis
-                )
-
-                Button(
-                  onClick = {
-                    onTriggerFcmPush(
-                      "📢 Urgent Event: Science & Robotics Fest 2026",
-                      "Annual Inter-School Robotics Competition scheduled for tomorrow at Main Auditorium. Registration starts at 9:00 AM.",
-                      "event",
-                      "events"
-                    )
-                    Toast.makeText(context, "🔥 FCM Push Notification sent to system tray!", Toast.LENGTH_SHORT).show()
-                  },
-                  colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB)),
-                  shape = RoundedCornerShape(8.dp),
-                  contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                  modifier = Modifier.fillMaxWidth().testTag("send_fcm_push_btn")
-                ) {
-                  Icon(imageVector = Icons.Default.Send, contentDescription = null, modifier = Modifier.size(16.dp))
-                  Spacer(modifier = Modifier.width(6.dp))
-                  Text(
-                    text = "Dispatch FCM Push (Events & Notices)",
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold)
-                  )
-                }
-              }
-            }
-
-            // Trigger Buttons
-            Row(
-              modifier = Modifier.fillMaxWidth(),
-              horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-              // Button 1: Immediate Pop-up
-              Button(
+            item {
+              FilterChip(
+                selected = selectedType == null && !showOnlyUnread,
                 onClick = {
-                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !hasPermission) {
-                    permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                  } else {
-                    onTriggerImmediatePopUp(
-                      "⚡ Urgent: Physics Lab (Grade 12-A)",
-                      "Experiment on Electromagnetic Induction starting in Science Lab 1. Bring record notebooks.",
-                      NotificationType.ACADEMIC,
-                      "timetable"
-                    )
-                    Toast.makeText(context, "Heads-up pop-up notification triggered!", Toast.LENGTH_SHORT).show()
-                  }
+                  selectedType = null
+                  showOnlyUnread = false
                 },
-                modifier = Modifier
-                  .weight(1f)
-                  .testTag("trigger_immediate_popup_btn"),
-                shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-              ) {
-                Icon(imageVector = Icons.Default.FlashOn, contentDescription = null, modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("Pop-Up Now", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
-              }
-
-              // Button 2: Pop-up in 5 Seconds (User can minimize app to see outside)
-              OutlinedButton(
-                onClick = {
-                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !hasPermission) {
-                    permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                  } else {
-                    delayedCountdownActive = true
-                    onTriggerDelayedPopUp(
-                      5L,
-                      "📢 School Notice: Science & AI Expo 2026",
-                      "Final prototype registrations close at 4:00 PM today. Deep-link ready!",
-                      NotificationType.NOTICE,
-                      "notices"
-                    )
-                    Toast.makeText(context, "Pop-up scheduled in 5s! Press Home button to see it outside the app.", Toast.LENGTH_LONG).show()
-                  }
-                },
-                modifier = Modifier
-                  .weight(1.2f)
-                  .testTag("trigger_delayed_popup_btn"),
-                shape = RoundedCornerShape(10.dp)
-              ) {
-                Icon(imageVector = Icons.Default.Timer, contentDescription = null, modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                  text = if (delayedCountdownActive) "In 5s (Exit App!)" else "Pop-Up in 5s (Exit App)",
-                  style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold)
-                )
-              }
-            }
-          }
-        }
-      }
-
-      // 4. Filter chips
-      LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.fillMaxWidth()
-      ) {
-        item {
-          FilterChip(
-            selected = selectedType == null && !showOnlyUnread,
-            onClick = {
-              selectedType = null
-              showOnlyUnread = false
-            },
-            label = { Text("All (${notifications.size})") },
-            leadingIcon = {
-              Icon(imageVector = Icons.Default.List, contentDescription = null, modifier = Modifier.size(16.dp))
-            }
-          )
-        }
-
-        item {
-          FilterChip(
-            selected = showOnlyUnread,
-            onClick = {
-              showOnlyUnread = !showOnlyUnread
-            },
-            label = { Text("Unread ($unreadCount)") },
-            leadingIcon = {
-              Icon(imageVector = Icons.Default.MarkEmailUnread, contentDescription = null, modifier = Modifier.size(16.dp))
-            }
-          )
-        }
-
-        items(NotificationType.values().filter { it != NotificationType.ALL }) { type ->
-          val count = notifications.count { it.type == type }
-          if (count > 0) {
-            FilterChip(
-              selected = selectedType == type,
-              onClick = {
-                selectedType = if (selectedType == type) null else type
-              },
-              label = { Text("${type.label} ($count)") }
-            )
-          }
-        }
-      }
-
-      Spacer(modifier = Modifier.height(10.dp))
-
-      // 5. Notification List or Empty State
-      if (filteredNotifications.isEmpty()) {
-        Box(
-          modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 32.dp),
-          contentAlignment = Alignment.Center
-        ) {
-          Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-          ) {
-            Box(
-              modifier = Modifier
-                .size(60.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
-              contentAlignment = Alignment.Center
-            ) {
-              Icon(
-                imageVector = Icons.Default.NotificationsNone,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(32.dp)
+                label = { Text("All (${notifications.size})") },
+                leadingIcon = {
+                  Icon(imageVector = Icons.Default.List, contentDescription = null, modifier = Modifier.size(16.dp))
+                }
               )
             }
-            Text(
-              text = "You're all caught up!",
-              style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-              color = MaterialTheme.colorScheme.primary
-            )
-            Text(
-              text = "No pending notifications in this filter",
-              style = MaterialTheme.typography.bodySmall,
-              color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            OutlinedButton(
-              onClick = {
-                onTriggerImmediatePopUp(
-                  "Campus Notification Alert",
-                  "Mathematics Calculus Assignment due tomorrow morning for Grade 12-A.",
-                  NotificationType.HOMEWORK,
-                  "homework"
+
+            item {
+              FilterChip(
+                selected = showOnlyUnread,
+                onClick = {
+                  showOnlyUnread = !showOnlyUnread
+                },
+                label = { Text("Unread ($unreadCount)") },
+                leadingIcon = {
+                  Icon(imageVector = Icons.Default.MarkEmailUnread, contentDescription = null, modifier = Modifier.size(16.dp))
+                }
+              )
+            }
+
+            items(NotificationType.values().filter { it != NotificationType.ALL }) { type ->
+              val count = notifications.count { it.type == type }
+              if (count > 0) {
+                FilterChip(
+                  selected = selectedType == type,
+                  onClick = {
+                    selectedType = if (selectedType == type) null else type
+                  },
+                  label = { Text("${type.label} ($count)") }
                 )
-              },
-              shape = RoundedCornerShape(10.dp)
+              }
+            }
+          }
+
+          Spacer(modifier = Modifier.height(10.dp))
+
+          // Notification List or Empty State
+          if (filteredNotifications.isEmpty()) {
+            Box(
+              modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 32.dp),
+              contentAlignment = Alignment.Center
             ) {
-              Icon(imageVector = Icons.Default.Notifications, contentDescription = null, modifier = Modifier.size(16.dp))
-              Spacer(modifier = Modifier.width(6.dp))
-              Text("Generate Pop-Up Alert", style = MaterialTheme.typography.labelSmall)
+              Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+              ) {
+                Box(
+                  modifier = Modifier
+                    .size(60.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+                  contentAlignment = Alignment.Center
+                ) {
+                  Icon(
+                    imageVector = Icons.Default.NotificationsNone,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(32.dp)
+                  )
+                }
+                Text(
+                  text = "You're all caught up!",
+                  style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                  color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                  text = "No pending notifications in this filter",
+                  style = MaterialTheme.typography.bodySmall,
+                  color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+              }
+            }
+          } else {
+            LazyColumn(
+              verticalArrangement = Arrangement.spacedBy(10.dp),
+              modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = 440.dp)
+            ) {
+              items(filteredNotifications, key = { it.id }) { item ->
+                NotificationCardItem(
+                  notification = item,
+                  onClick = {
+                    onMarkAsRead(item.id)
+                    item.actionRoute?.let { route ->
+                      onDismiss()
+                      onNavigateToRoute(route)
+                    }
+                  },
+                  onDelete = { onDeleteNotification(item.id) },
+                  onAction = {
+                    onMarkAsRead(item.id)
+                    item.actionRoute?.let { route ->
+                      onDismiss()
+                      onNavigateToRoute(route)
+                    }
+                  }
+                )
+              }
             }
           }
         }
-      } else {
-        LazyColumn(
-          verticalArrangement = Arrangement.spacedBy(10.dp),
-          modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(max = 400.dp)
-        ) {
-          items(filteredNotifications, key = { it.id }) { item ->
-            NotificationCardItem(
-              notification = item,
-              onClick = {
-                onMarkAsRead(item.id)
-                item.actionRoute?.let { route ->
-                  onDismiss()
-                  onNavigateToRoute(route)
-                }
-              },
-              onDelete = { onDeleteNotification(item.id) },
-              onAction = {
-                onMarkAsRead(item.id)
-                item.actionRoute?.let { route ->
-                  onDismiss()
-                  onNavigateToRoute(route)
-                }
-              },
-              onPopUpOutside = {
-                onTriggerImmediatePopUp(
-                  item.title,
-                  item.message,
-                  item.type,
-                  item.actionRoute ?: "dashboard"
-                )
-                Toast.makeText(context, "Pop-up alert shown outside app!", Toast.LENGTH_SHORT).show()
+
+        NotificationSheetViewMode.OFFLINE_ROOM_DB -> {
+          // Room Database History View
+          RoomDatabaseNotificationHistoryView(
+            roomNotifications = roomNotifications,
+            onNotificationClick = { entity ->
+              onMarkAsRead(entity.id)
+              entity.actionRoute?.let { route ->
+                onDismiss()
+                onNavigateToRoute(route)
               }
-            )
-          }
+            },
+            onDelete = { onDeleteNotification(it) }
+          )
+        }
+
+        NotificationSheetViewMode.CHANNELS_PREFS -> {
+          // Notification Channel Preferences View
+          NotificationChannelsPreferenceView(
+            onOpenChannelSettings = { channelId ->
+              SystemNotificationHelper.openNotificationSettings(context, channelId)
+            },
+            onOpenAllSettings = {
+              SystemNotificationHelper.openNotificationSettings(context)
+            }
+          )
         }
       }
     }
@@ -594,7 +413,6 @@ fun NotificationCardItem(
   onClick: () -> Unit,
   onDelete: () -> Unit,
   onAction: () -> Unit,
-  onPopUpOutside: () -> Unit = {},
   modifier: Modifier = Modifier
 ) {
   val icon: ImageVector = when (notification.type) {
@@ -763,33 +581,180 @@ fun NotificationCardItem(
             Spacer(modifier = Modifier.width(1.dp))
           }
 
-          Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+          IconButton(
+            onClick = onDelete,
+            modifier = Modifier.size(28.dp)
           ) {
-            // Button to test pop-up outside for this specific card
-            IconButton(
-              onClick = onPopUpOutside,
-              modifier = Modifier.size(28.dp)
-            ) {
-              Icon(
-                imageVector = Icons.Outlined.OpenInNew,
-                contentDescription = "Pop-up Outside App",
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(16.dp)
-              )
-            }
+            Icon(
+              imageVector = Icons.Outlined.Close,
+              contentDescription = "Dismiss",
+              tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+              modifier = Modifier.size(16.dp)
+            )
+          }
+        }
+      }
+    }
+  }
+}
 
-            IconButton(
-              onClick = onDelete,
-              modifier = Modifier.size(28.dp)
+@Composable
+fun RoomDatabaseNotificationHistoryView(
+  roomNotifications: List<com.example.data.local.entity.NotificationEntity>,
+  onNotificationClick: (com.example.data.local.entity.NotificationEntity) -> Unit,
+  onDelete: (String) -> Unit
+) {
+  Column(
+    modifier = Modifier.fillMaxWidth(),
+    verticalArrangement = Arrangement.spacedBy(8.dp)
+  ) {
+    Surface(
+      color = Color(0xFFF0FDF4),
+      shape = RoundedCornerShape(10.dp),
+      border = BorderStroke(1.dp, Color(0xFFBBF7D0)),
+      modifier = Modifier.fillMaxWidth()
+    ) {
+      Row(
+        modifier = Modifier.padding(10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+      ) {
+        Icon(
+          imageVector = Icons.Default.Storage,
+          contentDescription = null,
+          tint = Color(0xFF16A34A),
+          modifier = Modifier.size(20.dp)
+        )
+        Column(modifier = Modifier.weight(1f)) {
+          Text(
+            text = "Offline SQLite Storage (Room DB)",
+            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+            color = Color(0xFF15803D)
+          )
+          Text(
+            text = "All FCM push & system notifications are automatically persisted locally. Accessible offline without internet.",
+            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+            color = Color(0xFF166534)
+          )
+        }
+      }
+    }
+
+    if (roomNotifications.isEmpty()) {
+      Box(
+        modifier = Modifier
+          .fillMaxWidth()
+          .padding(vertical = 32.dp),
+        contentAlignment = Alignment.Center
+      ) {
+        Text(
+          text = "No stored notifications in Room SQLite yet.",
+          style = MaterialTheme.typography.bodyMedium,
+          color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+      }
+    } else {
+      LazyColumn(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier
+          .fillMaxWidth()
+          .heightIn(max = 380.dp)
+      ) {
+        items(roomNotifications, key = { it.id }) { entity ->
+          val formattedTime = remember(entity.timestamp) {
+            val date = java.util.Date(entity.timestamp)
+            java.text.SimpleDateFormat("dd MMM, hh:mm a", java.util.Locale.getDefault()).format(date)
+          }
+
+          Card(
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(
+              containerColor = if (!entity.isRead) MaterialTheme.colorScheme.primary.copy(alpha = 0.06f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+            ),
+            modifier = Modifier
+              .fillMaxWidth()
+              .clickable { onNotificationClick(entity) }
+          ) {
+            Row(
+              modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+              horizontalArrangement = Arrangement.spacedBy(10.dp),
+              verticalAlignment = Alignment.Top
             ) {
-              Icon(
-                imageVector = Icons.Outlined.Close,
-                contentDescription = "Dismiss",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                modifier = Modifier.size(16.dp)
-              )
+              Box(
+                modifier = Modifier
+                  .size(36.dp)
+                  .clip(CircleShape)
+                  .background(Color(entity.type.colorHex).copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+              ) {
+                Icon(
+                  imageVector = if (entity.isUrgent) Icons.Default.PriorityHigh else Icons.Default.Notifications,
+                  contentDescription = null,
+                  tint = Color(entity.type.colorHex),
+                  modifier = Modifier.size(18.dp)
+                )
+              }
+
+              Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(
+                  modifier = Modifier.fillMaxWidth(),
+                  horizontalArrangement = Arrangement.SpaceBetween,
+                  verticalAlignment = Alignment.CenterVertically
+                ) {
+                  Surface(
+                    color = Color(entity.type.colorHex).copy(alpha = 0.12f),
+                    shape = RoundedCornerShape(4.dp)
+                  ) {
+                    Text(
+                      text = "${entity.type.label.uppercase()} • ROOM",
+                      style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold),
+                      color = Color(entity.type.colorHex),
+                      modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                  }
+                  Text(
+                    text = formattedTime,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                  )
+                }
+
+                Text(
+                  text = entity.title,
+                  style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                  color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Text(
+                  text = entity.message,
+                  style = MaterialTheme.typography.bodySmall,
+                  color = MaterialTheme.colorScheme.onSurfaceVariant,
+                  maxLines = 2,
+                  overflow = TextOverflow.Ellipsis
+                )
+
+                if (entity.targetId != null || entity.actionRoute != null) {
+                  Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                  ) {
+                    Text(
+                      text = "Deep-link: ${entity.actionRoute ?: "general"} ${if (entity.targetId != null) "(ID: ${entity.targetId.take(8)}...)" else ""}",
+                      style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                      color = MaterialTheme.colorScheme.primary
+                    )
+                    IconButton(
+                      onClick = { onDelete(entity.id) },
+                      modifier = Modifier.size(24.dp)
+                    ) {
+                      Icon(Icons.Outlined.Delete, contentDescription = "Delete", modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.error)
+                    }
+                  }
+                }
+              }
             }
           }
         }
@@ -797,3 +762,208 @@ fun NotificationCardItem(
     }
   }
 }
+
+@Composable
+fun NotificationChannelsPreferenceView(
+  onOpenChannelSettings: (String) -> Unit,
+  onOpenAllSettings: () -> Unit
+) {
+  val channels = listOf(
+    NotificationChannelInfo(
+      id = SystemNotificationHelper.CHANNEL_EMERGENCY,
+      name = SystemNotificationHelper.CHANNEL_EMERGENCY_NAME,
+      description = SystemNotificationHelper.CHANNEL_EMERGENCY_DESC,
+      importance = "HIGH (Heads-Up Pop-Up)",
+      ledColor = "Red LED Light",
+      vibration = "Urgent Pulse (400-200-400-200-600ms)",
+      icon = Icons.Default.Emergency,
+      color = Color(0xFFDC2626)
+    ),
+    NotificationChannelInfo(
+      id = SystemNotificationHelper.CHANNEL_ACADEMIC,
+      name = SystemNotificationHelper.CHANNEL_ACADEMIC_NAME,
+      description = SystemNotificationHelper.CHANNEL_ACADEMIC_DESC,
+      importance = "HIGH (Sound & Banner)",
+      ledColor = "Blue LED Light",
+      vibration = "Double Pulse (300-150-300ms)",
+      icon = Icons.Default.School,
+      color = Color(0xFF2563EB)
+    ),
+    NotificationChannelInfo(
+      id = SystemNotificationHelper.CHANNEL_EVENTS,
+      name = SystemNotificationHelper.CHANNEL_EVENTS_NAME,
+      description = SystemNotificationHelper.CHANNEL_EVENTS_DESC,
+      importance = "DEFAULT (Sound & Tray)",
+      ledColor = "Green LED Light",
+      vibration = "Standard Vibration",
+      icon = Icons.Default.Event,
+      color = Color(0xFF16A34A)
+    ),
+    NotificationChannelInfo(
+      id = SystemNotificationHelper.CHANNEL_GENERAL,
+      name = SystemNotificationHelper.CHANNEL_GENERAL_NAME,
+      description = SystemNotificationHelper.CHANNEL_GENERAL_DESC,
+      importance = "DEFAULT (Sound & Tray)",
+      ledColor = "Cyan LED Light",
+      vibration = "Standard Vibration",
+      icon = Icons.Default.Campaign,
+      color = Color(0xFF0D9488)
+    )
+  )
+
+  Column(
+    modifier = Modifier.fillMaxWidth(),
+    verticalArrangement = Arrangement.spacedBy(10.dp)
+  ) {
+    Surface(
+      color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
+      shape = RoundedCornerShape(10.dp),
+      modifier = Modifier.fillMaxWidth()
+    ) {
+      Row(
+        modifier = Modifier.padding(10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+      ) {
+        Icon(
+          imageVector = Icons.Default.Tune,
+          contentDescription = null,
+          tint = MaterialTheme.colorScheme.primary,
+          modifier = Modifier.size(20.dp)
+        )
+        Column(modifier = Modifier.weight(1f)) {
+          Text(
+            text = "Android System Notification Channels",
+            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.primary
+          )
+          Text(
+            text = "Control alerts, sound, vibration, and lockscreen privacy individually per category in Android Settings.",
+            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+          )
+        }
+      }
+    }
+
+    LazyColumn(
+      verticalArrangement = Arrangement.spacedBy(8.dp),
+      modifier = Modifier
+        .fillMaxWidth()
+        .heightIn(max = 380.dp)
+    ) {
+      items(channels) { channel ->
+        Card(
+          shape = RoundedCornerShape(12.dp),
+          colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
+          modifier = Modifier.fillMaxWidth()
+        ) {
+          Column(
+            modifier = Modifier
+              .fillMaxWidth()
+              .padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+          ) {
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalArrangement = Arrangement.SpaceBetween,
+              verticalAlignment = Alignment.CenterVertically
+            ) {
+              Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+              ) {
+                Box(
+                  modifier = Modifier
+                    .size(32.dp)
+                    .clip(CircleShape)
+                    .background(channel.color.copy(alpha = 0.15f)),
+                  contentAlignment = Alignment.Center
+                ) {
+                  Icon(
+                    imageVector = channel.icon,
+                    contentDescription = null,
+                    tint = channel.color,
+                    modifier = Modifier.size(16.dp)
+                  )
+                }
+                Text(
+                  text = channel.name,
+                  style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                  color = MaterialTheme.colorScheme.onSurface
+                )
+              }
+
+              Surface(
+                color = channel.color.copy(alpha = 0.15f),
+                shape = RoundedCornerShape(4.dp)
+              ) {
+                Text(
+                  text = channel.importance.take(4),
+                  style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold),
+                  color = channel.color,
+                  modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                )
+              }
+            }
+
+            Text(
+              text = channel.description,
+              style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+              color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+              Text(
+                text = "💡 ${channel.ledColor}",
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+              )
+              Text(
+                text = "📳 ${channel.vibration.take(20)}...",
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+              )
+            }
+
+            Button(
+              onClick = { onOpenChannelSettings(channel.id) },
+              colors = ButtonDefaults.buttonColors(containerColor = channel.color),
+              shape = RoundedCornerShape(6.dp),
+              contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+              modifier = Modifier.fillMaxWidth()
+            ) {
+              Icon(Icons.Default.Settings, contentDescription = null, modifier = Modifier.size(14.dp))
+              Spacer(modifier = Modifier.width(6.dp))
+              Text("Configure ${channel.name.take(18)}... in System", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+            }
+          }
+        }
+      }
+    }
+
+    OutlinedButton(
+      onClick = onOpenAllSettings,
+      modifier = Modifier.fillMaxWidth(),
+      shape = RoundedCornerShape(8.dp)
+    ) {
+      Icon(Icons.Default.AppSettingsAlt, contentDescription = null, modifier = Modifier.size(16.dp))
+      Spacer(modifier = Modifier.width(6.dp))
+      Text("Open Android App Notification Settings", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+    }
+  }
+}
+
+data class NotificationChannelInfo(
+  val id: String,
+  val name: String,
+  val description: String,
+  val importance: String,
+  val ledColor: String,
+  val vibration: String,
+  val icon: ImageVector,
+  val color: Color
+)

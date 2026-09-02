@@ -140,7 +140,12 @@ fun BaseDashboardScaffold(
       modifier = Modifier.fillMaxSize().testTag("base_dashboard_scaffold"),
       snackbarHost = { SnackbarHost(snackbarHostState) },
       topBar = {
-        Column(modifier = Modifier.fillMaxWidth()) {
+        Column(
+          modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.background)
+            .statusBarsPadding()
+        ) {
           ResponsiveGoogleTopAppBar(
             currentUser = currentUser,
             currentTab = currentTab,

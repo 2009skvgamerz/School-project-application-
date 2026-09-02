@@ -43,6 +43,7 @@ fun CalendarScreen(
   userRole: UserRole,
   onAddEvent: (CalendarEvent) -> Unit,
   onToggleReminder: (String) -> Boolean,
+  initialSelectedEventId: String? = null,
   modifier: Modifier = Modifier
 ) {
   var selectedCategory by remember { mutableStateOf<CalendarCategory?>(null) }
@@ -51,6 +52,16 @@ fun CalendarScreen(
   var showAddEventDialog by remember { mutableStateOf(false) }
   var selectedEventForDetail by remember { mutableStateOf<CalendarEvent?>(null) }
   var reminderFeedbackMessage by remember { mutableStateOf<String?>(null) }
+
+  // Deep Link listener to open event detail automatically
+  LaunchedEffect(initialSelectedEventId, events) {
+    if (initialSelectedEventId != null) {
+      val match = events.find { it.id == initialSelectedEventId }
+      if (match != null) {
+        selectedEventForDetail = match
+      }
+    }
+  }
 
   val filteredEvents = remember(events, selectedCategory) {
     if (selectedCategory == null || selectedCategory == CalendarCategory.ALL) {
@@ -181,13 +192,19 @@ fun CalendarScreen(
               CalendarMiniStatBadge(
                 title = "Exams",
                 value = "$examsCount",
-                icon = Icons.Default.School,
+                icon = Icons.Default.Quiz,
                 modifier = Modifier.weight(1f)
               )
               CalendarMiniStatBadge(
                 title = "Holidays",
                 value = "$holidaysCount",
                 icon = Icons.Default.Celebration,
+                modifier = Modifier.weight(1f)
+              )
+              CalendarMiniStatBadge(
+                title = "FCM Push",
+                value = "Active",
+                icon = Icons.Default.CloudSync,
                 modifier = Modifier.weight(1f)
               )
             }
@@ -711,6 +728,7 @@ fun AddCalendarEventDialog(
   var selectedCategory by remember { mutableStateOf(CalendarCategory.ACADEMIC) }
   var targetGrades by remember { mutableStateOf("All Grades (1-12)") }
   var isHoliday by remember { mutableStateOf(false) }
+  var broadcastFcmPush by remember { mutableStateOf(true) }
 
   AlertDialog(
     onDismissRequest = onDismiss,
@@ -742,6 +760,23 @@ fun AddCalendarEventDialog(
           maxLines = 3,
           modifier = Modifier.fillMaxWidth().testTag("input_event_desc")
         )
+
+        Text(
+          text = "Event Category:",
+          style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold)
+        )
+        LazyRow(
+          horizontalArrangement = Arrangement.spacedBy(6.dp),
+          modifier = Modifier.fillMaxWidth()
+        ) {
+          items(CalendarCategory.entries.filter { it != CalendarCategory.ALL }) { cat ->
+            FilterChip(
+              selected = selectedCategory == cat,
+              onClick = { selectedCategory = cat },
+              label = { Text(cat.label, style = MaterialTheme.typography.labelSmall) }
+            )
+          }
+        }
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
           OutlinedTextField(
@@ -782,6 +817,22 @@ fun AddCalendarEventDialog(
           )
           Spacer(modifier = Modifier.width(6.dp))
           Text(text = "Declare as Official School Holiday", style = MaterialTheme.typography.bodyMedium)
+        }
+
+        // Broadcast FCM Push Notification Checkbox
+        Row(
+          verticalAlignment = Alignment.CenterVertically,
+          modifier = Modifier.clickable { broadcastFcmPush = !broadcastFcmPush }
+        ) {
+          Checkbox(
+            checked = broadcastFcmPush,
+            onCheckedChange = { broadcastFcmPush = it }
+          )
+          Spacer(modifier = Modifier.width(6.dp))
+          Text(
+            text = "Broadcast FCM Push Notification (#events)",
+            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold, color = SchoolNavyPrimary)
+          )
         }
       }
     },

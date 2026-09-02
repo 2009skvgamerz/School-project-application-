@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -380,6 +381,43 @@ fun SettingsScreen(
                 checked = isSimulatedOffline,
                 onCheckedChange = { onToggleSimulatedOffline(it) },
                 modifier = Modifier.testTag("settings_offline_simulation_switch")
+              )
+            }
+          }
+
+          HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+
+          // WhatsApp-Style Closed-App Alerts Card
+          Surface(
+            color = Color(0xFFF0FDF4),
+            shape = RoundedCornerShape(10.dp),
+            border = BorderStroke(1.dp, Color(0xFFBBF7D0)),
+            modifier = Modifier.fillMaxWidth()
+          ) {
+            Column(
+              modifier = Modifier.padding(12.dp),
+              verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+              Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+              ) {
+                Icon(
+                  imageVector = Icons.Default.Wifi,
+                  contentDescription = null,
+                  tint = Color(0xFF16A34A),
+                  modifier = Modifier.size(18.dp)
+                )
+                Text(
+                  text = "Closed-App Auto Alerts (WhatsApp-Style)",
+                  style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                  color = Color(0xFF15803D)
+                )
+              }
+              Text(
+                text = "When the app is closed, connecting to Wi-Fi/Data triggers Android WorkManager to fetch pending school notices & events, immediately posting heads-up notifications.",
+                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                color = Color(0xFF166534)
               )
             }
           }
