@@ -32,6 +32,8 @@ Engineered for **St. Joseph Matriculation Higher Secondary School** (*Hosur, Tam
 
 </div>
 
+> 📁 *Image location: `screenshots/` (or `app/src/test/screenshots/`)*
+
 ---
 
 ## 📑 Table of Contents
