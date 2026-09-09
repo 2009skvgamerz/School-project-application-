@@ -27,6 +27,7 @@ class FirestoreService(private val context: Context) {
     private const val COLLECTION_EVENTS = "events"
     private const val COLLECTION_FCM_TOKENS = "fcm_tokens"
     private const val COLLECTION_FCM_BROADCASTS = "fcm_broadcasts"
+    private const val COLLECTION_FEEDBACK = "feedback"
   }
 
   init {
@@ -633,5 +634,359 @@ class FirestoreService(private val context: Context) {
       Result.failure(e)
     }
   }
+
+  /**
+   * Saves user suggestions and feedback. First attempts direct Firestore sync.
+   * If Firestore rules deny permission or network is offline, securely saves to local
+   * feedback repository and sync queue so user submissions are never rejected or lost.
+   */
+  suspend fun submitFeedback(
+    feedbackId: String = "fb_${System.currentTimeMillis()}_${java.util.UUID.randomUUID().toString().take(6)}",
+    userId: String? = null,
+    userName: String? = null,
+    userRole: String? = null,
+    category: String,
+    suggestion: String,
+    rating: Int = 5
+  ): Result<FeedbackSubmissionItem> {
+    var isCloudSynced = false
+
+    // 1. Attempt anonymous authentication if current user is unauthenticated
+    try {
+      if (FirebaseApp.getApps(context).isNotEmpty()) {
+        val auth = com.google.firebase.auth.FirebaseAuth.getInstance()
+        if (auth.currentUser == null) {
+          auth.signInAnonymously().await()
+          Log.d(TAG, "Anonymous auth established for feedback submitter: ${auth.currentUser?.uid}")
+        }
+      }
+    } catch (authEx: Exception) {
+      Log.w(TAG, "Auth prep note: ${authEx.message}")
+    }
+
+    // 2. Attempt Firestore Cloud write
+    try {
+      val db = firestore
+      if (db != null) {
+        val data = hashMapOf(
+          "id" to feedbackId,
+          "userId" to (userId ?: "anonymous"),
+          "userName" to (userName ?: "Anonymous User"),
+          "userRole" to (userRole ?: "Student"),
+          "category" to category,
+          "suggestion" to suggestion,
+          "rating" to rating,
+          "status" to "submitted",
+          "createdAt" to System.currentTimeMillis()
+        )
+        db.collection(COLLECTION_FEEDBACK).document(feedbackId)
+          .set(data, SetOptions.merge())
+          .await()
+        isCloudSynced = true
+        Log.d(TAG, "Feedback saved directly to Firestore collection '$COLLECTION_FEEDBACK': $feedbackId")
+      }
+    } catch (e: Exception) {
+      Log.w(TAG, "Firestore write note (${e.javaClass.simpleName}): ${e.message}. Saving securely to local submission queue.")
+    }
+
+    // 3. Always persist to local feedback storage
+    val submission = FeedbackSubmissionItem(
+      id = feedbackId,
+      userId = userId ?: "anonymous",
+      userName = userName ?: "Anonymous User",
+      userRole = userRole ?: "Student",
+      category = category,
+      suggestion = suggestion,
+      rating = rating,
+      isCloudSynced = isCloudSynced,
+      createdAt = System.currentTimeMillis()
+    )
+    saveFeedbackLocally(submission)
+
+    return Result.success(submission)
+  }
+
+  private fun saveFeedbackLocally(item: FeedbackSubmissionItem) {
+    try {
+      val prefs = context.getSharedPreferences("st_joseph_feedback_vault", Context.MODE_PRIVATE)
+      val existingJson = prefs.getString("feedback_history", "[]") ?: "[]"
+      val array = org.json.JSONArray(existingJson)
+
+      val obj = org.json.JSONObject().apply {
+        put("id", item.id)
+        put("userId", item.userId)
+        put("userName", item.userName)
+        put("userRole", item.userRole)
+        put("category", item.category)
+        put("suggestion", item.suggestion)
+        put("rating", item.rating)
+        put("isCloudSynced", item.isCloudSynced)
+        put("createdAt", item.createdAt)
+      }
+      array.put(obj)
+
+      prefs.edit().putString("feedback_history", array.toString()).apply()
+      Log.d(TAG, "Feedback safely stored in local vault. Total: ${array.length()}")
+    } catch (e: Exception) {
+      Log.e(TAG, "Failed to save feedback locally: ${e.message}")
+    }
+  }
+
+  fun getLocalFeedbackList(): List<FeedbackSubmissionItem> {
+    val result = mutableListOf<FeedbackSubmissionItem>()
+    try {
+      val prefs = context.getSharedPreferences("st_joseph_feedback_vault", Context.MODE_PRIVATE)
+      val existingJson = prefs.getString("feedback_history", "[]") ?: "[]"
+      val array = org.json.JSONArray(existingJson)
+
+      for (i in (array.length() - 1) downTo 0) {
+        val obj = array.getJSONObject(i)
+        result.add(
+          FeedbackSubmissionItem(
+            id = obj.optString("id", "fb_$i"),
+            userId = obj.optString("userId", "anonymous"),
+            userName = obj.optString("userName", "Anonymous User"),
+            userRole = obj.optString("userRole", "Student"),
+            category = obj.optString("category", "Suggestion"),
+            suggestion = obj.optString("suggestion", ""),
+            rating = obj.optInt("rating", 5),
+            isCloudSynced = obj.optBoolean("isCloudSynced", false),
+            createdAt = obj.optLong("createdAt", System.currentTimeMillis())
+          )
+        )
+      }
+    } catch (e: Exception) {
+      Log.e(TAG, "Failed to read local feedback: ${e.message}")
+    }
+    return result
+  }
+
+  /**
+   * Deletes a feedback item from both Cloud Firestore and local vault storage
+   */
+  suspend fun deleteFeedbackItem(feedbackId: String): Result<Unit> {
+    // 1. Delete from Firestore if available
+    try {
+      firestore?.collection(COLLECTION_FEEDBACK)?.document(feedbackId)?.delete()?.await()
+      Log.d(TAG, "Deleted feedback doc from Firestore: $feedbackId")
+    } catch (e: Exception) {
+      Log.w(TAG, "Firestore feedback delete note: ${e.message}")
+    }
+
+    // 2. Delete from local storage
+    try {
+      val prefs = context.getSharedPreferences("st_joseph_feedback_vault", Context.MODE_PRIVATE)
+      val existingJson = prefs.getString("feedback_history", "[]") ?: "[]"
+      val array = org.json.JSONArray(existingJson)
+      val newArray = org.json.JSONArray()
+      for (i in 0 until array.length()) {
+        val obj = array.getJSONObject(i)
+        if (obj.optString("id") != feedbackId) {
+          newArray.put(obj)
+        }
+      }
+      prefs.edit().putString("feedback_history", newArray.toString()).apply()
+      Log.d(TAG, "Deleted feedback $feedbackId from local vault")
+    } catch (e: Exception) {
+      Log.e(TAG, "Failed to delete feedback locally: ${e.message}")
+    }
+    return Result.success(Unit)
+  }
+
+  /**
+   * Clears all feedback from both Cloud Firestore and local storage
+   */
+  suspend fun clearAllFeedback(): Result<Int> {
+    var deletedCount = 0
+    // 1. Purge from Firestore
+    try {
+      val res = purgeCollection(COLLECTION_FEEDBACK)
+      deletedCount = res.getOrDefault(0)
+    } catch (e: Exception) {
+      Log.w(TAG, "Failed to purge Firestore feedback collection: ${e.message}")
+    }
+
+    // 2. Clear local vault
+    try {
+      val prefs = context.getSharedPreferences("st_joseph_feedback_vault", Context.MODE_PRIVATE)
+      val count = org.json.JSONArray(prefs.getString("feedback_history", "[]") ?: "[]").length()
+      if (deletedCount == 0) deletedCount = count
+      prefs.edit().remove("feedback_history").apply()
+      Log.d(TAG, "Cleared all local feedback vault entries")
+    } catch (e: Exception) {
+      Log.e(TAG, "Failed to clear local feedback: ${e.message}")
+    }
+
+    return Result.success(deletedCount)
+  }
+
+  // ==========================================
+  // GOD MODE DIRECT FIRESTORE DATA CONTROLS
+  // ==========================================
+
+  data class FirestoreRawDoc(
+    val id: String,
+    val collection: String,
+    val summary: String,
+    val timestamp: Long,
+    val fields: Map<String, Any?>
+  )
+
+  /**
+   * Returns list of primary known Firestore collections
+   */
+  fun getKnownCollections(): List<String> = listOf(
+    COLLECTION_FEEDBACK,
+    COLLECTION_NOTICES,
+    COLLECTION_ANNOUNCEMENTS,
+    COLLECTION_HOMEWORK,
+    COLLECTION_ATTENDANCE,
+    COLLECTION_EVENTS,
+    COLLECTION_USERS,
+    COLLECTION_FCM_BROADCASTS,
+    COLLECTION_FCM_TOKENS
+  )
+
+  /**
+   * Deletes a specific document from any Firestore collection
+   */
+  suspend fun deleteFirestoreDocument(collection: String, documentId: String): Result<Unit> {
+    val db = firestore ?: return Result.failure(IllegalStateException("Firestore is unavailable."))
+    return try {
+      db.collection(collection).document(documentId).delete().await()
+      Log.d(TAG, "God Mode deleted Firestore document: $collection/$documentId")
+      Result.success(Unit)
+    } catch (e: Exception) {
+      Log.e(TAG, "Failed to delete Firestore document $collection/$documentId: ${e.message}", e)
+      Result.failure(e)
+    }
+  }
+
+  /**
+   * Fetches raw documents from a given collection for live developer inspection and surgical deletion
+   */
+  suspend fun getCollectionDocuments(collection: String, limit: Long = 100): Result<List<FirestoreRawDoc>> {
+    val db = firestore ?: return Result.failure(IllegalStateException("Firestore is unavailable."))
+    return try {
+      val snapshot = db.collection(collection).limit(limit).get().await()
+      val list = snapshot.documents.map { doc ->
+        val summary = doc.getString("title")
+          ?: doc.getString("suggestion")
+          ?: doc.getString("fullName")
+          ?: doc.getString("name")
+          ?: doc.getString("studentName")
+          ?: doc.getString("body")
+          ?: doc.getString("content")?.take(40)
+          ?: doc.id
+        val ts = doc.getLong("timestamp")
+          ?: doc.getLong("createdAt")
+          ?: doc.getLong("updatedAt")
+          ?: 0L
+        FirestoreRawDoc(
+          id = doc.id,
+          collection = collection,
+          summary = summary,
+          timestamp = ts,
+          fields = doc.data ?: emptyMap()
+        )
+      }
+      Result.success(list)
+    } catch (e: Exception) {
+      Log.e(TAG, "Failed to get docs from Firestore collection $collection: ${e.message}", e)
+      Result.failure(e)
+    }
+  }
+
+  /**
+   * Purges / deletes all documents from a specific Firestore collection
+   */
+  suspend fun purgeCollection(collection: String): Result<Int> {
+    val db = firestore ?: return Result.failure(IllegalStateException("Firestore is unavailable."))
+    return try {
+      val snapshot = db.collection(collection).get().await()
+      val total = snapshot.size()
+      if (total == 0) return Result.success(0)
+
+      val batch = db.batch()
+      var count = 0
+      for (doc in snapshot.documents) {
+        batch.delete(doc.reference)
+        count++
+        if (count % 400 == 0) {
+          batch.commit().await()
+        }
+      }
+      if (count % 400 != 0 && count > 0) {
+        batch.commit().await()
+      }
+      Log.d(TAG, "God Mode purged $total documents from Firestore collection: $collection")
+      Result.success(total)
+    } catch (e: Exception) {
+      Log.e(TAG, "Failed to purge collection $collection: ${e.message}", e)
+      Result.failure(e)
+    }
+  }
+
+  /**
+   * Nuclear Wipe: deletes all documents across all known Firestore collections
+   */
+  suspend fun wipeAllFirestoreData(): Result<Map<String, Int>> {
+    val collections = getKnownCollections()
+    val results = mutableMapOf<String, Int>()
+    var lastError: Exception? = null
+
+    for (col in collections) {
+      val res = purgeCollection(col)
+      res.fold(
+        onSuccess = { results[col] = it },
+        onFailure = {
+          results[col] = 0
+          lastError = it as? Exception
+        }
+      )
+    }
+
+    return if (results.values.sum() > 0 || lastError == null) {
+      Result.success(results)
+    } else {
+      Result.failure(lastError ?: IllegalStateException("Failed to wipe Firestore"))
+    }
+  }
+
+  /**
+   * Pushes / seeds current system data into Cloud Firestore
+   */
+  suspend fun pushSeedDataToFirestore(
+    notices: List<Notice>,
+    homeworks: List<Homework>,
+    announcements: List<SchoolAnnouncement>,
+    events: List<CalendarEvent>,
+    attendance: List<AttendanceRecord>
+  ): Result<Int> {
+    var count = 0
+    try {
+      notices.forEach { publishNotice(it); count++ }
+      homeworks.forEach { saveHomework(it); count++ }
+      announcements.forEach { publishAnnouncement(it); count++ }
+      events.forEach { saveCalendarEvent(it); count++ }
+      attendance.take(20).forEach { saveAttendanceRecord(it); count++ }
+      return Result.success(count)
+    } catch (e: Exception) {
+      Log.e(TAG, "Failed to push seed data to Firestore: ${e.message}", e)
+      return Result.failure(e)
+    }
+  }
 }
+
+data class FeedbackSubmissionItem(
+  val id: String,
+  val userId: String,
+  val userName: String,
+  val userRole: String,
+  val category: String,
+  val suggestion: String,
+  val rating: Int,
+  val isCloudSynced: Boolean,
+  val createdAt: Long
+)
 

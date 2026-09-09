@@ -99,9 +99,19 @@ fun StudentDashboardScreen(
       }
     }
 
-    // 3. Quick Action Shortcuts (Google Workspace Style)
+    // 2.1 Academic Performance Trends & Attendance Metrics (D3 / Recharts Integration)
     item {
       ScrollEntranceItem(index = 2) {
+        StudentAnalyticsVisualizer(
+          title = "Academic & Attendance Analytics",
+          subtitle = "${profile.user.fullName} • Class ${profile.grade}-${profile.section} (Roll #${profile.rollNo})"
+        )
+      }
+    }
+
+    // 3. Quick Action Shortcuts (Google Workspace Style)
+    item {
+      ScrollEntranceItem(index = 3) {
         Card(
           shape = RoundedCornerShape(20.dp),
           colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -111,7 +121,7 @@ fun StudentDashboardScreen(
         ) {
           Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(
-              text = "Google Academic Shortcuts",
+              text = "Academic Shortcuts",
               style = MaterialTheme.typography.titleSmall.copy(
                 fontWeight = FontWeight.Bold,
                 fontSize = 15.sp

@@ -133,9 +133,20 @@ fun TeacherDashboardScreen(
       }
     }
 
-    // 4. Today's Teaching Schedule
+    // 3.1 Class 10-A Academic Performance & Attendance Analytics (D3 / Recharts Integration)
     item {
       ScrollEntranceItem(index = 3) {
+        StudentAnalyticsVisualizer(
+          analyticsProfile = StudentAnalyticsProfile.classAggregateProfile,
+          title = "Class 10-A Performance & Attendance Trends",
+          subtitle = "Homeroom Aggregate • 32 Students • Prof. Sarah Jenkins"
+        )
+      }
+    }
+
+    // 4. Today's Teaching Schedule
+    item {
+      ScrollEntranceItem(index = 4) {
         Row(
           modifier = Modifier.fillMaxWidth(),
           horizontalArrangement = Arrangement.SpaceBetween,

@@ -18,7 +18,8 @@ class SchoolApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        SystemNotificationHelper.createNotificationChannel(this)
+        instance = this
+        SystemNotificationHelper.createNotificationChannels(this)
         initFirebase()
         BackgroundSyncManager.initialize(this)
         SchoolBackgroundScheduler.startContinuousBackgroundAlerts(this, initialDelaySeconds = 30L)
@@ -54,5 +55,7 @@ class SchoolApplication : Application() {
 
     companion object {
         private const val TAG = "SchoolApplication"
+        lateinit var instance: SchoolApplication
+            private set
     }
 }

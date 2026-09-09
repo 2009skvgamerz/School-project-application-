@@ -27,7 +27,8 @@ import com.example.viewmodel.SchoolViewModel
 fun DeveloperConsoleSheet(
   viewModel: SchoolViewModel,
   onDismiss: () -> Unit,
-  onSwitchToRole: (UserRole) -> Unit
+  onSwitchToRole: (UserRole) -> Unit,
+  onNavigateToTab: ((NavigationTab) -> Unit)? = null
 ) {
   val systemUsers by viewModel.systemUsers.collectAsState()
   val notices by viewModel.notices.collectAsState()
@@ -35,7 +36,7 @@ fun DeveloperConsoleSheet(
   val attendanceRecords by viewModel.attendanceRecords.collectAsState()
 
   var selectedTab by remember { mutableStateOf(0) }
-  val tabs = listOf("👥 Users", "📢 Notices", "📚 Homework", "📋 Attendance", "⚡ System")
+  val tabs = listOf("🔥 Firestore DB", "🌐 Omni Access", "👥 Users", "📢 Notices", "📚 Homework", "📋 Attendance", "⚡ System")
 
   var userToEdit by remember { mutableStateOf<SystemUserRecord?>(null) }
   var showAddUserDialog by remember { mutableStateOf(false) }
@@ -165,6 +166,114 @@ fun DeveloperConsoleSheet(
       // Tab Contents
       when (selectedTab) {
         0 -> {
+          // Firestore DB God Mode Tab
+          LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+          ) {
+            item {
+              FirestoreGodModeConsole(
+                viewModel = viewModel,
+                onNavigateToTab = { tab ->
+                  onDismiss()
+                  onNavigateToTab?.invoke(tab)
+                },
+                onRoleSwitched = { role ->
+                  onDismiss()
+                  onSwitchToRole(role)
+                }
+              )
+            }
+          }
+        }
+
+        1 -> {
+          // Omni Access Screen Jumper
+          LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+          ) {
+            item {
+              Surface(
+                color = Color(0xFF1E293B),
+                shape = RoundedCornerShape(12.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF38BDF8).copy(alpha = 0.4f)),
+                modifier = Modifier.fillMaxWidth()
+              ) {
+                Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                  Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Icon(Icons.Default.Launch, contentDescription = null, tint = Color(0xFF38BDF8))
+                    Text(
+                      text = "OMNI JUMP: ACCESS ANY SCREEN ACROSS THE APP",
+                      style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace),
+                      color = Color(0xFF38BDF8)
+                    )
+                  }
+                  Text(
+                    text = "Tap any module to instantly navigate with complete root permissions:",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFFCBD5E1)
+                  )
+                }
+              }
+            }
+
+            item {
+              Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf<Triple<String, String, NavigationTab>>(
+                  Triple("📝 Homework Desk", "Assign, grade & view all submissions", NavigationTab.HOMEWORK),
+                  Triple("📋 Attendance Roll-Call", "Take roll-call & override any class attendance", NavigationTab.ATTENDANCE),
+                  Triple("📢 Notices & Circulars", "Publish, update & delete school bulletins", NavigationTab.NOTICES),
+                  Triple("🏛️ Management DB", "Inspect student & teacher master database", NavigationTab.MANAGEMENT),
+                  Triple("🏫 Classes Matrix", "Homeroom teacher & student counts", NavigationTab.CLASSES),
+                  Triple("📅 Timetable Schedule", "Live class schedules & periods", NavigationTab.TIMETABLE),
+                  Triple("📆 School Calendar", "Academic & sports calendar events", NavigationTab.CALENDAR),
+                  Triple("🚌 Bus GPS Live Tracking", "Live route tracking & simulation", NavigationTab.BUS_TRACKING),
+                  Triple("🚨 Emergency Broadcasts", "Publish campus-wide emergency banners", NavigationTab.ANNOUNCEMENTS),
+                  Triple("👥 User Directory", "Search faculty, staff & students", NavigationTab.DIRECTORY),
+                  Triple("💼 Operations & Duties", "Supervision, lab & campus tasks", NavigationTab.DUTIES),
+                  Triple("⚙️ System Settings", "Theme, accounts & preferences", NavigationTab.SETTINGS)
+                ).forEach { (title, subtitle, tab) ->
+                  Surface(
+                    color = Color(0xFF0F172A),
+                    shape = RoundedCornerShape(10.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF334155)),
+                    modifier = Modifier
+                      .fillMaxWidth()
+                      .clickable {
+                        onDismiss()
+                        onNavigateToTab?.invoke(tab)
+                      }
+                  ) {
+                    Row(
+                      modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                      horizontalArrangement = Arrangement.SpaceBetween,
+                      verticalAlignment = Alignment.CenterVertically
+                    ) {
+                      Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                          text = title,
+                          style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                          color = Color.White
+                        )
+                        Text(
+                          text = subtitle,
+                          style = MaterialTheme.typography.labelSmall,
+                          color = Color(0xFF94A3B8)
+                        )
+                      }
+                      Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color(0xFF38BDF8), modifier = Modifier.size(20.dp))
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        2 -> {
           // Users Master Tab
           Row(
             modifier = Modifier.fillMaxWidth(),
@@ -333,7 +442,7 @@ fun DeveloperConsoleSheet(
           }
         }
 
-        1 -> {
+        3 -> {
           // Notices Master Tab
           Row(
             modifier = Modifier.fillMaxWidth(),
@@ -403,7 +512,7 @@ fun DeveloperConsoleSheet(
           }
         }
 
-        2 -> {
+        4 -> {
           // Homework Master Tab
           Text(
             text = "Live Assignments Master (${homeworks.size})",
@@ -447,7 +556,7 @@ fun DeveloperConsoleSheet(
           }
         }
 
-        3 -> {
+        5 -> {
           // Attendance Override Tab
           Text(
             text = "Direct Attendance Override Engine",
@@ -513,7 +622,7 @@ fun DeveloperConsoleSheet(
           }
         }
 
-        4 -> {
+        6 -> {
           // System God Mode Controls
           Column(
             modifier = Modifier.fillMaxSize(),
@@ -598,12 +707,52 @@ fun DeveloperConsoleSheet(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Danger Zone
+            // Danger Zone: Cloud Firestore and Factory System Reset
             Text(
-              text = "⚠️ Factory System Reset",
+              text = "⚠️ God Mode Database Purge & Reset",
               style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
               color = Color(0xFFEF4444)
             )
+
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+              Button(
+                onClick = { viewModel.wipeEntireFirestoreDatabase() },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7F1D1D)),
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.weight(1f)
+              ) {
+                Icon(Icons.Default.Warning, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("☢️ Nuclear Wipe DB", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+              }
+
+              Button(
+                onClick = { viewModel.pushLocalSeedToFirestore() },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0D9488)),
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.weight(1f)
+              ) {
+                Icon(Icons.Default.CloudUpload, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("🚀 Re-Seed Firestore", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+              }
+            }
+
+            OutlinedButton(
+              onClick = {
+                viewModel.clearAllFeedbackData()
+              },
+              colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFF59E0B)),
+              border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFF59E0B)),
+              modifier = Modifier.fillMaxWidth()
+            ) {
+              Icon(Icons.Default.DeleteSweep, contentDescription = null, modifier = Modifier.size(18.dp))
+              Spacer(modifier = Modifier.width(6.dp))
+              Text("Clear Feedback Vault & Cloud Submissions")
+            }
 
             OutlinedButton(
               onClick = {

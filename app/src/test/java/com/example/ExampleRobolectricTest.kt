@@ -358,4 +358,28 @@ class ExampleRobolectricTest {
     assertNotNull(class11Sci)
     assertEquals("Dr. Rachel Green", class11Sci?.classTeacherName)
   }
+
+  @Test
+  fun `verify StudentAnalyticsProfile default and aggregate trends and metrics`() {
+    val studentProfile = com.example.model.StudentAnalyticsProfile.defaultStudentProfile
+    assertEquals("Alex Johnson", studentProfile.studentName)
+    assertEquals(6, studentProfile.terms.size)
+    assertEquals(10, studentProfile.monthlyAttendance.size)
+    assertTrue(studentProfile.overallAttendance >= 75.0)
+    assertTrue(studentProfile.currentGpa > 9.0)
+
+    // Verify progression across assessment cycles
+    val firstTerm = studentProfile.terms.first()
+    val lastTerm = studentProfile.terms.last()
+    assertEquals("UT-1", firstTerm.shortName)
+    assertEquals("Pre-Board", lastTerm.shortName)
+    assertTrue(lastTerm.studentScore > firstTerm.studentScore)
+
+    // Verify aggregate profile for teacher/admin view
+    val classAggregate = com.example.model.StudentAnalyticsProfile.classAggregateProfile
+    assertEquals("Class 10-A (Aggregate)", classAggregate.studentName)
+    assertEquals(6, classAggregate.terms.size)
+    assertTrue(classAggregate.overallAttendance >= 75.0)
+  }
 }
+

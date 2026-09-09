@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
 import com.example.model.*
-import com.example.ui.NavigationTab
+import com.example.model.NavigationTab
 import com.example.ui.theme.*
 import com.example.util.NetworkState
 import kotlinx.coroutines.CoroutineScope

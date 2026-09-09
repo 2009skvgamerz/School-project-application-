@@ -37,6 +37,36 @@ class SchoolViewModel(
   private var firebaseAuthService: com.example.data.auth.FirebaseAuthService? = null
   private var firestoreService: com.example.data.firestore.FirestoreService? = null
 
+  // God Mode Direct Firestore State Flows
+  val firestoreCollections = listOf(
+    "feedback",
+    "notices",
+    "announcements",
+    "homework",
+    "attendance",
+    "events",
+    "users",
+    "fcm_broadcasts",
+    "fcm_tokens"
+  )
+  private val _selectedFirestoreCollection = MutableStateFlow("feedback")
+  val selectedFirestoreCollection: StateFlow<String> = _selectedFirestoreCollection.asStateFlow()
+
+  private val _firestoreDocs = MutableStateFlow<List<com.example.data.firestore.FirestoreService.FirestoreRawDoc>>(emptyList())
+  val firestoreDocs: StateFlow<List<com.example.data.firestore.FirestoreService.FirestoreRawDoc>> = _firestoreDocs.asStateFlow()
+
+  private val _isFirestoreLoading = MutableStateFlow(false)
+  val isFirestoreLoading: StateFlow<Boolean> = _isFirestoreLoading.asStateFlow()
+
+  private val _firestoreOperationMessage = MutableStateFlow<String?>(null)
+  val firestoreOperationMessage: StateFlow<String?> = _firestoreOperationMessage.asStateFlow()
+
+  private val _allFeedbackSubmissions = MutableStateFlow<List<com.example.data.firestore.FeedbackSubmissionItem>>(emptyList())
+  val allFeedbackSubmissions: StateFlow<List<com.example.data.firestore.FeedbackSubmissionItem>> = _allFeedbackSubmissions.asStateFlow()
+
+  private val _godModeOverrideActive = MutableStateFlow(true)
+  val godModeOverrideActive: StateFlow<Boolean> = _godModeOverrideActive.asStateFlow()
+
   // Tracking observed IDs to prevent duplicate alerts on initial app start
   private val knownNoticeIds = mutableSetOf<String>()
   private val knownAttendanceIds = mutableSetOf<String>()
@@ -283,6 +313,8 @@ class SchoolViewModel(
           isRealtimeConnected = true,
           lastSyncedTime = "Just now"
         )
+        refreshLocalAndCloudFeedback()
+        loadFirestoreCollectionDocs(_selectedFirestoreCollection.value)
 
         // 1. Listen for real-time cloud notices from Firestore with Audience Filtering
         viewModelScope.launch {
@@ -923,6 +955,26 @@ class SchoolViewModel(
       knownHomeworkIds.add(createdHw.id)
       viewModelScope.launch {
         firestoreService?.saveHomework(createdHw)
+        firestoreService?.recordFcmBroadcast(
+          title = "📚 New Assignment: $subjectName ($className)",
+          body = "$title. Due: $dueDate",
+          type = "homework",
+          topic = "homework",
+          targetRoute = "homework",
+          isUrgent = false
+        )
+      }
+      val ctx = context ?: appContext
+      ctx?.let { c ->
+        SystemNotificationHelper.showSystemNotification(
+          context = c,
+          title = "📚 New Assignment: $subjectName ($className)",
+          message = "$title • Due: $dueDate",
+          type = NotificationType.HOMEWORK,
+          actionRoute = "homework",
+          targetId = createdHw.id,
+          isUrgent = false
+        )
       }
     }
     _refreshFeedbackMessage.value = "Homework assigned for $className and synced across devices."
@@ -939,6 +991,26 @@ class SchoolViewModel(
     knownNoticeIds.add(notice.id)
     viewModelScope.launch {
       firestoreService?.publishNotice(notice)
+      firestoreService?.recordFcmBroadcast(
+        title = if (isUrgent) "🚨 URGENT: $title" else "📢 Circular: $title",
+        body = content,
+        type = "notice",
+        topic = if (isUrgent) "all_school" else "academic",
+        targetRoute = "notices",
+        isUrgent = isUrgent
+      )
+    }
+    val ctx = context ?: appContext
+    ctx?.let { c ->
+      SystemNotificationHelper.showSystemNotification(
+        context = c,
+        title = if (isUrgent) "🚨 Urgent Circular: $title" else "📢 School Circular: $title",
+        message = content,
+        type = NotificationType.NOTICE,
+        actionRoute = "notices",
+        targetId = notice.id,
+        isUrgent = isUrgent
+      )
     }
     _refreshFeedbackMessage.value = if (isUrgent) {
       "🚨 Urgent circular published! Priority alert broadcasted."
@@ -1275,11 +1347,39 @@ class SchoolViewModel(
 
   fun broadcastDriverDelayAlert(routeId: String, delayMins: Int, reason: String) {
     repository.broadcastDriverDelayAlert(routeId, delayMins, reason)
+    appContext?.let { ctx ->
+      SystemNotificationHelper.showSystemNotification(
+        context = ctx,
+        title = "🚍 Bus Delay Notice (+$delayMins mins)",
+        message = "Bus Route $routeId delayed by $delayMins mins ($reason).",
+        type = NotificationType.BUS,
+        actionRoute = "bus_tracking",
+        targetId = routeId,
+        isUrgent = true
+      )
+    }
     _refreshFeedbackMessage.value = "📢 Delay announcement (+$delayMins min) broadcasted to parents."
   }
 
   fun advanceBusToNextStop(routeId: String) {
     repository.advanceBusToNextStop(routeId)
+    val route = repository.busRoutes.value.find { it.id == routeId }
+    if (route != null) {
+      val nextStop = route.stops.find { it.isCurrent } ?: route.stops.firstOrNull { !it.isCompleted }
+      val stopTitle = nextStop?.name ?: route.nextStopName
+      val eta = if (nextStop != null) nextStop.scheduledTime else "${route.estimatedArrivalMins} mins"
+      appContext?.let { ctx ->
+        SystemNotificationHelper.showSystemNotification(
+          context = ctx,
+          title = "🚍 Bus Approaching: $stopTitle",
+          message = "Route #${route.routeNumber} (${route.routeName}) is approaching $stopTitle (ETA: $eta).",
+          type = NotificationType.BUS,
+          actionRoute = "bus_tracking",
+          targetId = route.id,
+          isUrgent = false
+        )
+      }
+    }
   }
 
   fun simulateBusMovement(routeId: String) {
@@ -1365,6 +1465,13 @@ class SchoolViewModel(
 
   fun deleteAnnouncement(announcementId: String) {
     repository.deleteAnnouncement(announcementId)
+    viewModelScope.launch {
+      try {
+        firestoreService?.deleteFirestoreDocument("announcements", announcementId)
+      } catch (e: Exception) {
+        android.util.Log.w("SchoolViewModel", "Cloud delete note: ${e.message}")
+      }
+    }
   }
 
   // Developer God Mode Mutators
@@ -1378,6 +1485,13 @@ class SchoolViewModel(
 
   fun deleteSystemUser(userId: String) {
     repository.deleteSystemUser(userId)
+    viewModelScope.launch {
+      try {
+        firestoreService?.deleteFirestoreDocument("users", userId)
+      } catch (e: Exception) {
+        android.util.Log.w("SchoolViewModel", "Cloud delete note: ${e.message}")
+      }
+    }
   }
 
   fun updateNotice(notice: Notice) {
@@ -1386,6 +1500,13 @@ class SchoolViewModel(
 
   fun deleteNotice(noticeId: String) {
     repository.deleteNotice(noticeId)
+    viewModelScope.launch {
+      try {
+        firestoreService?.deleteFirestoreDocument("notices", noticeId)
+      } catch (e: Exception) {
+        android.util.Log.w("SchoolViewModel", "Cloud delete note: ${e.message}")
+      }
+    }
   }
 
   fun updateHomework(homework: Homework) {
@@ -1394,6 +1515,13 @@ class SchoolViewModel(
 
   fun deleteHomework(hwId: String) {
     repository.deleteHomework(hwId)
+    viewModelScope.launch {
+      try {
+        firestoreService?.deleteFirestoreDocument("homework", hwId)
+      } catch (e: Exception) {
+        android.util.Log.w("SchoolViewModel", "Cloud delete note: ${e.message}")
+      }
+    }
   }
 
   fun updateAttendanceRecordDirect(recordId: String, studentName: String, status: AttendanceStatus, notes: String) {
@@ -1428,5 +1556,220 @@ class SchoolViewModel(
   fun resetAllSystemDefaults() {
     repository.resetToDefaults()
     resetDatabaseToDefaults()
+  }
+
+  // ==========================================
+  // GOD MODE DIRECT FIRESTORE CONTROL METHODS
+  // ==========================================
+
+  fun toggleGodModeOverride() {
+    _godModeOverrideActive.value = !_godModeOverrideActive.value
+    _refreshFeedbackMessage.value = if (_godModeOverrideActive.value) "⚡ God Mode Universal Bypass ENABLED" else "God Mode Override Disabled"
+  }
+
+  fun clearFirestoreOperationMessage() {
+    _firestoreOperationMessage.value = null
+  }
+
+  fun selectFirestoreCollection(collectionName: String) {
+    _selectedFirestoreCollection.value = collectionName
+    loadFirestoreCollectionDocs(collectionName)
+  }
+
+  fun loadFirestoreCollectionDocs(collectionName: String = _selectedFirestoreCollection.value) {
+    val fService = firestoreService ?: return
+    viewModelScope.launch {
+      _isFirestoreLoading.value = true
+      try {
+        val res = fService.getCollectionDocuments(collectionName)
+        res.fold(
+          onSuccess = { docs ->
+            _firestoreDocs.value = docs
+            _firestoreOperationMessage.value = "Loaded ${docs.size} docs from '$collectionName'"
+          },
+          onFailure = {
+            _firestoreOperationMessage.value = "Failed to load '$collectionName': ${it.message}"
+          }
+        )
+      } finally {
+        _isFirestoreLoading.value = false
+      }
+    }
+  }
+
+  fun deleteFirestoreDoc(collectionName: String, docId: String) {
+    val fService = firestoreService ?: return
+    viewModelScope.launch {
+      _isFirestoreLoading.value = true
+      try {
+        val res = fService.deleteFirestoreDocument(collectionName, docId)
+        res.fold(
+          onSuccess = {
+            _firestoreDocs.value = _firestoreDocs.value.filter { it.id != docId }
+            _firestoreOperationMessage.value = "Successfully deleted '$docId' from '$collectionName'!"
+            when (collectionName) {
+              "notices" -> repository.deleteNotice(docId)
+              "homework" -> repository.deleteHomework(docId)
+              "announcements" -> repository.deleteAnnouncement(docId)
+              "events" -> repository.deleteCalendarEvent(docId)
+              "users" -> repository.deleteSystemUser(docId)
+              "feedback" -> refreshLocalAndCloudFeedback()
+            }
+          },
+          onFailure = {
+            _firestoreOperationMessage.value = "Failed to delete: ${it.message}"
+          }
+        )
+      } finally {
+        _isFirestoreLoading.value = false
+      }
+    }
+  }
+
+  fun purgeFirestoreCollection(collectionName: String) {
+    val fService = firestoreService ?: return
+    viewModelScope.launch {
+      _isFirestoreLoading.value = true
+      try {
+        val res = fService.purgeCollection(collectionName)
+        res.fold(
+          onSuccess = { count ->
+            _firestoreDocs.value = emptyList()
+            _firestoreOperationMessage.value = "Purged all $count documents from '$collectionName' in Firestore!"
+            if (collectionName == "feedback") {
+              refreshLocalAndCloudFeedback()
+            }
+          },
+          onFailure = {
+            _firestoreOperationMessage.value = "Failed to purge collection '$collectionName': ${it.message}"
+          }
+        )
+      } finally {
+        _isFirestoreLoading.value = false
+      }
+    }
+  }
+
+  fun wipeEntireFirestoreDatabase() {
+    val fService = firestoreService ?: return
+    viewModelScope.launch {
+      _isFirestoreLoading.value = true
+      try {
+        val res = fService.wipeAllFirestoreData()
+        res.fold(
+          onSuccess = { results ->
+            _firestoreDocs.value = emptyList()
+            val total = results.values.sum()
+            _firestoreOperationMessage.value = "☢️ NUCLEAR WIPE COMPLETE: Deleted $total documents across all collections in Firestore!"
+            refreshLocalAndCloudFeedback()
+          },
+          onFailure = {
+            _firestoreOperationMessage.value = "Wipe failed: ${it.message}"
+          }
+        )
+      } finally {
+        _isFirestoreLoading.value = false
+      }
+    }
+  }
+
+  fun pushLocalSeedToFirestore() {
+    val fService = firestoreService ?: return
+    viewModelScope.launch {
+      _isFirestoreLoading.value = true
+      try {
+        val notices = repository.notices.value
+        val homeworks = repository.homeworks.value
+        val announcements = repository.announcements.value
+        val events = repository.calendarEvents.value
+        val attendance = repository.attendanceRecords.value
+        val res = fService.pushSeedDataToFirestore(notices, homeworks, announcements, events, attendance)
+        res.fold(
+          onSuccess = { count ->
+            _firestoreOperationMessage.value = "Pushed and synced $count records into Cloud Firestore!"
+            loadFirestoreCollectionDocs(_selectedFirestoreCollection.value)
+          },
+          onFailure = {
+            _firestoreOperationMessage.value = "Cloud seed sync failed: ${it.message}"
+          }
+        )
+      } finally {
+        _isFirestoreLoading.value = false
+      }
+    }
+  }
+
+  fun refreshLocalAndCloudFeedback() {
+    val fService = firestoreService ?: return
+    viewModelScope.launch {
+      val localList = fService.getLocalFeedbackList()
+      _allFeedbackSubmissions.value = localList
+    }
+  }
+
+  fun deleteFeedback(feedbackId: String) {
+    val fService = firestoreService ?: return
+    viewModelScope.launch {
+      fService.deleteFeedbackItem(feedbackId)
+      refreshLocalAndCloudFeedback()
+      _firestoreOperationMessage.value = "Feedback $feedbackId deleted from database"
+    }
+  }
+
+  fun clearAllFeedbackData() {
+    val fService = firestoreService ?: return
+    viewModelScope.launch {
+      val res = fService.clearAllFeedback()
+      refreshLocalAndCloudFeedback()
+      _firestoreOperationMessage.value = "Cleared all feedback (${res.getOrDefault(0)} entries)"
+    }
+  }
+
+  // ==================== FIREBASE CLOUD MESSAGING & PUSH NOTIFICATIONS ====================
+
+  private val _fcmToken = MutableStateFlow<String?>(com.example.service.SchoolFirebaseMessagingService.latestToken)
+  val fcmToken: StateFlow<String?> = _fcmToken.asStateFlow()
+
+  fun refreshFcmToken() {
+    com.example.service.SchoolFirebaseMessagingService.fetchFcmToken { token ->
+      _fcmToken.value = token
+    }
+  }
+
+  fun subscribeToFcmTopic(topic: String, onComplete: ((Boolean) -> Unit)? = null) {
+    appContext?.let { ctx ->
+      com.example.service.SchoolFirebaseMessagingService.subscribeToTopic(topic, ctx, onComplete)
+    }
+  }
+
+  fun unsubscribeFromFcmTopic(topic: String, onComplete: ((Boolean) -> Unit)? = null) {
+    appContext?.let { ctx ->
+      com.example.service.SchoolFirebaseMessagingService.unsubscribeFromTopic(topic, ctx, onComplete)
+    }
+  }
+
+  fun getSubscribedFcmTopics(): Set<String> {
+    return appContext?.let { com.example.service.SchoolFirebaseMessagingService.getSubscribedTopics(it) }
+      ?: com.example.service.SchoolFirebaseMessagingService.DEFAULT_TOPICS
+  }
+
+  fun triggerTestPushNotification(
+    type: NotificationType,
+    title: String,
+    message: String,
+    targetRoute: String,
+    isUrgent: Boolean = false
+  ) {
+    appContext?.let { ctx ->
+      SystemNotificationHelper.showSystemNotification(
+        context = ctx,
+        title = title,
+        message = message,
+        type = type,
+        actionRoute = targetRoute,
+        isUrgent = isUrgent
+      )
+      _refreshFeedbackMessage.value = "🔔 Notification dispatched to device status bar!"
+    }
   }
 }

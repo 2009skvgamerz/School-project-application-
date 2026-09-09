@@ -34,7 +34,8 @@ fun DeveloperDashboardScreen(
   onNavigateToHomework: () -> Unit = {},
   onNavigateToAttendance: () -> Unit = {},
   onNavigateToManagement: () -> Unit = {},
-  onRoleSwitched: (UserRole) -> Unit = {}
+  onRoleSwitched: (UserRole) -> Unit = {},
+  onNavigateToTab: ((NavigationTab) -> Unit)? = null
 ) {
   val currentUser by viewModel.currentUser.collectAsState()
   val developerProfile by viewModel.developerProfile.collectAsState()
@@ -43,6 +44,7 @@ fun DeveloperDashboardScreen(
   val homeworks by viewModel.homeworks.collectAsState()
   val attendanceRecords by viewModel.attendanceRecords.collectAsState()
 
+  var selectedSection by remember { mutableStateOf(0) }
   var searchQuery by remember { mutableStateOf("") }
   var selectedRoleFilter by remember { mutableStateOf<UserRole?>(null) }
   var userToEdit by remember { mutableStateOf<SystemUserRecord?>(null) }
@@ -184,7 +186,124 @@ fun DeveloperDashboardScreen(
       }
     }
 
-    // 3. Fast Command Actions
+    // 3. Section Selector TabRow
+    item {
+      ScrollableTabRow(
+        selectedTabIndex = selectedSection,
+        containerColor = Color(0xFF1E293B),
+        contentColor = Color(0xFF10B981),
+        edgePadding = 0.dp
+      ) {
+        listOf("🔥 Firestore DB", "🌐 Omni Access", "👥 Users DB", "⚡ System Actions").forEachIndexed { idx, title ->
+          Tab(
+            selected = selectedSection == idx,
+            onClick = { selectedSection = idx },
+            text = {
+              Text(
+                text = title,
+                style = MaterialTheme.typography.labelMedium.copy(
+                  fontWeight = if (selectedSection == idx) FontWeight.Bold else FontWeight.Normal,
+                  fontFamily = FontFamily.Monospace
+                ),
+                color = if (selectedSection == idx) Color(0xFF10B981) else Color(0xFF94A3B8)
+              )
+            }
+          )
+        }
+      }
+    }
+
+    // SECTION 0: FIRESTORE GOD MODE CLOUD DB
+    if (selectedSection == 0) {
+      item {
+        FirestoreGodModeConsole(
+          viewModel = viewModel,
+          onNavigateToTab = onNavigateToTab,
+          onRoleSwitched = onRoleSwitched
+        )
+      }
+    }
+
+    // SECTION 1: OMNI ACCESS SCREEN JUMPER
+    if (selectedSection == 1) {
+      item {
+        Surface(
+          color = Color(0xFF1E293B),
+          shape = RoundedCornerShape(14.dp),
+          border = BorderStroke(1.dp, Color(0xFF38BDF8).copy(alpha = 0.4f)),
+          modifier = Modifier.fillMaxWidth()
+        ) {
+          Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+              Icon(Icons.Default.Launch, contentDescription = null, tint = Color(0xFF38BDF8))
+              Text(
+                text = "OMNI JUMP: ACCESS ANY SCREEN ACROSS THE APP",
+                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace),
+                color = Color(0xFF38BDF8)
+              )
+            }
+            Text(
+              text = "Tap any module to navigate with complete root permissions across all features:",
+              style = MaterialTheme.typography.bodySmall,
+              color = Color(0xFFCBD5E1)
+            )
+          }
+        }
+      }
+
+      item {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+          listOf<Triple<String, String, NavigationTab>>(
+            Triple("📝 Homework Desk", "Assign, grade & view all submissions", NavigationTab.HOMEWORK),
+            Triple("📋 Attendance Roll-Call", "Take roll-call & override any class attendance", NavigationTab.ATTENDANCE),
+            Triple("📢 Notices & Circulars", "Publish, update & delete school bulletins", NavigationTab.NOTICES),
+            Triple("🏛️ Management DB", "Inspect student & teacher master database", NavigationTab.MANAGEMENT),
+            Triple("🏫 Classes Matrix", "Homeroom teacher & student counts", NavigationTab.CLASSES),
+            Triple("📅 Timetable Schedule", "Live class schedules & periods", NavigationTab.TIMETABLE),
+            Triple("📆 School Calendar", "Academic & sports calendar events", NavigationTab.CALENDAR),
+            Triple("🚌 Bus GPS Live Tracking", "Live route tracking & simulation", NavigationTab.BUS_TRACKING),
+            Triple("🚨 Emergency Broadcasts", "Publish campus-wide emergency banners", NavigationTab.ANNOUNCEMENTS),
+            Triple("👥 User Directory", "Search faculty, staff & students", NavigationTab.DIRECTORY),
+            Triple("💼 Operations & Duties", "Supervision, lab & campus tasks", NavigationTab.DUTIES),
+            Triple("⚙️ System Settings", "Theme, accounts & preferences", NavigationTab.SETTINGS)
+          ).forEach { (title, subtitle, tab) ->
+            Surface(
+              color = Color(0xFF0F172A),
+              shape = RoundedCornerShape(10.dp),
+              border = BorderStroke(1.dp, Color(0xFF334155)),
+              modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onNavigateToTab?.invoke(tab) }
+            ) {
+              Row(
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .padding(14.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+              ) {
+                Column(modifier = Modifier.weight(1f)) {
+                  Text(
+                    text = title,
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                    color = Color.White
+                  )
+                  Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color(0xFF94A3B8)
+                  )
+                }
+                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color(0xFF38BDF8), modifier = Modifier.size(20.dp))
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // 4. Fast Command Actions
+    if (selectedSection == 3) {
     item {
       Text(
         text = "⚡ QUICK GOD MODE ACTIONS",
@@ -226,105 +345,106 @@ fun DeveloperDashboardScreen(
       }
     }
 
-    // 4. Role Impersonator Chips
     item {
-      Surface(
-        color = Color(0xFF1E293B),
-        shape = RoundedCornerShape(14.dp),
-        border = BorderStroke(1.dp, Color(0xFF334155)),
+      PushNotificationControlCard(
+        viewModel = viewModel,
         modifier = Modifier.fillMaxWidth()
-      ) {
-        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-          Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-          ) {
-            Icon(Icons.Default.SwitchAccount, contentDescription = null, tint = Color(0xFF38BDF8), modifier = Modifier.size(18.dp))
+      )
+    }
+
+      item {
+        Surface(
+          color = Color(0xFF1E293B),
+          shape = RoundedCornerShape(14.dp),
+          border = BorderStroke(1.dp, Color(0xFF334155)),
+          modifier = Modifier.fillMaxWidth()
+        ) {
+          Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(
-              text = "Live Role Impersonation (Instant Switch)",
+              text = "⚠️ Factory System Reset & Firestore Cloud Purge",
               style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-              color = Color.White
+              color = Color(0xFFEF4444)
+            )
+
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+              Button(
+                onClick = { viewModel.wipeEntireFirestoreDatabase() },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7F1D1D)),
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.weight(1f)
+              ) {
+                Icon(Icons.Default.Warning, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("☢️ Nuclear Wipe DB", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+              }
+
+              Button(
+                onClick = { viewModel.pushLocalSeedToFirestore() },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0D9488)),
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.weight(1f)
+              ) {
+                Icon(Icons.Default.CloudUpload, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("🚀 Re-Seed Firestore", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+              }
+            }
+
+            OutlinedButton(
+              onClick = { viewModel.clearAllFeedbackData() },
+              colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFF59E0B)),
+              border = BorderStroke(1.dp, Color(0xFFF59E0B)),
+              modifier = Modifier.fillMaxWidth()
+            ) {
+              Icon(Icons.Default.DeleteSweep, contentDescription = null, modifier = Modifier.size(18.dp))
+              Spacer(modifier = Modifier.width(6.dp))
+              Text("Clear Feedback Vault & Submissions")
+            }
+
+            OutlinedButton(
+              onClick = { viewModel.resetAllSystemDefaults() },
+              colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFEF4444)),
+              border = BorderStroke(1.dp, Color(0xFFEF4444)),
+              modifier = Modifier.fillMaxWidth()
+            ) {
+              Icon(Icons.Default.RestartAlt, contentDescription = null, modifier = Modifier.size(18.dp))
+              Spacer(modifier = Modifier.width(6.dp))
+              Text("Reset All Records & Users to Factory Seed")
+            }
+          }
+        }
+      }
+    }
+
+    // SECTION 2: MASTER USER ROSTER & EDITOR
+    if (selectedSection == 2) {
+      item {
+        Row(
+          modifier = Modifier.fillMaxWidth(),
+          horizontalArrangement = Arrangement.SpaceBetween,
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          Column {
+            Text(
+              text = "👥 MASTER USER ROSTER & EDITOR",
+              style = MaterialTheme.typography.labelMedium.copy(
+                fontWeight = FontWeight.Bold,
+                fontFamily = FontFamily.Monospace,
+                letterSpacing = 1.sp
+              ),
+              color = Color(0xFF10B981)
+            )
+            Text(
+              text = "Tap '✏️ Edit' on any card to modify name, role, email, phone or student details in real time.",
+              style = MaterialTheme.typography.bodySmall,
+              color = Color(0xFF94A3B8)
             )
           }
-
-          Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-          ) {
-            Button(
-              onClick = {
-                onRoleSwitched(UserRole.STUDENT)
-                viewModel.switchRole(UserRole.STUDENT)
-              },
-              colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB)),
-              shape = RoundedCornerShape(8.dp),
-              modifier = Modifier.weight(1f)
-            ) {
-              Text("Student", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
-            }
-            Button(
-              onClick = {
-                onRoleSwitched(UserRole.TEACHER)
-                viewModel.switchRole(UserRole.TEACHER)
-              },
-              colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF059669)),
-              shape = RoundedCornerShape(8.dp),
-              modifier = Modifier.weight(1f)
-            ) {
-              Text("Teacher", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
-            }
-            Button(
-              onClick = {
-                onRoleSwitched(UserRole.STAFF)
-                viewModel.switchRole(UserRole.STAFF)
-              },
-              colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7C3AED)),
-              shape = RoundedCornerShape(8.dp),
-              modifier = Modifier.weight(1f)
-            ) {
-              Text("Staff", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
-            }
-            Button(
-              onClick = {
-                onRoleSwitched(UserRole.ADMIN)
-                viewModel.switchRole(UserRole.ADMIN)
-              },
-              colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD97706)),
-              shape = RoundedCornerShape(8.dp),
-              modifier = Modifier.weight(1f)
-            ) {
-              Text("Admin", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
-            }
-          }
         }
       }
-    }
-
-    // 5. Master User Directory Header & Search
-    item {
-      Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-      ) {
-        Column {
-          Text(
-            text = "👥 MASTER USER ROSTER & EDITOR",
-            style = MaterialTheme.typography.labelMedium.copy(
-              fontWeight = FontWeight.Bold,
-              fontFamily = FontFamily.Monospace,
-              letterSpacing = 1.sp
-            ),
-            color = Color(0xFF10B981)
-          )
-          Text(
-            text = "Tap '✏️ Edit' on any card to modify name, role, email, phone or student details in real time.",
-            style = MaterialTheme.typography.bodySmall,
-            color = Color(0xFF94A3B8)
-          )
-        }
-      }
-    }
 
     item {
       OutlinedTextField(
@@ -464,6 +584,7 @@ fun DeveloperDashboardScreen(
           }
         }
       }
+    }
     }
   }
 

@@ -31,7 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.local.entity.AttendanceEntity
 import com.example.model.*
-import com.example.ui.components.StatCard
+import com.example.ui.components.*
 import com.example.ui.theme.*
 
 /**
@@ -103,9 +103,11 @@ fun AttendanceScreen(
     }
   }
 
-  // Security Verification: ONLY the respected Homeroom Teacher for this specific class can take roll-call
+  // Security Verification: Homeroom Teacher or Developer/Admin God Mode can take roll-call
   val isAuthorizedHomeroomTeacher = remember(userRole, teacherProfile, currentUser, selectedClass, homeroomTeacherName) {
-    if (userRole != UserRole.TEACHER || teacherProfile == null) {
+    if (userRole == UserRole.DEVELOPER || userRole == UserRole.ADMIN) {
+      true
+    } else if (userRole != UserRole.TEACHER || teacherProfile == null) {
       false
     } else {
       val teacherName = currentUser?.fullName ?: teacherProfile.user.fullName
@@ -322,6 +324,14 @@ fun AttendanceScreen(
               )
             }
           }
+        }
+
+        // D3 / Recharts-style Interactive Attendance & Academic Performance Analytics
+        item {
+          StudentAnalyticsVisualizer(
+            title = "Attendance Metrics & Performance Trends",
+            subtitle = "Monthly attendance trajectory & term performance correlations"
+          )
         }
 
         // Subject-Wise Attendance Breakdown

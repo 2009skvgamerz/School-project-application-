@@ -141,8 +141,19 @@ fun AdminDashboardScreen(
       }
     }
 
+    // 2.6 Institutional Academic & Attendance Analytics (D3 / Recharts Integration)
     item {
       ScrollEntranceItem(index = 3) {
+        StudentAnalyticsVisualizer(
+          analyticsProfile = StudentAnalyticsProfile.classAggregateProfile,
+          title = "School-Wide Performance & Attendance Trends",
+          subtitle = "St. Joseph's Hr. Sec. School • 1,420 Students • Session 2026–2027"
+        )
+      }
+    }
+
+    item {
+      ScrollEntranceItem(index = 4) {
         Card(
           shape = RoundedCornerShape(16.dp),
           colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),

@@ -62,7 +62,7 @@ fun HomeworkScreen(
         )
       }
 
-      if (userRole == UserRole.TEACHER || userRole == UserRole.ADMIN) {
+      if (userRole == UserRole.TEACHER || userRole == UserRole.ADMIN || userRole == UserRole.DEVELOPER) {
         Button(
           onClick = onOpenAssignDialog,
           contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
@@ -343,7 +343,7 @@ fun HomeworkCard(
           ) {
             Text("Submit", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
           }
-        } else if (userRole == UserRole.TEACHER) {
+        } else if (userRole == UserRole.TEACHER || userRole == UserRole.ADMIN || userRole == UserRole.DEVELOPER) {
           Surface(
             shape = RoundedCornerShape(8.dp),
             color = SchoolAccentGreen.copy(alpha = 0.12f)

@@ -49,7 +49,8 @@ fun ClassesScreen(
       items(classes, key = { it.id }) { cls ->
         val fullClassName = "${cls.name}-${cls.section}"
         val isClassTeacherForThis = when (userRole) {
-          UserRole.ADMIN -> false
+          UserRole.DEVELOPER -> true
+          UserRole.ADMIN -> true
           UserRole.TEACHER -> {
             val homeroom = teacherProfile?.classTeacherOf ?: "Class 10-A"
             (teacherProfile?.isClassTeacher == true) && (

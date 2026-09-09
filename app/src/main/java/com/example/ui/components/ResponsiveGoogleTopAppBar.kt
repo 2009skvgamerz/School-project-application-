@@ -40,7 +40,7 @@ import com.example.model.User
 import com.example.model.UserRole
 import com.example.model.CloudSyncInfo
 import com.example.model.CloudSyncState
-import com.example.ui.NavigationTab
+import com.example.model.NavigationTab
 import com.example.ui.theme.*
 import com.example.util.NetworkState
 

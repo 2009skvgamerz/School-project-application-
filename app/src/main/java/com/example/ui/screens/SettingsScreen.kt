@@ -26,7 +26,10 @@ import androidx.compose.ui.unit.sp
 import com.example.model.AppThemeMode
 import com.example.model.User
 import com.example.model.UserRole
+import com.example.ui.components.FeedbackSubmissionDialog
+import com.example.ui.components.PushNotificationControlCard
 import com.example.ui.theme.*
+import com.example.viewmodel.SchoolViewModel
 
 /**
  * SettingsScreen - Application Settings, Theme Selection, Version & System Info.
@@ -45,11 +48,20 @@ fun SettingsScreen(
   isSimulatedOffline: Boolean = false,
   onToggleSimulatedOffline: ((Boolean) -> Unit)? = null,
   onRetryConnection: (() -> Unit)? = null,
+  viewModel: SchoolViewModel? = null,
   modifier: Modifier = Modifier
 ) {
   var showResetSuccessBanner by remember { mutableStateOf(false) }
   var showSyncSuccessBanner by remember { mutableStateOf(false) }
   var showResetConfirmDialog by remember { mutableStateOf(false) }
+  var showFeedbackDialog by remember { mutableStateOf(false) }
+
+  if (showFeedbackDialog) {
+    FeedbackSubmissionDialog(
+      currentUser = currentUser,
+      onDismiss = { showFeedbackDialog = false }
+    )
+  }
 
   // App Meta constants
   val appVersion = com.example.BuildConfig.VERSION_NAME
@@ -217,56 +229,65 @@ fun SettingsScreen(
       }
     }
 
-    // 2.5 System Pop-Up Alerts & External Notification Center
+    // 2.5 Real-Time Push Notifications & Firebase Cloud Messaging
     item {
-      SettingsSectionTitle(title = "External System Notifications", icon = Icons.Default.Campaign)
+      SettingsSectionTitle(title = "Push Notifications & Real-Time Alerts", icon = Icons.Default.NotificationsActive)
     }
 
-    item {
-      Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        modifier = Modifier.fillMaxWidth().testTag("settings_popup_card")
-      ) {
-        Column(
-          modifier = Modifier.padding(16.dp),
-          verticalArrangement = Arrangement.spacedBy(12.dp)
+    if (viewModel != null) {
+      item {
+        PushNotificationControlCard(
+          viewModel = viewModel,
+          modifier = Modifier.fillMaxWidth()
+        )
+      }
+    }
+
+    if (onOpenNotificationCenter != null) {
+      item {
+        Card(
+          shape = RoundedCornerShape(16.dp),
+          colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+          elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+          modifier = Modifier.fillMaxWidth().testTag("settings_popup_card")
         ) {
-          Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+          Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
           ) {
-            Box(
-              modifier = Modifier
-                .size(44.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
-              contentAlignment = Alignment.Center
+            Row(
+              verticalAlignment = Alignment.CenterVertically,
+              horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-              Icon(
-                imageVector = Icons.Default.OpenInNew,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(24.dp)
-              )
+              Box(
+                modifier = Modifier
+                  .size(44.dp)
+                  .clip(CircleShape)
+                  .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+              ) {
+                Icon(
+                  imageVector = Icons.Default.Inbox,
+                  contentDescription = null,
+                  tint = MaterialTheme.colorScheme.primary,
+                  modifier = Modifier.size(24.dp)
+                )
+              }
+
+              Column(modifier = Modifier.weight(1f)) {
+                Text(
+                  text = "School Notification Center Log",
+                  style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                  color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                  text = "Inspect all historical notifications, read status, and deep link targets.",
+                  style = MaterialTheme.typography.bodySmall,
+                  color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+              }
             }
 
-            Column(modifier = Modifier.weight(1f)) {
-              Text(
-                text = "Heads-Up Pop-Up Windows",
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onSurface
-              )
-              Text(
-                text = "Receive floating pop-up windows outside this app with deep-link navigation.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-              )
-            }
-          }
-
-          if (onOpenNotificationCenter != null) {
             FilledTonalButton(
               onClick = onOpenNotificationCenter,
               modifier = Modifier.fillMaxWidth().testTag("settings_open_popup_center_btn"),
@@ -278,7 +299,7 @@ fun SettingsScreen(
             ) {
               Icon(imageVector = Icons.Default.FlashOn, contentDescription = null, modifier = Modifier.size(16.dp))
               Spacer(modifier = Modifier.width(6.dp))
-              Text("Open External Notification Center")
+              Text("Open In-App Notification Center")
             }
           }
         }
@@ -452,6 +473,76 @@ fun SettingsScreen(
           InfoRow(label = "Persistence Engine", value = databaseEngine)
           HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
           InfoRow(label = "Academic Session", value = "2026 - 2027 (Term 1)")
+        }
+      }
+    }
+
+    // Community Feedback & Suggestions Section
+    item {
+      SettingsSectionTitle(title = "Community Feedback & Suggestions", icon = Icons.Default.Feedback)
+    }
+
+    item {
+      Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        modifier = Modifier.fillMaxWidth()
+      ) {
+        Column(
+          modifier = Modifier.padding(16.dp),
+          verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+          Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+          ) {
+            Box(
+              modifier = Modifier
+                .size(40.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(MaterialTheme.colorScheme.primaryContainer),
+              contentAlignment = Alignment.Center
+            ) {
+              Icon(
+                imageVector = Icons.Default.RateReview,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(22.dp)
+              )
+            }
+            Column {
+              Text(
+                text = "Share Suggestions & Feedback",
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
+              )
+              Text(
+                text = "Directly saves suggestions to the Firestore 'feedback' collection.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+              )
+            }
+          }
+
+          Button(
+            onClick = { showFeedbackDialog = true },
+            modifier = Modifier
+              .fillMaxWidth()
+              .testTag("settings_open_feedback_btn"),
+            shape = RoundedCornerShape(10.dp),
+            colors = ButtonDefaults.buttonColors(
+              containerColor = MaterialTheme.colorScheme.primary,
+              contentColor = MaterialTheme.colorScheme.onPrimary
+            )
+          ) {
+            Icon(
+              imageVector = Icons.Default.Feedback,
+              contentDescription = null,
+              modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Open Feedback Form", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold))
+          }
         }
       }
     }

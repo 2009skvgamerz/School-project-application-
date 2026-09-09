@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.model.*
+import com.example.ui.components.FeedbackSubmissionDialog
 import com.example.ui.theme.*
 
 @Composable
@@ -34,6 +35,15 @@ fun ProfileScreen(
   onOpenNotificationCenter: (() -> Unit)? = null,
   onSignOut: (() -> Unit)? = null
 ) {
+  var showFeedbackDialog by remember { mutableStateOf(false) }
+
+  if (showFeedbackDialog) {
+    FeedbackSubmissionDialog(
+      currentUser = currentUser,
+      onDismiss = { showFeedbackDialog = false }
+    )
+  }
+
   LazyColumn(
     modifier = modifier
       .fillMaxSize()
@@ -128,6 +138,26 @@ fun ProfileScreen(
               Spacer(modifier = Modifier.width(8.dp))
               Text("App Settings, Themes & Version Info")
             }
+          }
+
+          FilledTonalButton(
+            onClick = { showFeedbackDialog = true },
+            modifier = Modifier
+              .fillMaxWidth()
+              .testTag("profile_open_feedback_btn"),
+            shape = RoundedCornerShape(10.dp),
+            colors = ButtonDefaults.filledTonalButtonColors(
+              containerColor = MaterialTheme.colorScheme.primaryContainer,
+              contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+          ) {
+            Icon(
+              imageVector = Icons.Default.Feedback,
+              contentDescription = null,
+              modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Send Suggestions & Feedback", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold))
           }
         }
       }

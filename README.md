@@ -1,6 +1,6 @@
 # 🏛️ St. Joseph Matriculation Hr. Sec. School — Android Management System
 
-[![Android](https://img.shields.io/badge/Platform-Android-3DDC84?logo=android&logoColor=white)](https://developer.android.com)
+[![Android](https://img.shields.io/badge/Platform-Android%2014%2F15%2F16-3DDC84?logo=android&logoColor=white)](https://developer.android.com)
 [![Kotlin](https://img.shields.io/badge/Language-Kotlin%202.0-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org)
 [![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose%20M3-4285F4?logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
 [![Room Database](https://img.shields.io/badge/Database-Android%20Room%20SQLite-FFCA28?logo=sqlite&logoColor=black)](https://developer.android.com/training/data-storage/room)
@@ -13,10 +13,39 @@ Engineered for **St. Joseph Matriculation Higher Secondary School** (*Hosur, Tam
 
 ---
 
+## 📱 Application Visual Showcase & Screenshots
+
+The application features a tailored **Material Design 3 (M3)** interface customized for every institutional role with dynamic color accenting, floating pill navigation, real-time cloud telemetry, and high-contrast typography.
+
+<div align="center">
+
+| 👨‍🎓 Student Academic Portal | 👩‍🏫 Teacher & Faculty Portal |
+| :---: | :---: |
+| <img src="screenshots/screenshot_1.png" alt="Student Academic Portal" width="340" /> | <img src="screenshots/screenshot_2.png" alt="Teacher & Faculty Portal" width="340" /> |
+| **Keerthivasan** (Class 12-A • Roll #1)<br>• Live GPA (9.45/10) & 97.5% Attendance<br>• Model Pre-Board Trends (95.0% - Grade O)<br>• Active Assignments & Unread Circulars | **Prof. Sarah Jenkins** (Physical & Chemical Sciences)<br>• Quick Homeroom Attendance Roll Call<br>• One-Tap Assignment & Circular Publishing<br>• Class 10-A Aggregate Performance Metrics |
+
+| 🛠️ Campus Operations & Staff | 🚍 Bus Transit & Driver Portal |
+| :---: | :---: |
+| <img src="screenshots/screenshot_3.png" alt="Campus Operations Portal" width="340" /> | <img src="screenshots/screenshot_4.png" alt="Bus Driver Navigation Portal" width="340" /> |
+| **Mr. Thomas Wright** (Campus Operations & Safety)<br>• Shift Status: On Duty (07:30 AM - 04:30 PM)<br>• Audio & Stage Setup Task Tracker<br>• Science Lab Safety Inspection Checklist | **Mr. Ramesh Kumar** (Bus #12 • SIPCOT Express)<br>• Passenger Attendance Roster (Boarded/Waiting/Absent)<br>• Live Checkpoint Check-In (Hosur Bus Stand Circle)<br>• Driver Delay & Traffic Detour Broadcasts |
+
+| 👑 Executive Administration & Principal | 💻 Developer / Root God-Mode Portal |
+| :---: | :---: |
+| <img src="screenshots/screenshot_5.png" alt="Executive Administration Portal" width="340" /> | <img src="screenshots/screenshot_6.png" alt="Developer / Root God-Mode Portal" width="340" /> |
+| **Dr. Arthur Pendelton** (Executive Principal)<br>• Institutional KPIs: 1,420 Students • 84 Teachers<br>• 42 Section Rosters across Grades 1–12<br>• School-wide Circular & Emergency Broadcasting | **Keerthivasan** (Lead Systems Developer & Root Admin)<br>• Full Master Write Authority & GOD MODE<br>• Live System Telemetry (Users, Notices, Attendance)<br>• Master User Roster & Live Role Switcher |
+
+</div>
+
+> 💡 *Note: To view the full-resolution screenshots, place the image files in the `/screenshots/` directory of the repository or root path.*
+
+---
+
 ## 📑 Table of Contents
 
+- [📱 Application Visual Showcase & Screenshots](#-application-visual-showcase--screenshots)
 - [🚀 What's New in Release v3.0.0](#-whats-new-in-release-v300)
 - [🏛️ Role-Based Portals & Modules](#-role-based-portals--modules)
+- [🔔 Push Notifications & Firebase Cloud Messaging (FCM)](#-push-notifications--firebase-cloud-messaging-fcm)
 - [🏗️ Technical Architecture](#️-technical-architecture)
 - [📂 Source Code Directory Structure](#-source-code-directory-structure)
 - [🛠️ Getting Started & Build Instructions](#️-getting-started--build-instructions)
@@ -37,6 +66,7 @@ Engineered for **St. Joseph Matriculation Higher Secondary School** (*Hosur, Tam
 ### 2. ☁️ Firebase Cloud Messaging (FCM) & Google Services
 - Native `SchoolFirebaseMessagingService` with automatic device token generation and multi-topic subscriptions (`#all_school`, `#announcements`, `#events`, `#exams`, `#sports`).
 - Standardized notification payload mapping with `SystemNotificationHelper` for instant high-priority heads-up banners with deep-link navigation directly to relevant academic screens.
+- Live **Push Notification Control Center** in Settings and Developer Dashboard for runtime permission requests, token inspection, topic toggling, and real-time status bar test alerts.
 
 ### 3. 🎨 Google Material You (M3) Floating Top Search Bar & Design Refresh
 - Transformed the navigation header into a floating search pill (`28.dp` rounded container) with built-in search filter, quick role switcher, notification badge counter, and Google Account profile avatar ring.
@@ -58,33 +88,75 @@ Engineered for **St. Joseph Matriculation Higher Secondary School** (*Hosur, Tam
 
 ## 🏛️ Role-Based Portals & Modules
 
-### 👨‍🎓 1. Student Portal
-- **Dashboard Overview**: Cumulative GPA, attendance percentage, today's schedule, pending tasks, and recent announcements.
-- **Attendance Insights**: Interactive circular completion meter with session breakdown (*Full Day, Half Day, On Duty, Absent*) and subject-wise attendance bars.
+### 👨‍🎓 1. Student Portal (Blue Theme)
+- **Dashboard Overview**: Cumulative GPA (9.45 / 10), attendance percentage (97.5%), today's schedule, pending tasks, and recent announcements.
+- **Academic Analytics**: Live performance engine tracking test trends (+6.5% since UT-1), pre-board results (95.0% Grade O), and subject-wise score distribution.
 - **Academic Timetable**: Real-time period-by-period class schedule with subject, room number, and faculty assignment.
 - **Homework & Submissions**: Assignment details, due dates, submission status tags, and teacher feedback.
 - **Digital Student ID Card**: High-resolution digital badge featuring student photo, scannable barcode/QR, blood group, emergency contact, and house affiliation (*St. Patrick, St. Joseph, St. Mary, St. Francis*).
 
-### 👩‍🏫 2. Teacher & Faculty Portal
+### 👩‍🏫 2. Teacher & Faculty Portal (Green Theme)
 - **Homeroom Roll Call**: Fast digital attendance register with one-tap batch "All Full Day" marking and individual FD/HD/OD/AB status toggles.
 - **Class Rosters**: Section-by-section student directory with real-time attendance statistics and contact records.
 - **Assignment Publisher**: Distribute homework, set deadlines, and monitor student submission progress.
 - **Curriculum & Invigilation**: Track syllabus completion and view assigned exam invigilation schedules.
 
-### 🛠️ 3. Operations & Campus Staff Portal
+### 🛠️ 3. Operations & Campus Staff Portal (Purple Theme)
 - **Campus Duty Rosters**: Assigned shift management covering gate supervision, lab maintenance, cafeteria oversight, and ground setup.
+- **Task Progression Tracker**: Live status tags (*Pending*, *In Progress*, *Completed*) with shift hours tracking (07:30 AM - 04:30 PM).
 - **Incident & Facility Reporting**: Log maintenance tickets and facility requirements with priority flags.
 - **Institutional Directory**: Search internal faculty phone extensions and department contacts.
 
-### 🚗 4. Transport & Driver Dashboard
-- **Interactive WebView GPS Map**: Real-time route coordinate visualization with GPS-lock and route bounds fitting.
-- **Passenger Boarding Checklist**: Mark student pickups and drop-offs at designated route stops.
-- **Turn-by-Turn Navigation**: One-tap shortcut launching Google Maps Navigation for scheduled bus stops.
+### 🚍 4. Transport & Driver Dashboard (Orange Theme)
+- **Interactive GPS Navigation**: Real-time route coordinate visualization with GPS-lock and route bounds fitting.
+- **Passenger Boarding Checklist**: Mark student pickups and drop-offs at designated route stops (Hosur Bus Stand Circle, SIPCOT Gate, Gandhi Nagar).
+- **Delay & Detour Broadcasts**: One-tap delay alerts (+5, +10, +15 mins) and extra route detour broadcasting sent directly to parents' phones.
+- **Turn-by-Turn Navigation**: Direct shortcut launching Google Maps Navigation for scheduled bus stops.
 
-### 👑 5. Principal & Administration Portal
-- **Governance Dashboard**: Institutional attendance averages, total student/staff strength, fee collection summaries, and academic grade distributions.
+### 👑 5. Principal & Administration Portal (Amber Theme)
+- **Governance Dashboard**: Institutional attendance averages (95.2%), total student/staff strength (1,420 students, 84 teachers, 32 staff), fee collection summaries, and academic grade distributions.
 - **School-Wide Circulars**: Compose and broadcast official circulars to specific cohorts or the entire school.
 - **Database Administration**: Inspect local Room SQLite records and trigger full seed data resets.
+
+### 💻 6. Developer & Root Admin Portal (Teal / God-Mode Theme)
+- **Master User Roster & Editor**: Live search and editable user profiles across all roles with instant save to SQLite and cloud sync.
+- **Live System Telemetry**: Track active users, published circulars, attendance records, and database operations in real-time.
+- **Omni Access System**: Instant one-click impersonation and role switching for troubleshooting and testing.
+
+---
+
+## 🔔 Push Notifications & Firebase Cloud Messaging (FCM)
+
+The system includes a production-ready push notification pipeline designed for critical institutional alerts:
+
+```
+┌─────────────────────────────────┐
+│     Firebase Cloud Messaging    │
+│       Topics: all_school,       │
+│   homework, bus_tracking, etc.  │
+└────────────────┬────────────────┘
+                 │
+                 ▼
+┌─────────────────────────────────┐
+│  SchoolFirebaseMessagingService │
+│     (App Background / Killed)   │
+└────────────────┬────────────────┘
+                 │
+                 ▼
+┌─────────────────────────────────┐
+│     SystemNotificationHelper    │
+│   (NotificationChannel: High)   │
+└────────────────┬────────────────┘
+                 │
+                 ▼
+┌─────────────────────────────────┐
+│  Android Heads-Up Status Bar    │
+│  - 🚨 Emergency Campus Closure  │
+│  - 📚 New Homework Deadline     │
+│  - 🚍 Bus Proximity (ETA 4m)    │
+│  - 📢 Headmaster Broadcast      │
+└─────────────────────────────────┘
+```
 
 ---
 
@@ -108,8 +180,8 @@ Engineered for **St. Joseph Matriculation Higher Secondary School** (*Hosur, Tam
 │       (SchoolRepository • BackgroundSyncManager)            │
 └──────────────────────────────┬──────────────────────────────┘
                                │
-             ┌─────────────────┴─────────────────┐
-             ▼                                   ▼
+              ┌─────────────────┴─────────────────┐
+              ▼                                   ▼
 ┌─────────────────────────────┐     ┌─────────────────────────────┐
 │     Android Room SQLite     │     │   AlarmManager & Firebase   │
 │  (DAOs • Entities • KSP)    │     │(SchoolAlarmReceiver • FCM)  │
@@ -183,7 +255,7 @@ app/src/main/java/com/example/
     │   ├── ManagementScreen.kt          # Institutional records & staff directory
     │   ├── SettingsScreen.kt            # Theme toggles, notification channel settings, database reset
     │   └── ProfileScreen.kt             # Digital ID card & role switcher
-    ├── dashboard/                       # Role-tailored home dashboards (Student, Teacher, Admin, Staff, Driver)
+    ├── dashboard/                       # Role-tailored home dashboards (Student, Teacher, Admin, Staff, Driver, Developer)
     ├── components/                      # Reusable M3 cards, headers, stat badges, modal sheets
     └── theme/                           # Color.kt, Type.kt, Theme.kt
 ```
@@ -221,11 +293,12 @@ Download the compiled release APK directly from the official [**v3.0.0 GitHub Re
 
 | Role | Username | Email | Name | Designation / Assignment |
 |---|---|---|---|---|
-| 👨‍🎓 **Student** | `student01` | `alex.j@stjosephs.edu` | Alex Johnson | Class 10-A, Roll #1, St. Patrick House |
-| 👩‍🏫 **Teacher** | `teacher01` | `s.jenkins@stjosephs.edu` | Prof. Sarah Jenkins | Class Teacher of 10-A (Physics & Lab) |
-| 🛠️ **Staff (Operations)** | `staff01` | `t.wright@stjosephs.edu` | Mr. Thomas Wright | Senior Operations Supervisor |
-| 🚗 **Staff (Driver)** | `driver01` | `m.ross@stjosephs.edu` | Mr. Marcus Ross | Transport Driver (Route #05) |
-| 👑 **Admin** | `admin01` | `principal@stjosephs.edu` | Dr. Arthur Pendelton | Principal & Head of Institution |
+| 👨‍🎓 **Student** | `student01` | `alex.j@stjosephs.edu` | Keerthivasan / Alex Johnson | Class 12-A / 10-A, Roll #1, St. Francis House |
+| 👩‍🏫 **Teacher** | `teacher01` | `s.jenkins@stjosephs.edu` | Prof. Sarah Jenkins | Class Teacher of 10-A (Physics & Chemistry) |
+| 🛠️ **Staff (Operations)** | `staff01` | `t.wright@stjosephs.edu` | Mr. Thomas Wright | Senior Operations Supervisor (Campus Safety) |
+| 🚍 **Staff (Driver)** | `driver01` | `m.ross@stjosephs.edu` | Mr. Ramesh Kumar / Marcus Ross | Transport Pilot (Route #12 / #05) |
+| 👑 **Admin** | `admin01` | `principal@stjosephs.edu` | Dr. Arthur Pendelton | Executive Principal & Head of Institution |
+| 💻 **Developer** | `root01` | `keerthivasan.dev@stjosephs.edu` | Keerthivasan | Lead Systems Developer & Root Admin (God Mode) |
 
 ---
 
