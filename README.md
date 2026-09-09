@@ -1,3 +1,4 @@
+<!-- Updated for GitHub Sync v3.0.0 -->
 # 🏛️ St. Joseph Matriculation Hr. Sec. School — Android Management System
 
 [![Android](https://img.shields.io/badge/Platform-Android%2014%2F15%2F16-3DDC84?logo=android&logoColor=white)](https://developer.android.com)
