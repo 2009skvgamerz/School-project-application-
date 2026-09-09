@@ -13,36 +13,29 @@ Engineered for **St. Joseph Matriculation Higher Secondary School** (*Hosur, Tam
 
 ---
 
-## 📱 Application Visual Showcase & Screenshots
-
-The application features a tailored **Material Design 3 (M3)** interface customized for every institutional role with dynamic color accenting, floating pill navigation, real-time cloud telemetry, and high-contrast typography.
+## 📱 Screenshots
 
 <div align="center">
 
-| 👨‍🎓 Student Academic Portal | 👩‍🏫 Teacher & Faculty Portal |
+| Student Portal | Teacher Portal |
 | :---: | :---: |
-| <img src="screenshots/screenshot_1.png" alt="Student Academic Portal" width="340" /> | <img src="screenshots/screenshot_2.png" alt="Teacher & Faculty Portal" width="340" /> |
-| **Keerthivasan** (Class 12-A • Roll #1)<br>• Live GPA (9.45/10) & 97.5% Attendance<br>• Model Pre-Board Trends (95.0% - Grade O)<br>• Active Assignments & Unread Circulars | **Prof. Sarah Jenkins** (Physical & Chemical Sciences)<br>• Quick Homeroom Attendance Roll Call<br>• One-Tap Assignment & Circular Publishing<br>• Class 10-A Aggregate Performance Metrics |
+| <img src="screenshots/screenshot_1.png" alt="Student Portal" width="360" /> | <img src="screenshots/screenshot_2.png" alt="Teacher Portal" width="360" /> |
 
-| 🛠️ Campus Operations & Staff | 🚍 Bus Transit & Driver Portal |
+| Campus Staff Portal | Bus Driver Portal |
 | :---: | :---: |
-| <img src="screenshots/screenshot_3.png" alt="Campus Operations Portal" width="340" /> | <img src="screenshots/screenshot_4.png" alt="Bus Driver Navigation Portal" width="340" /> |
-| **Mr. Thomas Wright** (Campus Operations & Safety)<br>• Shift Status: On Duty (07:30 AM - 04:30 PM)<br>• Audio & Stage Setup Task Tracker<br>• Science Lab Safety Inspection Checklist | **Mr. Ramesh Kumar** (Bus #12 • SIPCOT Express)<br>• Passenger Attendance Roster (Boarded/Waiting/Absent)<br>• Live Checkpoint Check-In (Hosur Bus Stand Circle)<br>• Driver Delay & Traffic Detour Broadcasts |
+| <img src="screenshots/screenshot_3.png" alt="Campus Staff Portal" width="360" /> | <img src="screenshots/screenshot_4.png" alt="Bus Driver Portal" width="360" /> |
 
-| 👑 Executive Administration & Principal | 💻 Developer / Root God-Mode Portal |
+| Administrator Portal | Developer Portal |
 | :---: | :---: |
-| <img src="screenshots/screenshot_5.png" alt="Executive Administration Portal" width="340" /> | <img src="screenshots/screenshot_6.png" alt="Developer / Root God-Mode Portal" width="340" /> |
-| **Dr. Arthur Pendelton** (Executive Principal)<br>• Institutional KPIs: 1,420 Students • 84 Teachers<br>• 42 Section Rosters across Grades 1–12<br>• School-wide Circular & Emergency Broadcasting | **Keerthivasan** (Lead Systems Developer & Root Admin)<br>• Full Master Write Authority & GOD MODE<br>• Live System Telemetry (Users, Notices, Attendance)<br>• Master User Roster & Live Role Switcher |
+| <img src="screenshots/screenshot_5.png" alt="Administrator Portal" width="360" /> | <img src="screenshots/screenshot_6.png" alt="Developer Portal" width="360" /> |
 
 </div>
-
-> 💡 *Note: To view the full-resolution screenshots, place the image files in the `/screenshots/` directory of the repository or root path.*
 
 ---
 
 ## 📑 Table of Contents
 
-- [📱 Application Visual Showcase & Screenshots](#-application-visual-showcase--screenshots)
+- [📱 Screenshots](#-screenshots)
 - [🚀 What's New in Release v3.0.0](#-whats-new-in-release-v300)
 - [🏛️ Role-Based Portals & Modules](#-role-based-portals--modules)
 - [🔔 Push Notifications & Firebase Cloud Messaging (FCM)](#-push-notifications--firebase-cloud-messaging-fcm)
