@@ -86,13 +86,13 @@ fun SplashScreen(
             .fillMaxSize()
             .clip(CircleShape)
             .background(Color.White)
-            .padding(4.dp),
+            .padding(3.dp),
           contentAlignment = Alignment.Center
         ) {
           Image(
-            painter = painterResource(id = R.drawable.school_logo),
+            painter = painterResource(id = R.drawable.img_app_icon),
             contentDescription = "School Emblem",
-            contentScale = ContentScale.Fit,
+            contentScale = ContentScale.Crop,
             modifier = Modifier
               .fillMaxSize()
               .clip(CircleShape)

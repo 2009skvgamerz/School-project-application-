@@ -148,10 +148,10 @@ fun LoginScreen(
         ) {
           // School Logo Emblem with White Ring & Gold Border
           Surface(
-            modifier = Modifier.size(76.dp),
+            modifier = Modifier.size(80.dp),
             shape = CircleShape,
             color = Color.White,
-            shadowElevation = 6.dp
+            shadowElevation = 8.dp
           ) {
             Box(
               modifier = Modifier
@@ -161,9 +161,9 @@ fun LoginScreen(
               contentAlignment = Alignment.Center
             ) {
               Image(
-                painter = painterResource(id = R.drawable.school_logo),
+                painter = painterResource(id = R.drawable.img_app_icon),
                 contentDescription = "$schoolName Crest",
-                contentScale = ContentScale.Fit,
+                contentScale = ContentScale.Crop,
                 modifier = Modifier
                   .fillMaxSize()
                   .clip(CircleShape)

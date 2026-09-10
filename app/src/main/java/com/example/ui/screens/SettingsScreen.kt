@@ -2,6 +2,7 @@ package com.example.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -19,10 +20,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.R
 import com.example.model.AppThemeMode
 import com.example.model.User
 import com.example.model.UserRole
@@ -93,19 +97,28 @@ fun SettingsScreen(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp)
           ) {
-            Box(
-              modifier = Modifier
-                .size(56.dp)
-                .clip(RoundedCornerShape(14.dp))
-                .background(SchoolNavyPrimary),
-              contentAlignment = Alignment.Center
+            Surface(
+              modifier = Modifier.size(56.dp),
+              shape = RoundedCornerShape(14.dp),
+              color = Color.White,
+              shadowElevation = 2.dp
             ) {
-              Icon(
-                imageVector = Icons.Default.School,
-                contentDescription = null,
-                tint = SchoolGold,
-                modifier = Modifier.size(32.dp)
-              )
+              Box(
+                modifier = Modifier
+                  .fillMaxSize()
+                  .padding(2.dp)
+                  .clip(RoundedCornerShape(12.dp)),
+                contentAlignment = Alignment.Center
+              ) {
+                Image(
+                  painter = painterResource(id = R.drawable.img_app_icon),
+                  contentDescription = "St. Joseph's Emblem",
+                  contentScale = ContentScale.Crop,
+                  modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(12.dp))
+                )
+              }
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {

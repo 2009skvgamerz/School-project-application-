@@ -66,7 +66,7 @@ fun StudentIdCard(
               contentAlignment = Alignment.Center
             ) {
               Image(
-                painter = painterResource(id = R.drawable.school_logo),
+                painter = painterResource(id = R.drawable.img_app_icon),
                 contentDescription = "School Logo",
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
@@ -263,7 +263,7 @@ fun StaffIdCard(
               contentAlignment = Alignment.Center
             ) {
               Image(
-                painter = painterResource(id = R.drawable.school_logo),
+                painter = painterResource(id = R.drawable.img_app_icon),
                 contentDescription = "School Logo",
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
