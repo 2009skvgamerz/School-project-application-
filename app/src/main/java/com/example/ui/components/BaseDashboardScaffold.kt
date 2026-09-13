@@ -594,23 +594,12 @@ fun RoleSpecificDrawerContent(
           verticalAlignment = Alignment.CenterVertically,
           horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-          Box(
-            modifier = Modifier
-              .size(44.dp)
-              .clip(CircleShape)
-              .background(Color.White)
-              .padding(2.dp),
-            contentAlignment = Alignment.Center
-          ) {
-            Image(
-              painter = painterResource(id = R.drawable.school_logo),
-              contentDescription = "School Crest",
-              contentScale = ContentScale.Crop,
-              modifier = Modifier
-                .fillMaxSize()
-                .clip(CircleShape)
-            )
-          }
+          Image(
+            painter = painterResource(id = R.drawable.school_logo),
+            contentDescription = "School Crest",
+            contentScale = ContentScale.Fit,
+            modifier = Modifier.size(44.dp)
+          )
 
           Column {
             Text(

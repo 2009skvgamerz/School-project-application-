@@ -322,7 +322,7 @@ class SchoolRepository {
       id = "not_${System.currentTimeMillis()}",
       title = title,
       content = content,
-      date = "Today, 09:00 AM",
+      date = com.example.util.SchoolDateTimeUtils.getCurrentNoticeDateString(),
       category = category,
       publisherRole = roleName,
       publisherName = publisher,

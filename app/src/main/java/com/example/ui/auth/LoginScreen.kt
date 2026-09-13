@@ -147,29 +147,12 @@ fun LoginScreen(
           verticalArrangement = Arrangement.Center
         ) {
           // School Logo Emblem with White Ring & Gold Border
-          Surface(
-            modifier = Modifier.size(80.dp),
-            shape = CircleShape,
-            color = Color.White,
-            shadowElevation = 8.dp
-          ) {
-            Box(
-              modifier = Modifier
-                .fillMaxSize()
-                .padding(2.dp)
-                .clip(CircleShape),
-              contentAlignment = Alignment.Center
-            ) {
-              Image(
-                painter = painterResource(id = R.drawable.img_app_icon),
-                contentDescription = "$schoolName Crest",
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                  .fillMaxSize()
-                  .clip(CircleShape)
-              )
-            }
-          }
+          Image(
+            painter = painterResource(id = R.drawable.school_logo),
+            contentDescription = "$schoolName Crest",
+            contentScale = ContentScale.Fit,
+            modifier = Modifier.size(80.dp)
+          )
 
           Spacer(modifier = Modifier.height(10.dp))
 

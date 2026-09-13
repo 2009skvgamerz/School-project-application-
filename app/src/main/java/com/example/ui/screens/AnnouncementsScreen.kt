@@ -811,7 +811,7 @@ fun PublishAnnouncementDialog(
               content = content.trim(),
               priority = if (isEmergency) AnnouncementPriority.URGENT else selectedPriority,
               targetAudience = selectedAudience,
-              date = "22 Aug 2026",
+              date = com.example.util.SchoolDateTimeUtils.getCurrentAnnouncementDateString(),
               timeAgo = "Just now",
               authorName = "Institutional Broadcast Desk",
               authorRole = "Administration",

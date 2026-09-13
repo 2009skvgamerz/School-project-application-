@@ -32,6 +32,8 @@ import com.example.model.User
 import com.example.model.UserRole
 import com.example.ui.components.FeedbackSubmissionDialog
 import com.example.ui.components.PushNotificationControlCard
+import com.example.ui.components.SyncPausedStatusIndicator
+import com.example.data.firestore.DiagnosticLevel
 import com.example.ui.theme.*
 import com.example.viewmodel.SchoolViewModel
 
@@ -59,6 +61,11 @@ fun SettingsScreen(
   var showSyncSuccessBanner by remember { mutableStateOf(false) }
   var showResetConfirmDialog by remember { mutableStateOf(false) }
   var showFeedbackDialog by remember { mutableStateOf(false) }
+
+  val isSyncPaused by viewModel?.isSyncPaused?.collectAsState() ?: remember { mutableStateOf(networkState.isSyncPaused) }
+  val diagnosticReport by viewModel?.diagnosticReport?.collectAsState() ?: remember { mutableStateOf(null) }
+  val isDiagnosing by viewModel?.isDiagnosing?.collectAsState() ?: remember { mutableStateOf(false) }
+  val lastRetryEvent by viewModel?.lastRetryEvent?.collectAsState() ?: remember { mutableStateOf(null) }
 
   if (showFeedbackDialog) {
     FeedbackSubmissionDialog(
@@ -97,29 +104,12 @@ fun SettingsScreen(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp)
           ) {
-            Surface(
-              modifier = Modifier.size(56.dp),
-              shape = RoundedCornerShape(14.dp),
-              color = Color.White,
-              shadowElevation = 2.dp
-            ) {
-              Box(
-                modifier = Modifier
-                  .fillMaxSize()
-                  .padding(2.dp)
-                  .clip(RoundedCornerShape(12.dp)),
-                contentAlignment = Alignment.Center
-              ) {
-                Image(
-                  painter = painterResource(id = R.drawable.img_app_icon),
-                  contentDescription = "St. Joseph's Emblem",
-                  contentScale = ContentScale.Crop,
-                  modifier = Modifier
-                    .fillMaxSize()
-                    .clip(RoundedCornerShape(12.dp))
-                )
-              }
-            }
+            Image(
+              painter = painterResource(id = R.drawable.school_logo),
+              contentDescription = "St. Joseph's Emblem",
+              contentScale = ContentScale.Fit,
+              modifier = Modifier.size(56.dp)
+            )
 
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
               Text(
@@ -385,6 +375,149 @@ fun SettingsScreen(
                 modifier = Modifier.testTag("settings_retry_network_btn")
               ) {
                 Icon(imageVector = Icons.Default.Refresh, contentDescription = "Check Network", tint = SchoolNavyPrimary)
+              }
+            }
+          }
+
+          // Dedicated Sync Paused Warning Indicator
+          SyncPausedStatusIndicator(
+            isSyncPaused = isSyncPaused,
+            pauseReason = if (isSimulatedOffline) "Simulated offline test mode" else "No internet connection",
+            onRetry = { onRetryConnection?.invoke() }
+          )
+
+          HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+
+          // Firestore Diagnostics & Reliability Section
+          Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalArrangement = Arrangement.SpaceBetween,
+              verticalAlignment = Alignment.CenterVertically
+            ) {
+              Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+              ) {
+                Icon(
+                  imageVector = Icons.Default.Analytics,
+                  contentDescription = null,
+                  tint = SchoolNavyPrimary,
+                  modifier = Modifier.size(18.dp)
+                )
+                Text(
+                  text = "Cloud Diagnostics & Verification",
+                  style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                  color = MaterialTheme.colorScheme.onSurface
+                )
+              }
+
+              diagnosticReport?.let { report ->
+                val badgeColor = when (report.overallLevel) {
+                  DiagnosticLevel.PASS -> SchoolAccentGreen
+                  DiagnosticLevel.WARNING -> Color(0xFFD97706)
+                  DiagnosticLevel.FAIL -> Color(0xFFDC2626)
+                }
+                Surface(
+                  color = badgeColor.copy(alpha = 0.15f),
+                  shape = RoundedCornerShape(4.dp)
+                ) {
+                  Text(
+                    text = report.overallLevel.name,
+                    style = MaterialTheme.typography.labelSmall.copy(
+                      fontSize = 9.sp,
+                      fontWeight = FontWeight.Bold,
+                      color = badgeColor
+                    ),
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                  )
+                }
+              }
+            }
+
+            Text(
+              text = "Validate google-services.json configuration, cloud latency, and Firestore security rules to ensure reliable bi-directional data flow.",
+              style = MaterialTheme.typography.bodySmall,
+              color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            // Run Diagnostics Button
+            if (viewModel != null) {
+              FilledTonalButton(
+                onClick = { viewModel.runCloudDiagnostics() },
+                enabled = !isDiagnosing,
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier.fillMaxWidth().testTag("settings_run_diagnostics_btn")
+              ) {
+                if (isDiagnosing) {
+                  CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                  Spacer(modifier = Modifier.width(8.dp))
+                  Text("Testing Cloud Connection & Rules...", style = MaterialTheme.typography.labelMedium)
+                } else {
+                  Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
+                  Spacer(modifier = Modifier.width(6.dp))
+                  Text("Test Firestore Connection & Security Rules", style = MaterialTheme.typography.labelMedium)
+                }
+              }
+
+              // Diagnostic summary pills
+              diagnosticReport?.let { report ->
+                Surface(
+                  color = MaterialTheme.colorScheme.surfaceContainerLow,
+                  shape = RoundedCornerShape(10.dp),
+                  modifier = Modifier.fillMaxWidth()
+                ) {
+                  Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                      text = "Diagnostic Results:",
+                      style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                      color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                      text = "• Config: ${report.configDiagnostics.summary}",
+                      style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                      color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                      text = "• Connection: ${report.connectionDiagnostics.summary} (${report.connectionDiagnostics.roundTripLatencyMs}ms)",
+                      style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                      color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                      text = "• Rules: ${report.rulesDiagnostics.summary}",
+                      style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                      color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                      text = "• Data Sync: ${report.syncDiagnostics.summary}",
+                      style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                      color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                  }
+                }
+              }
+
+              // Live Retry Status pill if backoff is currently active
+              lastRetryEvent?.let { event ->
+                Surface(
+                  color = Color(0xFFFEF3C7),
+                  shape = RoundedCornerShape(8.dp),
+                  border = BorderStroke(1.dp, Color(0xFFF59E0B)),
+                  modifier = Modifier.fillMaxWidth()
+                ) {
+                  Row(
+                    modifier = Modifier.padding(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                  ) {
+                    Icon(Icons.Default.HourglassTop, contentDescription = null, tint = Color(0xFFB45309), modifier = Modifier.size(16.dp))
+                    Text(
+                      text = "Exponential Backoff Active: Attempt ${event.attempt}/${event.maxAttempts} • Delay: ${event.delayMs}ms",
+                      style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.5.sp, fontWeight = FontWeight.SemiBold),
+                      color = Color(0xFF92400E)
+                    )
+                  }
+                }
               }
             }
           }

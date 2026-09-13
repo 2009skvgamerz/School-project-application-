@@ -18,6 +18,16 @@ sealed class NetworkState {
 
   val isConnected: Boolean
     get() = this is Online
+
+  val isSyncPaused: Boolean
+    get() = this !is Online
+
+  val syncPauseReason: String?
+    get() = when (this) {
+      is Offline -> reason
+      is Reconnecting -> "Reconnecting to network..."
+      is Online -> null
+    }
 }
 
 class NetworkConnectivityMonitor(private val context: Context) {
@@ -104,6 +114,10 @@ class NetworkConnectivityMonitor(private val context: Context) {
       realState
     }
   }.flowOn(Dispatchers.IO)
+
+  val isSyncPausedFlow: Flow<Boolean> = networkState.map { it.isSyncPaused }
+
+  fun isSyncPaused(): Boolean = !isCurrentlyConnected()
 
   fun isCurrentlyConnected(): Boolean {
     if (_simulatedOffline.value) return false

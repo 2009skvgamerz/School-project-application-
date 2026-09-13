@@ -22,7 +22,7 @@ class SchoolApplication : Application() {
         SystemNotificationHelper.createNotificationChannels(this)
         initFirebase()
         BackgroundSyncManager.initialize(this)
-        SchoolBackgroundScheduler.startContinuousBackgroundAlerts(this, initialDelaySeconds = 30L)
+        SchoolBackgroundScheduler.cancelBackgroundAlerts(this)
     }
 
     private fun initFirebase() {

@@ -18,37 +18,11 @@ import com.example.util.SystemNotificationHelper
 class SchoolAlarmReceiver : BroadcastReceiver() {
 
   override fun onReceive(context: Context, intent: Intent?) {
-    Log.d(TAG, "SchoolAlarmReceiver triggered in background (App closed/killed state).")
-
+    Log.d(TAG, "SchoolAlarmReceiver triggered. Ensuring no unwanted background alarms are running.")
     try {
-      // 1. Pick and show the next scheduled autonomous school alert
-      val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-      val currentIndex = prefs.getInt(KEY_ALERT_INDEX, 0)
-      val alert = AUTONOMOUS_ALERTS[currentIndex % AUTONOMOUS_ALERTS.size]
-
-      // Increment index for next time
-      prefs.edit().putInt(KEY_ALERT_INDEX, currentIndex + 1).apply()
-
-      // 2. Dispatch the system notification banner (Heads-Up + Room DB sync)
-      SystemNotificationHelper.showSystemNotification(
-        context = context,
-        title = alert.title,
-        message = alert.message,
-        type = alert.type,
-        actionRoute = alert.route,
-        isUrgent = alert.isUrgent
-      )
-
-      Log.d(TAG, "Autonomous background notification posted: ${alert.title}")
+      SchoolBackgroundScheduler.cancelBackgroundAlerts(context)
     } catch (e: Exception) {
-      Log.e(TAG, "Error posting autonomous background alert: ${e.message}", e)
-    } finally {
-      // 3. Chain the next background alarm (continuous autonomous delivery every 2 minutes)
-      try {
-        SchoolBackgroundScheduler.scheduleNextBackgroundAlert(context, delaySeconds = 120L)
-      } catch (e: Exception) {
-        Log.e(TAG, "Failed to re-arm next background alert: ${e.message}")
-      }
+      Log.d(TAG, "Cleanup note: ${e.message}")
     }
   }
 

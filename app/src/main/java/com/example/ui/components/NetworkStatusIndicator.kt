@@ -2,6 +2,7 @@ package com.example.ui.components
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -55,18 +56,18 @@ fun NetworkStatusBanner(
   }
 
   Column(modifier = modifier.fillMaxWidth().testTag("network_status_banner_container")) {
-    // 1. OFFLINE BANNER (Slide in when offline)
+    // 1. SYNC PAUSED / OFFLINE BANNER (Slide in when network is offline or sync is paused)
     AnimatedVisibility(
-      visible = networkState is NetworkState.Offline,
+      visible = networkState.isSyncPaused,
       enter = expandVertically(animationSpec = tween(300)) + fadeIn(animationSpec = tween(300)),
       exit = shrinkVertically(animationSpec = tween(300)) + fadeOut(animationSpec = tween(300))
     ) {
-      val offlineReason = (networkState as? NetworkState.Offline)?.reason ?: "No internet connection"
+      val offlineReason = (networkState as? NetworkState.Offline)?.reason ?: "Network offline"
 
       Surface(
         color = Color(0xFFB91C1C), // Deep Crimson/Amber
         tonalElevation = 6.dp,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth().testTag("sync_paused_banner")
       ) {
         Row(
           modifier = Modifier
@@ -89,7 +90,7 @@ fun NetworkStatusBanner(
             ) {
               Icon(
                 imageVector = Icons.Default.CloudOff,
-                contentDescription = "Offline Mode",
+                contentDescription = "Data Sync Paused",
                 tint = Color.White,
                 modifier = Modifier.size(18.dp)
               )
@@ -101,10 +102,24 @@ fun NetworkStatusBanner(
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
               ) {
                 Text(
-                  text = "You are currently offline",
+                  text = "Data Synchronization Paused",
                   style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                   color = Color.White
                 )
+                Surface(
+                  color = Color(0xFFFEF08A),
+                  shape = RoundedCornerShape(4.dp)
+                ) {
+                  Text(
+                    text = "PAUSED",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                      fontSize = 8.sp,
+                      color = Color(0xFF78350F),
+                      fontWeight = FontWeight.Black
+                    ),
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                  )
+                }
                 if (isSimulated) {
                   Surface(
                     color = Color.White.copy(alpha = 0.25f),
@@ -120,7 +135,7 @@ fun NetworkStatusBanner(
               }
 
               Text(
-                text = "Showing cached local records (Room DB). Refresh is paused.",
+                text = "Cloud sync paused ($offlineReason). Changes stored securely in local Room DB.",
                 style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
                 color = Color.White.copy(alpha = 0.9f)
               )
@@ -137,7 +152,7 @@ fun NetworkStatusBanner(
               modifier = Modifier.testTag("offline_info_btn")
             ) {
               Text(
-                text = "Why?",
+                text = "Details",
                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                 color = Color(0xFFFEF08A) // Soft gold
               )
@@ -378,12 +393,23 @@ fun NetworkStatusBarBadge(
   modifier: Modifier = Modifier
 ) {
   val isOnline = networkState is NetworkState.Online
-  val color = if (isOnline) SchoolAccentGreen else Color(0xFFDC2626)
+  val isPaused = networkState.isSyncPaused
+  val color = when {
+    !isOnline || isPaused -> Color(0xFFDC2626)
+    networkState is NetworkState.Reconnecting -> Color(0xFFF59E0B)
+    else -> SchoolAccentGreen
+  }
+  val label = when {
+    isPaused -> "SYNC PAUSED"
+    !isOnline -> "OFFLINE"
+    networkState is NetworkState.Reconnecting -> "RECONNECTING"
+    else -> "LIVE SYNC"
+  }
 
   Surface(
     color = color.copy(alpha = 0.15f),
     shape = RoundedCornerShape(6.dp),
-    modifier = modifier
+    modifier = modifier.testTag("network_status_bar_badge")
   ) {
     Row(
       modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.5.dp),
@@ -397,7 +423,7 @@ fun NetworkStatusBarBadge(
           .background(color)
       )
       Text(
-        text = if (isOnline) "ONLINE" else "OFFLINE",
+        text = label,
         style = MaterialTheme.typography.labelSmall.copy(
           fontSize = 8.5.sp,
           fontWeight = FontWeight.Bold,
@@ -407,6 +433,77 @@ fun NetworkStatusBarBadge(
         maxLines = 1,
         softWrap = false
       )
+    }
+  }
+}
+
+/**
+ * Dedicated status indicator that visibly notifies the user whenever data synchronization is paused
+ */
+@Composable
+fun SyncPausedStatusIndicator(
+  isSyncPaused: Boolean,
+  pauseReason: String = "Network offline",
+  onRetry: () -> Unit = {},
+  modifier: Modifier = Modifier
+) {
+  AnimatedVisibility(
+    visible = isSyncPaused,
+    enter = fadeIn() + expandVertically(),
+    exit = fadeOut() + shrinkVertically(),
+    modifier = modifier
+  ) {
+    Surface(
+      color = Color(0xFFFEF2F2),
+      border = BorderStroke(1.dp, Color(0xFFF87171)),
+      shape = RoundedCornerShape(10.dp),
+      modifier = Modifier
+        .fillMaxWidth()
+        .padding(horizontal = 16.dp, vertical = 6.dp)
+        .testTag("sync_paused_status_indicator")
+    ) {
+      Row(
+        modifier = Modifier
+          .fillMaxWidth()
+          .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+      ) {
+        Row(
+          modifier = Modifier.weight(1f),
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+          Icon(
+            imageVector = Icons.Default.PauseCircle,
+            contentDescription = "Sync Paused",
+            tint = Color(0xFFDC2626),
+            modifier = Modifier.size(18.dp)
+          )
+          Column {
+            Text(
+              text = "Data Synchronization Paused",
+              style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+              color = Color(0xFF991B1B)
+            )
+            Text(
+              text = "$pauseReason • Local changes queued in Room SQLite",
+              style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+              color = Color(0xFF7F1D1D)
+            )
+          }
+        }
+        TextButton(
+          onClick = onRetry,
+          contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+        ) {
+          Text(
+            text = "Resume",
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+            color = Color(0xFFDC2626)
+          )
+        }
+      }
     }
   }
 }

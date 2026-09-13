@@ -381,5 +381,105 @@ class ExampleRobolectricTest {
     assertEquals(6, classAggregate.terms.size)
     assertTrue(classAggregate.overallAttendance >= 75.0)
   }
+
+  @Test
+  fun `verify SchoolDateTimeUtils dynamic date and time formatting logic`() {
+    val now = System.currentTimeMillis()
+
+    // 1. Notice Date formatting
+    val currentNoticeDate = com.example.util.SchoolDateTimeUtils.getCurrentNoticeDateString()
+    assertTrue(currentNoticeDate.startsWith("Today, "))
+
+    val formattedNow = com.example.util.SchoolDateTimeUtils.formatNoticeDate(now)
+    assertTrue(formattedNow.startsWith("Today, "))
+
+    val yesterday = now - (24 * 60 * 60 * 1000L)
+    val formattedYesterday = com.example.util.SchoolDateTimeUtils.formatNoticeDate(yesterday)
+    assertTrue(formattedYesterday.startsWith("Yesterday, "))
+
+    // 2. Announcement formatting
+    val announcementDate = com.example.util.SchoolDateTimeUtils.getCurrentAnnouncementDateString()
+    assertFalse(announcementDate.isBlank())
+
+    // 3. Time ago calculation
+    assertEquals("Just now", com.example.util.SchoolDateTimeUtils.formatTimeAgo(now))
+    assertEquals("Just now", com.example.util.SchoolDateTimeUtils.formatTimeAgo(now - 10_000L))
+    assertEquals("5m ago", com.example.util.SchoolDateTimeUtils.formatTimeAgo(now - (5 * 60 * 1000L)))
+    assertEquals("2h ago", com.example.util.SchoolDateTimeUtils.formatTimeAgo(now - (2 * 60 * 60 * 1000L)))
+  }
+
+  @Test
+  fun `verify Notice publishing uses dynamic live time instead of static 09_00 AM`() {
+    val repository = SchoolRepository()
+    repository.loginAsRole(UserRole.ADMIN)
+
+    val publishedNotice = repository.addNotice(
+      title = "Science Club Registration",
+      content = "Registrations open for grades 9-12.",
+      category = NoticeCategory.EVENT,
+      isUrgent = false
+    )
+
+    assertNotNull(publishedNotice)
+    assertEquals("Science Club Registration", publishedNotice.title)
+    assertTrue("Published notice date must start with 'Today, '", publishedNotice.date.startsWith("Today, "))
+    assertFalse("Published notice date must not be hardcoded static 9:00 AM", publishedNotice.date == "Today, 09:00 AM")
+  }
+
+  @Test
+  fun `verify Bus Tracking route advancement and passenger boarding logic`() {
+    val repository = SchoolRepository()
+    val routes = repository.busRoutes.value
+    assertTrue(routes.isNotEmpty())
+
+    val route = routes.first()
+    val routeId = route.id
+
+    // Advance bus to next stop
+    repository.advanceBusToNextStop(routeId)
+    val updatedRoute = repository.busRoutes.value.first { it.id == routeId }
+    assertNotNull(updatedRoute)
+
+    // Mark stop passengers boarded
+    val currentStop = updatedRoute.stops.find { it.isCurrent } ?: updatedRoute.stops.first()
+    repository.markAllStopPassengersBoarded(routeId, currentStop.id)
+    val afterBoardingRoute = repository.busRoutes.value.first { it.id == routeId }
+    val stopPassengers = afterBoardingRoute.stops.find { it.id == currentStop.id }?.passengers ?: emptyList()
+    if (stopPassengers.isNotEmpty()) {
+      assertTrue(stopPassengers.all { it.boardingStatus == com.example.model.PassengerBoardingStatus.BOARDED })
+    }
+  }
+
+  @Test
+  fun `verify NotificationAudienceFilter correctly filters roles and classrooms`() {
+    val studentUser = com.example.model.SystemUserRecord("u_std", "Keerthivasan", UserRole.STUDENT, "student01", "password123")
+    val teacherUser = com.example.model.SystemUserRecord("u_tch", "Prof. Jenkins", UserRole.TEACHER, "teacher01", "password123")
+    val studentProfile = com.example.model.StudentAnalyticsProfile.defaultStudentProfile // Class 10-A
+
+    // Emergency announcement for all school -> both receive
+    val emergencyAnn = com.example.model.SchoolAnnouncement(
+      id = "ann_1",
+      title = "Campus Closure Alert",
+      content = "School closed tomorrow due to heavy rain.",
+      priority = com.example.model.AnnouncementPriority.URGENT,
+      targetAudience = com.example.model.AnnouncementAudience.ALL_SCHOOL,
+      date = "Today",
+      timeAgo = "Just now",
+      authorName = "Principal",
+      authorRole = "Admin",
+      isEmergency = true
+    )
+    assertTrue(com.example.util.NotificationAudienceFilter.shouldReceiveAnnouncement(emergencyAnn, studentUser))
+    assertTrue(com.example.util.NotificationAudienceFilter.shouldReceiveAnnouncement(emergencyAnn, teacherUser))
+
+    // Faculty only announcement -> Student does not receive, Teacher does
+    val facultyAnn = emergencyAnn.copy(
+      id = "ann_2",
+      targetAudience = com.example.model.AnnouncementAudience.TEACHERS_FACULTY,
+      isEmergency = false
+    )
+    assertFalse(com.example.util.NotificationAudienceFilter.shouldReceiveAnnouncement(facultyAnn, studentUser))
+    assertTrue(com.example.util.NotificationAudienceFilter.shouldReceiveAnnouncement(facultyAnn, teacherUser))
+  }
 }
 

@@ -57,23 +57,12 @@ fun StudentIdCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
           ) {
-            Box(
-              modifier = Modifier
-                .size(34.dp)
-                .clip(CircleShape)
-                .background(Color.White)
-                .padding(2.dp),
-              contentAlignment = Alignment.Center
-            ) {
-              Image(
-                painter = painterResource(id = R.drawable.img_app_icon),
-                contentDescription = "School Logo",
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                  .fillMaxSize()
-                  .clip(CircleShape)
-              )
-            }
+            Image(
+              painter = painterResource(id = R.drawable.school_logo),
+              contentDescription = "School Logo",
+              contentScale = ContentScale.Fit,
+              modifier = Modifier.size(34.dp)
+            )
             Column {
               Text(
                 text = "ST. JOSEPH'S SCHOOL",
@@ -254,23 +243,12 @@ fun StaffIdCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
           ) {
-            Box(
-              modifier = Modifier
-                .size(34.dp)
-                .clip(CircleShape)
-                .background(Color.White)
-                .padding(2.dp),
-              contentAlignment = Alignment.Center
-            ) {
-              Image(
-                painter = painterResource(id = R.drawable.img_app_icon),
-                contentDescription = "School Logo",
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                  .fillMaxSize()
-                  .clip(CircleShape)
-              )
-            }
+            Image(
+              painter = painterResource(id = R.drawable.school_logo),
+              contentDescription = "School Logo",
+              contentScale = ContentScale.Fit,
+              modifier = Modifier.size(34.dp)
+            )
             Column {
               Text(
                 text = "ST. JOSEPH'S SCHOOL",

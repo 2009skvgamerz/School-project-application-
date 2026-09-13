@@ -73,7 +73,7 @@ class SchoolBackgroundSyncWorker(
 
       // 2. Check for New Calendar Events & Exams
       try {
-        val eventsSnapshot = firestore.collection("calendar_events")
+        val eventsSnapshot = firestore.collection("events")
           .limit(10)
           .get()
           .await()

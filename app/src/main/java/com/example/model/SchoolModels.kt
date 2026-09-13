@@ -488,5 +488,5 @@ data class CloudSyncInfo(
   val lastSyncedTime: String = "Just now",
   val pendingChangesCount: Int = 0,
   val isRealtimeConnected: Boolean = true,
-  val firestoreProject: String = "st-josephs-erp-prod"
+  val firestoreProject: String = "st-joseph-school-app"
 )

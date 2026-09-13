@@ -3,6 +3,7 @@ package com.example.ui.components
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -26,8 +27,10 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
@@ -36,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.example.R
 import com.example.model.User
 import com.example.model.UserRole
 import com.example.model.CloudSyncInfo
@@ -248,24 +252,12 @@ fun ResponsiveGoogleTopAppBar(
                   .clickable { isSearchActive = true }
                   .padding(vertical = 6.dp, horizontal = 6.dp)
               ) {
-                Box(
-                  modifier = Modifier
-                    .size(32.dp)
-                    .clip(CircleShape)
-                    .background(
-                      brush = Brush.linearGradient(
-                        listOf(SchoolNavyPrimary, Color(0xFF1E3A8A))
-                      )
-                    ),
-                  contentAlignment = Alignment.Center
-                ) {
-                  Icon(
-                    imageVector = Icons.Default.School,
-                    contentDescription = null,
-                    tint = SchoolGold,
-                    modifier = Modifier.size(18.dp)
-                  )
-                }
+                Image(
+                  painter = painterResource(id = R.drawable.school_logo),
+                  contentDescription = "School Logo",
+                  contentScale = ContentScale.Fit,
+                  modifier = Modifier.size(32.dp)
+                )
 
                 Column(verticalArrangement = Arrangement.Center) {
                   Text(
@@ -729,11 +721,11 @@ fun GoogleAccountProfileDialog(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
           ) {
-            Icon(
-              imageVector = Icons.Default.School,
-              contentDescription = null,
-              tint = MaterialTheme.colorScheme.primary,
-              modifier = Modifier.size(20.dp)
+            Image(
+              painter = painterResource(id = R.drawable.school_logo),
+              contentDescription = "School Logo",
+              contentScale = ContentScale.Fit,
+              modifier = Modifier.size(24.dp)
             )
             Text(
               text = "St. Joseph's Account",

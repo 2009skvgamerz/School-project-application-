@@ -16,7 +16,7 @@ class BootReceiver : BroadcastReceiver() {
   override fun onReceive(context: Context, intent: Intent?) {
     Log.d(TAG, "BootReceiver received action: ${intent?.action}. Starting background sync and continuous alert schedulers...")
     try {
-      com.example.util.SchoolBackgroundScheduler.startContinuousBackgroundAlerts(context)
+      com.example.util.SchoolBackgroundScheduler.cancelBackgroundAlerts(context)
       BackgroundSyncManager.schedulePeriodicBackgroundSync(context)
       BackgroundSyncManager.enqueueImmediateSyncOnConnectivity(context)
     } catch (e: Exception) {

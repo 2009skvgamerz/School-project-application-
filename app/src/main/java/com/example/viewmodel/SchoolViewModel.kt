@@ -61,6 +61,9 @@ class SchoolViewModel(
   private val _firestoreOperationMessage = MutableStateFlow<String?>(null)
   val firestoreOperationMessage: StateFlow<String?> = _firestoreOperationMessage.asStateFlow()
 
+  private val _cloudConnectionHealth = MutableStateFlow<com.example.data.firestore.FirestoreService.ConnectionHealth?>(null)
+  val cloudConnectionHealth: StateFlow<com.example.data.firestore.FirestoreService.ConnectionHealth?> = _cloudConnectionHealth.asStateFlow()
+
   private val _allFeedbackSubmissions = MutableStateFlow<List<com.example.data.firestore.FeedbackSubmissionItem>>(emptyList())
   val allFeedbackSubmissions: StateFlow<List<com.example.data.firestore.FeedbackSubmissionItem>> = _allFeedbackSubmissions.asStateFlow()
 
@@ -95,8 +98,21 @@ class SchoolViewModel(
   private val _networkState = MutableStateFlow<com.example.util.NetworkState>(com.example.util.NetworkState.Online("Connected"))
   val networkState: StateFlow<com.example.util.NetworkState> = _networkState.asStateFlow()
 
+  val isSyncPaused: StateFlow<Boolean> = _networkState.map { it.isSyncPaused }
+    .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
   private val _isSimulatedOffline = MutableStateFlow(false)
   val isSimulatedOffline: StateFlow<Boolean> = _isSimulatedOffline.asStateFlow()
+
+  // Diagnostics & Exponential Backoff Telemetry State
+  private val _diagnosticReport = MutableStateFlow<com.example.data.firestore.CloudDiagnosticsReport?>(null)
+  val diagnosticReport: StateFlow<com.example.data.firestore.CloudDiagnosticsReport?> = _diagnosticReport.asStateFlow()
+
+  private val _isDiagnosing = MutableStateFlow(false)
+  val isDiagnosing: StateFlow<Boolean> = _isDiagnosing.asStateFlow()
+
+  private val _lastRetryEvent = MutableStateFlow<com.example.data.firestore.FirestoreRetryEvent?>(null)
+  val lastRetryEvent: StateFlow<com.example.data.firestore.FirestoreRetryEvent?> = _lastRetryEvent.asStateFlow()
 
   // Real-time Cloud Sync Telemetry State
   private val _cloudSyncInfo = MutableStateFlow(
@@ -308,6 +324,7 @@ class SchoolViewModel(
       try {
         val fService = com.example.data.firestore.FirestoreService(context.applicationContext)
         firestoreService = fService
+        checkFirestoreConnectionHealth()
         _cloudSyncInfo.value = _cloudSyncInfo.value.copy(
           state = CloudSyncState.SYNCED,
           isRealtimeConnected = true,
@@ -315,6 +332,13 @@ class SchoolViewModel(
         )
         refreshLocalAndCloudFeedback()
         loadFirestoreCollectionDocs(_selectedFirestoreCollection.value)
+
+        // 0. Listen for transient failure retry events (Exponential Backoff engine)
+        viewModelScope.launch {
+          fService.lastRetryEvent.collect { retryEvent ->
+            _lastRetryEvent.value = retryEvent
+          }
+        }
 
         // 1. Listen for real-time cloud notices from Firestore with Audience Filtering
         viewModelScope.launch {
@@ -596,6 +620,18 @@ class SchoolViewModel(
       viewModelScope.launch {
         monitor.networkState.collect { state ->
           _networkState.value = state
+          if (state.isSyncPaused) {
+            _cloudSyncInfo.value = _cloudSyncInfo.value.copy(
+              state = CloudSyncState.OFFLINE,
+              isRealtimeConnected = false
+            )
+          } else {
+            _cloudSyncInfo.value = _cloudSyncInfo.value.copy(
+              state = CloudSyncState.SYNCED,
+              isRealtimeConnected = true,
+              lastSyncedTime = "Just now"
+            )
+          }
         }
       }
     }
@@ -1576,19 +1612,76 @@ class SchoolViewModel(
     loadFirestoreCollectionDocs(collectionName)
   }
 
+  fun checkFirestoreConnectionHealth() {
+    val fService = firestoreService ?: return
+    viewModelScope.launch {
+      val health = fService.checkConnectionHealth()
+      _cloudConnectionHealth.value = health
+    }
+  }
+
+  fun runCloudDiagnostics() {
+    val ctx = appContext ?: runCatching { com.example.SchoolApplication.instance }.getOrNull() ?: return
+    viewModelScope.launch {
+      _isDiagnosing.value = true
+      try {
+        val fService = firestoreService
+        val netOnline = _networkState.value.isConnected
+        val netType = when (val s = _networkState.value) {
+          is com.example.util.NetworkState.Online -> s.connectionType
+          is com.example.util.NetworkState.Offline -> "Offline (${s.reason})"
+          is com.example.util.NetworkState.Reconnecting -> "Reconnecting"
+        }
+        val report = fService?.runDiagnostics(
+          isNetworkOnline = netOnline,
+          networkType = netType,
+          isSyncPaused = _isSimulatedOffline.value || !netOnline
+        ) ?: com.example.data.firestore.FirestoreDiagnosticTester.runDiagnostics(
+          context = ctx,
+          firestore = null,
+          isNetworkOnline = netOnline,
+          networkType = netType,
+          isSyncPausedManually = _isSimulatedOffline.value
+        )
+        _diagnosticReport.value = report
+        // Also refresh the cloudConnectionHealth summary
+        checkFirestoreConnectionHealth()
+      } catch (e: Exception) {
+        android.util.Log.e("SchoolViewModel", "Diagnostics error: ${e.message}", e)
+      } finally {
+        _isDiagnosing.value = false
+      }
+    }
+  }
+
+  fun clearDiagnosticReport() {
+    _diagnosticReport.value = null
+  }
+
   fun loadFirestoreCollectionDocs(collectionName: String = _selectedFirestoreCollection.value) {
     val fService = firestoreService ?: return
     viewModelScope.launch {
       _isFirestoreLoading.value = true
+      _firestoreDocs.value = emptyList() // Clear immediately to prevent cross-collection bleed
       try {
         val res = fService.getCollectionDocuments(collectionName)
         res.fold(
           onSuccess = { docs ->
             _firestoreDocs.value = docs
-            _firestoreOperationMessage.value = "Loaded ${docs.size} docs from '$collectionName'"
+            _firestoreOperationMessage.value = "☁️ Live Cloud: Loaded ${docs.size} docs from Firestore '$collectionName'"
+            checkFirestoreConnectionHealth()
           },
-          onFailure = {
-            _firestoreOperationMessage.value = "Failed to load '$collectionName': ${it.message}"
+          onFailure = { error ->
+            // Seamless Device-Cloud Flow: fallback to local synchronized database records
+            val localDocs = fService.getLocalDocumentsForCollection(collectionName, repository)
+            _firestoreDocs.value = localDocs
+            val isPerm = error.message?.contains("PERMISSION_DENIED", ignoreCase = true) == true
+            if (isPerm) {
+              _firestoreOperationMessage.value = "💾 Local Synced Vault: Displaying ${localDocs.size} records for '$collectionName' (Cloud rules restricted: PERMISSION_DENIED)"
+            } else {
+              _firestoreOperationMessage.value = "💾 Local Synced Vault: Displaying ${localDocs.size} records for '$collectionName' (Offline / local fallback)"
+            }
+            checkFirestoreConnectionHealth()
           }
         )
       } finally {
@@ -1602,22 +1695,35 @@ class SchoolViewModel(
     viewModelScope.launch {
       _isFirestoreLoading.value = true
       try {
+        // 1. Remove from in-memory UI list immediately
+        _firestoreDocs.value = _firestoreDocs.value.filter { it.id != docId }
+
+        // 2. Remove from local device storage
+        when (collectionName) {
+          "notices" -> repository.deleteNotice(docId)
+          "homework" -> repository.deleteHomework(docId)
+          "announcements" -> repository.deleteAnnouncement(docId)
+          "events" -> repository.deleteCalendarEvent(docId)
+          "users" -> repository.deleteSystemUser(docId)
+          "feedback" -> {
+            fService.deleteFeedbackItem(docId)
+            refreshLocalAndCloudFeedback()
+          }
+        }
+
+        // 3. Attempt cloud deletion
         val res = fService.deleteFirestoreDocument(collectionName, docId)
         res.fold(
           onSuccess = {
-            _firestoreDocs.value = _firestoreDocs.value.filter { it.id != docId }
-            _firestoreOperationMessage.value = "Successfully deleted '$docId' from '$collectionName'!"
-            when (collectionName) {
-              "notices" -> repository.deleteNotice(docId)
-              "homework" -> repository.deleteHomework(docId)
-              "announcements" -> repository.deleteAnnouncement(docId)
-              "events" -> repository.deleteCalendarEvent(docId)
-              "users" -> repository.deleteSystemUser(docId)
-              "feedback" -> refreshLocalAndCloudFeedback()
-            }
+            _firestoreOperationMessage.value = "Successfully deleted '$docId' from '$collectionName' across Cloud & Device!"
           },
-          onFailure = {
-            _firestoreOperationMessage.value = "Failed to delete: ${it.message}"
+          onFailure = { ex ->
+            val isPerm = ex.message?.contains("PERMISSION_DENIED", ignoreCase = true) == true
+            if (isPerm) {
+              _firestoreOperationMessage.value = "Deleted '$docId' from Device Vault (Cloud delete restricted by rules)"
+            } else {
+              _firestoreOperationMessage.value = "Deleted '$docId' from Device Vault (Cloud sync note: ${ex.message})"
+            }
           }
         )
       } finally {
@@ -1631,17 +1737,41 @@ class SchoolViewModel(
     viewModelScope.launch {
       _isFirestoreLoading.value = true
       try {
+        // 1. Purge from local device storage
+        var localCount = 0
+        when (collectionName) {
+          "notices" -> {
+            localCount = repository.notices.value.size
+            repository.notices.value.forEach { repository.deleteNotice(it.id) }
+          }
+          "homework" -> {
+            localCount = repository.homeworks.value.size
+            repository.homeworks.value.forEach { repository.deleteHomework(it.id) }
+          }
+          "announcements" -> {
+            localCount = repository.announcements.value.size
+            repository.announcements.value.forEach { repository.deleteAnnouncement(it.id) }
+          }
+          "events" -> {
+            localCount = repository.calendarEvents.value.size
+            repository.calendarEvents.value.forEach { repository.deleteCalendarEvent(it.id) }
+          }
+          "feedback" -> {
+            localCount = fService.getLocalFeedbackList().size
+            fService.clearAllFeedback()
+            refreshLocalAndCloudFeedback()
+          }
+        }
+        _firestoreDocs.value = emptyList()
+
+        // 2. Attempt cloud purge
         val res = fService.purgeCollection(collectionName)
         res.fold(
           onSuccess = { count ->
-            _firestoreDocs.value = emptyList()
-            _firestoreOperationMessage.value = "Purged all $count documents from '$collectionName' in Firestore!"
-            if (collectionName == "feedback") {
-              refreshLocalAndCloudFeedback()
-            }
+            _firestoreOperationMessage.value = "Purged all $count documents from '$collectionName' across Cloud & Device!"
           },
-          onFailure = {
-            _firestoreOperationMessage.value = "Failed to purge collection '$collectionName': ${it.message}"
+          onFailure = { ex ->
+            _firestoreOperationMessage.value = "Purged $localCount documents from '$collectionName' on Device (Cloud purge restricted by rules)"
           }
         )
       } finally {
@@ -1655,16 +1785,24 @@ class SchoolViewModel(
     viewModelScope.launch {
       _isFirestoreLoading.value = true
       try {
+        // Purge local repository items
+        repository.notices.value.forEach { repository.deleteNotice(it.id) }
+        repository.homeworks.value.forEach { repository.deleteHomework(it.id) }
+        repository.announcements.value.forEach { repository.deleteAnnouncement(it.id) }
+        repository.calendarEvents.value.forEach { repository.deleteCalendarEvent(it.id) }
+        fService.clearAllFeedback()
+        _firestoreDocs.value = emptyList()
+
         val res = fService.wipeAllFirestoreData()
         res.fold(
           onSuccess = { results ->
-            _firestoreDocs.value = emptyList()
             val total = results.values.sum()
-            _firestoreOperationMessage.value = "☢️ NUCLEAR WIPE COMPLETE: Deleted $total documents across all collections in Firestore!"
+            _firestoreOperationMessage.value = "☢️ NUCLEAR WIPE COMPLETE: Cleared device storage and purged $total documents across Firestore!"
             refreshLocalAndCloudFeedback()
           },
-          onFailure = {
-            _firestoreOperationMessage.value = "Wipe failed: ${it.message}"
+          onFailure = { ex ->
+            _firestoreOperationMessage.value = "Cleared all local device data (Cloud wipe restricted by rules: ${ex.message})"
+            refreshLocalAndCloudFeedback()
           }
         )
       } finally {
@@ -1685,8 +1823,14 @@ class SchoolViewModel(
         val attendance = repository.attendanceRecords.value
         val res = fService.pushSeedDataToFirestore(notices, homeworks, announcements, events, attendance)
         res.fold(
-          onSuccess = { count ->
-            _firestoreOperationMessage.value = "Pushed and synced $count records into Cloud Firestore!"
+          onSuccess = { syncResult ->
+            if (syncResult.cloudSuccessCount > 0) {
+              _firestoreOperationMessage.value = "Pushed and synced ${syncResult.cloudSuccessCount}/${syncResult.totalItems} records into Cloud Firestore!"
+            } else if (syncResult.isPermissionRestricted) {
+              _firestoreOperationMessage.value = "All ${syncResult.totalItems} records preserved on Device. Cloud Firestore rejected writes (PERMISSION_DENIED). Check Firebase Console rules to enable public cloud sync."
+            } else {
+              _firestoreOperationMessage.value = "Synchronized ${syncResult.totalItems} records on device."
+            }
             loadFirestoreCollectionDocs(_selectedFirestoreCollection.value)
           },
           onFailure = {
