@@ -231,9 +231,12 @@ fun BaseDashboardScaffold(
                       text = tab.label,
                       style = MaterialTheme.typography.labelSmall.copy(
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                        letterSpacing = 0.2.sp,
-                        fontSize = 11.sp
-                      )
+                        letterSpacing = if (visibleBottomTabs.size > 4) (-0.3).sp else 0.sp,
+                        fontSize = if (visibleBottomTabs.size > 5) 9.5.sp else 10.5.sp
+                      ),
+                      maxLines = 1,
+                      softWrap = false,
+                      overflow = TextOverflow.Ellipsis
                     )
                   },
                   selected = isSelected,

@@ -421,19 +421,44 @@ fun BusTrackingScreen(
                   )
                 }
                 BusTrackingViewMode.EMBED_MAP -> {
-                  val embedUrl = "https://maps.google.com/maps?q=${activeRoute.currentLatitude},${activeRoute.currentLongitude}&z=15&output=embed"
+                  val embedHtml = """
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+                      <style>
+                        * { margin: 0; padding: 0; box-sizing: border-box; }
+                        html, body { width: 100%; height: 100%; background: #0F172A; overflow: hidden; }
+                        iframe { width: 100%; height: 100%; border: 0; display: block; }
+                      </style>
+                    </head>
+                    <body>
+                      <iframe 
+                        src="https://maps.google.com/maps?q=${activeRoute.currentLatitude},${activeRoute.currentLongitude}&z=15&output=embed" 
+                        allowfullscreen
+                        loading="lazy">
+                      </iframe>
+                    </body>
+                    </html>
+                  """.trimIndent()
+
                   androidx.compose.ui.viewinterop.AndroidView(
                     factory = { ctx ->
                       android.webkit.WebView(ctx).apply {
-                        settings.javaScriptEnabled = true
-                        settings.domStorageEnabled = true
-                        settings.mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                        settings.apply {
+                          javaScriptEnabled = true
+                          domStorageEnabled = true
+                          databaseEnabled = true
+                          mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                          loadWithOverviewMode = true
+                          useWideViewPort = true
+                        }
                         webViewClient = android.webkit.WebViewClient()
-                        loadUrl(embedUrl)
+                        loadDataWithBaseURL("https://www.google.com", embedHtml, "text/html", "UTF-8", null)
                       }
                     },
                     update = { view ->
-                      view.loadUrl(embedUrl)
+                      view.loadDataWithBaseURL("https://www.google.com", embedHtml, "text/html", "UTF-8", null)
                     },
                     modifier = Modifier.fillMaxSize().testTag("gmaps_embed_webview")
                   )

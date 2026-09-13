@@ -221,7 +221,6 @@ fun MainSchoolApp(
       NavigationTab.TIMETABLE,
       NavigationTab.HOMEWORK,
       NavigationTab.ATTENDANCE,
-      NavigationTab.NOTICES,
       NavigationTab.PROFILE
     )
     UserRole.TEACHER -> listOf(
@@ -229,7 +228,6 @@ fun MainSchoolApp(
       NavigationTab.ATTENDANCE,
       NavigationTab.HOMEWORK,
       NavigationTab.CLASSES,
-      NavigationTab.NOTICES,
       NavigationTab.PROFILE
     )
     UserRole.STAFF -> listOf(
@@ -251,7 +249,6 @@ fun MainSchoolApp(
       NavigationTab.MANAGEMENT,
       NavigationTab.CLASSES,
       NavigationTab.ATTENDANCE,
-      NavigationTab.NOTICES,
       NavigationTab.PROFILE
     )
     UserRole.DEVELOPER -> listOf(
@@ -259,7 +256,6 @@ fun MainSchoolApp(
       NavigationTab.MANAGEMENT,
       NavigationTab.ATTENDANCE,
       NavigationTab.HOMEWORK,
-      NavigationTab.NOTICES,
       NavigationTab.PROFILE
     )
   }

@@ -166,7 +166,7 @@ fun InAppBusMapView(
             },
             "AndroidApp"
           )
-          loadDataWithBaseURL("https://maps.google.com", mapHtml, "text/html", "UTF-8", null)
+          loadDataWithBaseURL("https://openstreetmap.org", mapHtml, "text/html", "UTF-8", null)
           webViewRef = this
         }
       },
@@ -693,20 +693,20 @@ private fun buildMapHtml(
     var schoolLat = $schoolLat;
     var schoolLng = $schoolLng;
 
-    // Tile layers (Google Maps Tile Engine)
-    var streetLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
-      maxZoom: 20,
-      attribution: '&copy; Google Maps'
+    // Tile layers (High Reliability Cartography Engines)
+    var streetLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
     });
 
-    var satelliteLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-      maxZoom: 20,
-      attribution: '&copy; Google Maps'
+    var satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 19,
+      attribution: '&copy; Esri World Imagery'
     });
 
-    var darkLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
-      maxZoom: 20,
-      attribution: '&copy; Google Maps'
+    var darkLayer = L.tileLayer('https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; CartoDB Dark'
     });
 
     var map = L.map('map', {

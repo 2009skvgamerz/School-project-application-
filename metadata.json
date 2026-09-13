@@ -1,6 +1,6 @@
 {
   "name": "St. Joseph's School",
-  "description": "Comprehensive native Android ERP for St. Joseph's School with v3.0.0 Material You UI, Real-Time Cloud Sync, and Offline-First Room DB.",
+  "description": "Comprehensive native Android institutional OS for St. Joseph's School with v3.5.0 Material 3 Expressive UI, Real-Time Cloud Sync, and Offline-First Room DB.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
