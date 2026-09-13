@@ -36,11 +36,23 @@ fun ProfileScreen(
   onSignOut: (() -> Unit)? = null
 ) {
   var showFeedbackDialog by remember { mutableStateOf(false) }
+  var showIdCardDialog by remember { mutableStateOf(false) }
 
   if (showFeedbackDialog) {
     FeedbackSubmissionDialog(
       currentUser = currentUser,
       onDismiss = { showFeedbackDialog = false }
+    )
+  }
+
+  if (showIdCardDialog) {
+    com.example.ui.components.DigitalIdCardDialog(
+      currentUser = currentUser,
+      studentProfile = studentProfile,
+      teacherProfile = teacherProfile,
+      staffProfile = staffProfile,
+      driverProfile = driverProfile,
+      onDismiss = { showIdCardDialog = false }
     )
   }
 
@@ -120,6 +132,26 @@ fun ProfileScreen(
                 color = if (currentUser.role == UserRole.DEVELOPER) Color(0xFF059669) else SchoolNavyPrimary
               )
             }
+          }
+
+          Button(
+            onClick = { showIdCardDialog = true },
+            modifier = Modifier
+              .fillMaxWidth()
+              .testTag("profile_view_digital_id_btn"),
+            shape = RoundedCornerShape(10.dp),
+            colors = ButtonDefaults.buttonColors(
+              containerColor = SchoolNavyPrimary,
+              contentColor = Color.White
+            )
+          ) {
+            Icon(
+              imageVector = Icons.Default.Badge,
+              contentDescription = null,
+              modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("View Official Digital ID Card", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
           }
 
           if (onNavigateToSettings != null) {

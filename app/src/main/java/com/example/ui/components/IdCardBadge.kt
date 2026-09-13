@@ -372,3 +372,146 @@ fun StaffIdCard(
     }
   }
 }
+
+@Composable
+fun DigitalIdCardDialog(
+  currentUser: User,
+  studentProfile: StudentProfile?,
+  teacherProfile: TeacherProfile?,
+  staffProfile: StaffProfile?,
+  driverProfile: DriverProfile?,
+  onDismiss: () -> Unit
+) {
+  androidx.compose.ui.window.Dialog(
+    onDismissRequest = onDismiss,
+    properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+  ) {
+    Surface(
+      modifier = Modifier
+        .fillMaxWidth(0.94f)
+        .wrapContentHeight()
+        .padding(16.dp),
+      shape = RoundedCornerShape(24.dp),
+      color = MaterialTheme.colorScheme.surface,
+      tonalElevation = 6.dp
+    ) {
+      Column(
+        modifier = Modifier
+          .fillMaxWidth()
+          .padding(20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+      ) {
+        Row(
+          modifier = Modifier.fillMaxWidth(),
+          horizontalArrangement = Arrangement.SpaceBetween,
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+          ) {
+            Icon(
+              imageVector = Icons.Default.Badge,
+              contentDescription = null,
+              tint = SchoolNavyPrimary,
+              modifier = Modifier.size(24.dp)
+            )
+            Text(
+              text = "Official Digital ID",
+              style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+              color = MaterialTheme.colorScheme.onSurface
+            )
+          }
+          IconButton(
+            onClick = onDismiss,
+            modifier = Modifier.size(32.dp)
+          ) {
+            Icon(
+              imageVector = Icons.Default.Close,
+              contentDescription = "Close",
+              tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+          }
+        }
+
+        when (currentUser.role) {
+          UserRole.STUDENT -> {
+            val sProfile = studentProfile ?: StudentProfile(
+              user = currentUser,
+              rollNo = 1,
+              grade = "12",
+              section = "A",
+              academicYear = "2026-2027",
+              admissionNo = "SJ-2026-0101",
+              houseName = "St. Francis House",
+              parentName = "Mr. S. Kumar",
+              parentPhone = "+91 98765 43210",
+              emergencyContact = "+91 98765 43211",
+              bloodGroup = "O+ve",
+              attendancePercentage = 94.5
+            )
+            StudentIdCard(profile = sProfile)
+          }
+          UserRole.TEACHER -> {
+            StaffIdCard(
+              user = currentUser,
+              employeeId = teacherProfile?.employeeId ?: "EMP-SJ-402",
+              department = teacherProfile?.department ?: "Science & Physics",
+              designation = "Senior Faculty & Homeroom Head",
+              role = currentUser.role
+            )
+          }
+          UserRole.STAFF -> {
+            StaffIdCard(
+              user = currentUser,
+              employeeId = staffProfile?.staffId ?: "STF-SJ-108",
+              department = staffProfile?.department ?: "Campus Facilities & Safety",
+              designation = "Operations Supervisor",
+              role = currentUser.role
+            )
+          }
+          UserRole.DRIVER -> {
+            StaffIdCard(
+              user = currentUser,
+              employeeId = driverProfile?.driverId ?: "DRV-SJ-012",
+              department = "Transport & Logistics",
+              designation = "Senior Fleet Pilot (Bus #${driverProfile?.assignedBusNo ?: "12"})",
+              role = currentUser.role
+            )
+          }
+          UserRole.ADMIN -> {
+            StaffIdCard(
+              user = currentUser,
+              employeeId = "ADM-SJ-001",
+              department = "Executive Management",
+              designation = "Principal & Administrative Head",
+              role = currentUser.role
+            )
+          }
+          UserRole.DEVELOPER -> {
+            StaffIdCard(
+              user = currentUser,
+              employeeId = "DEV-ROOT-007",
+              department = "IT & Systems Architecture",
+              designation = "Lead Platform Engineer",
+              role = currentUser.role
+            )
+          }
+        }
+
+        Button(
+          onClick = onDismiss,
+          shape = RoundedCornerShape(12.dp),
+          colors = ButtonDefaults.buttonColors(containerColor = SchoolNavyPrimary),
+          modifier = Modifier.fillMaxWidth()
+        ) {
+          Icon(imageVector = Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
+          Spacer(modifier = Modifier.width(8.dp))
+          Text("Done", fontWeight = FontWeight.Bold)
+        }
+      }
+    }
+  }
+}
+
