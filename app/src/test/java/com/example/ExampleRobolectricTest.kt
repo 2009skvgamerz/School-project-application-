@@ -452,8 +452,8 @@ class ExampleRobolectricTest {
 
   @Test
   fun `verify NotificationAudienceFilter correctly filters roles and classrooms`() {
-    val studentUser = com.example.model.SystemUserRecord("u_std", "Keerthivasan", UserRole.STUDENT, "student01", "password123")
-    val teacherUser = com.example.model.SystemUserRecord("u_tch", "Prof. Jenkins", UserRole.TEACHER, "teacher01", "password123")
+    val studentUser = com.example.model.User("u_std", "student01", "Keerthivasan", "keerthi@school.edu", UserRole.STUDENT)
+    val teacherUser = com.example.model.User("u_tch", "teacher01", "Prof. Jenkins", "jenkins@school.edu", UserRole.TEACHER)
     val studentProfile = com.example.model.StudentAnalyticsProfile.defaultStudentProfile // Class 10-A
 
     // Emergency announcement for all school -> both receive

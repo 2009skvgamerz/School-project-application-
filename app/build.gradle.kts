@@ -117,7 +117,10 @@ dependencies {
   implementation(libs.logging.interceptor)
   implementation(libs.moshi.kotlin)
   implementation(libs.okhttp)
+  // OpenStreetMap (osmdroid) - 100% free, no API key or billing required
+  implementation(libs.osmdroid.android)
   // implementation(libs.play.services.location)
+  implementation(libs.play.services.maps)
   implementation(libs.retrofit)
   testImplementation(libs.androidx.compose.ui.test.junit4)
   testImplementation(libs.androidx.core)

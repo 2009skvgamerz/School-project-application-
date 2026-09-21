@@ -73,14 +73,17 @@ Every user profile is greeted by a custom-crafted interface designed strictly fo
 - **Instantaneous Cold-Start**: Zero network lag on startup. User dashboards, class schedules, and identity cards hydrate in milliseconds from the local Room database (`AppDatabase`).
 - **Resilient Background Synchronization**: Integrated `WorkManager` and `SchoolBackgroundSyncWorker` automatically queue offline transactions and synchronize seamlessly once network connectivity is restored.
 
-### 2. 🚍 Real-Time In-App Fleet & Bus Radar
-- **Live Cartography**: Embedded OpenStreetMap & Esri satellite mapping engine with custom route polylines and smooth bus pin animation.
-- **Proximity Telemetry**: Live speed calculation, next-stop ETA countdowns, and student boarding checklists for morning and evening pickup routes across Hosur.
-- **Instant Google Navigation Launch**: One-touch intent launch into native Google Maps turn-by-turn driving mode for drivers.
+### 2. 🚍 Real-Time In-App Fleet & Campus Navigation (OpenStreetMap)
+- **100% Free OpenStreetMap Engine (`osmdroid`)**: Powered by native OpenStreetMap vector/raster tile streaming with zero dependency on Google Cloud billing or paid API keys.
+- **Dual-Mode Experience**: Instant one-tap switcher between **Campus Building Guide** (Academic Blocks, Labs, Library, Sports Arena, Bus Bays) and **Live Student Bus Radar**.
+- **Interactive Layers**: Toggle on-the-fly between standard OSM (Mapnik) and topographic relief (OpenTopo) terrain.
+- **Proximity Telemetry**: Live speed calculation, next-stop ETA countdowns, student boarding checklists, and one-tap external Google Maps navigation intent.
 
-### 3. 🔔 Continuous Autonomous Alert Engine
-- **Independent System Alarms**: Configured with Android `AlarmManager` (`setExactAndAllowWhileIdle`) to ensure critical updates (bus proximity, homework deadlines, emergency notices) fire precisely even when the device is in deep Doze mode or the app process is terminated.
-- **Firebase Cloud Messaging (FCM)**: Native `SchoolFirebaseMessagingService` with multi-channel subscription topics (`#all_school`, `#announcements`, `#exams`, `#sports`).
+### 3. 🔔 Comprehensive Multi-Category Notification Center
+- **Categorized Live Feeds**: Instant filters for Academics, Transport, Examinations, Campus Events, and Emergency circulars with unread badge counters.
+- **Permanent Offline Room Archive**: Offline SQLite logging of historical alerts with instant search and date indexing.
+- **FCM Push Manager**: Live Firebase Cloud Messaging token inspector, subscription topic management (`all_school`, `announcements`, `events`, `exams`), and broadcast simulator.
+- **Independent System Alarms**: Configured with Android `AlarmManager` (`setExactAndAllowWhileIdle`) to ensure critical alerts fire reliably even during deep Doze mode.
 
 ### 4. 🪪 High-Security Digital Smart Badges
 - **Cryptographic Barcode & QR**: High-contrast, scannable digital student and faculty ID cards embedded with student roll numbers, blood group, emergency contacts, and institutional house insignias.
@@ -120,7 +123,7 @@ Every user profile is greeted by a custom-crafted interface designed strictly fo
 | **Language** | Kotlin 2.0 | Modern coroutines, Flow streams, sealed state hierarchies |
 | **UI Kit** | Jetpack Compose (M3) | Declarative UI, dynamic tonal color theming, edge-to-edge system insets |
 | **Local Storage** | Android Room DB | Local persistence, schema versioning, and zero-latency caching |
-| **Fleet Radar** | Leaflet Cartography & WebKit | Hardware-accelerated interactive maps with Street, Satellite, & Dark layers |
+| **Fleet Radar & Maps** | OpenStreetMap (`osmdroid`) | Hardware-accelerated native tile streaming, zero billing/API key required |
 | **Push Engine** | Firebase Cloud Messaging (FCM) | Priority heads-up push notifications with deep-link navigation |
 | **Background Sync** | Android WorkManager & AlarmManager | Exact alarm scheduling, boot recovery, and background network sync |
 

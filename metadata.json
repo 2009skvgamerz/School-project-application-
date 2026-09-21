@@ -1,6 +1,6 @@
 {
   "name": "St. Joseph's School",
-  "description": "Comprehensive native Android institutional OS for St. Joseph's School with v3.5.0 Material 3 Expressive UI, Real-Time Cloud Sync, and Offline-First Room DB.",
+  "description": "Comprehensive native Android institutional OS for St. Joseph's School (v3.5.0 Production) featuring OpenStreetMap (osmdroid) GPS bus tracking, offline-first Room DB, and Material 3 Expressive UI.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

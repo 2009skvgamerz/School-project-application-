@@ -61,6 +61,7 @@ fun SettingsScreen(
   var showSyncSuccessBanner by remember { mutableStateOf(false) }
   var showResetConfirmDialog by remember { mutableStateOf(false) }
   var showFeedbackDialog by remember { mutableStateOf(false) }
+  var showWhatsNewDialog by remember { mutableStateOf(false) }
 
   val isSyncPaused by viewModel?.isSyncPaused?.collectAsState() ?: remember { mutableStateOf(networkState.isSyncPaused) }
   val diagnosticReport by viewModel?.diagnosticReport?.collectAsState() ?: remember { mutableStateOf(null) }
@@ -74,10 +75,98 @@ fun SettingsScreen(
     )
   }
 
+  if (showWhatsNewDialog) {
+    AlertDialog(
+      onDismissRequest = { showWhatsNewDialog = false },
+      icon = {
+        Icon(
+          imageVector = Icons.Default.RocketLaunch,
+          contentDescription = null,
+          tint = SchoolNavyPrimary,
+          modifier = Modifier.size(32.dp)
+        )
+      },
+      title = {
+        Text(
+          text = "What's New in v3.5.0",
+          style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+          color = SchoolNavyDark
+        )
+      },
+      text = {
+        Column(
+          modifier = Modifier.fillMaxWidth(),
+          verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+          Surface(
+            shape = RoundedCornerShape(10.dp),
+            color = SchoolNavyPrimary.copy(alpha = 0.08f),
+            modifier = Modifier.fillMaxWidth()
+          ) {
+            Row(
+              modifier = Modifier.padding(10.dp),
+              verticalAlignment = Alignment.CenterVertically,
+              horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+              Icon(Icons.Default.Verified, contentDescription = null, tint = SchoolNavyPrimary, modifier = Modifier.size(18.dp))
+              Text(
+                text = "Official Enterprise Production Release",
+                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                color = SchoolNavyPrimary
+              )
+            }
+          }
+
+          Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+              Icon(Icons.Default.Public, contentDescription = null, tint = Color(0xFF10B981), modifier = Modifier.size(18.dp))
+              Column {
+                Text("OpenStreetMap (osmdroid) Engine", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+                Text("100% Free, zero billing/Google API key requirement, crisp map rendering with Mapnik & OpenTopo layers.", style = MaterialTheme.typography.bodySmall, color = Color(0xFF64748B))
+              }
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+              Icon(Icons.Default.DirectionsBus, contentDescription = null, tint = SchoolGold, modifier = Modifier.size(18.dp))
+              Column {
+                Text("Dual-Mode Campus Guide & Bus GPS", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+                Text("Instant switcher between Campus Points of Interest and Real-Time Student Transport Tracking.", style = MaterialTheme.typography.bodySmall, color = Color(0xFF64748B))
+              }
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+              Icon(Icons.Default.NotificationsActive, contentDescription = null, tint = SchoolNavyPrimary, modifier = Modifier.size(18.dp))
+              Column {
+                Text("Advanced Notification Center", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+                Text("Categorized live feed, persistent offline Room history, FCM token management, and priority channels.", style = MaterialTheme.typography.bodySmall, color = Color(0xFF64748B))
+              }
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+              Icon(Icons.Default.CloudDone, contentDescription = null, tint = Color(0xFF0284C7), modifier = Modifier.size(18.dp))
+              Column {
+                Text("WorkManager Background Sync", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+                Text("Automatic offline-first synchronization with immediate heads-up alerts when connectivity resumes.", style = MaterialTheme.typography.bodySmall, color = Color(0xFF64748B))
+              }
+            }
+          }
+        }
+      },
+      confirmButton = {
+        Button(
+          onClick = { showWhatsNewDialog = false },
+          colors = ButtonDefaults.buttonColors(containerColor = SchoolNavyPrimary)
+        ) {
+          Text("Got It")
+        }
+      }
+    )
+  }
+
   // App Meta constants
   val appVersion = com.example.BuildConfig.VERSION_NAME
-  val buildNumber = "2026.08.30.1"
-  val releaseChannel = "Enterprise Production"
+  val buildNumber = "2026.09.20.1"
+  val releaseChannel = "Enterprise Production (v3.5.0 Final)"
   val composeVersion = "Jetpack Compose M3 (Material 3)"
   val databaseEngine = "Room SQLite Database v1"
 
@@ -616,9 +705,21 @@ fun SettingsScreen(
           HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
           InfoRow(label = "UI Architecture", value = composeVersion)
           HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+          InfoRow(label = "Map & GPS Engine", value = "OpenStreetMap (osmdroid) - 100% Free")
+          HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
           InfoRow(label = "Persistence Engine", value = databaseEngine)
           HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
           InfoRow(label = "Academic Session", value = "2026 - 2027 (Term 1)")
+          Spacer(modifier = Modifier.height(4.dp))
+          OutlinedButton(
+            onClick = { showWhatsNewDialog = true },
+            modifier = Modifier.fillMaxWidth().testTag("whats_new_v350_btn"),
+            shape = RoundedCornerShape(10.dp)
+          ) {
+            Icon(Icons.Default.RocketLaunch, contentDescription = null, tint = SchoolNavyPrimary, modifier = Modifier.size(18.dp))
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("What's New in v3.5.0 Release Notes", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold))
+          }
         }
       }
     }

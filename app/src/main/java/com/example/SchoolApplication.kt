@@ -13,12 +13,26 @@ import com.example.service.SchoolFirebaseMessagingService
 import com.example.util.BackgroundSyncManager
 import com.example.util.SchoolBackgroundScheduler
 import com.example.util.SystemNotificationHelper
+import org.osmdroid.config.Configuration
 
 class SchoolApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
         instance = this
+
+        // Initialize OpenStreetMap (osmdroid) configuration
+        try {
+            val sharedPrefs = getSharedPreferences("osmdroid_prefs", android.content.Context.MODE_PRIVATE)
+            Configuration.getInstance().load(this, sharedPrefs)
+            Configuration.getInstance().userAgentValue = packageName
+        } catch (e: Exception) {
+            // Fallback user agent
+            try {
+                Configuration.getInstance().userAgentValue = "StJosephSchoolHosur/1.0"
+            } catch (_: Exception) {}
+        }
+
         SystemNotificationHelper.createNotificationChannels(this)
         initFirebase()
         BackgroundSyncManager.initialize(this)
@@ -30,6 +44,13 @@ class SchoolApplication : Application() {
             FirebaseApp.initializeApp(this)
 
             if (FirebaseApp.getApps(this).isNotEmpty()) {
+                // Prevent FirebaseMessaging from automatic background registration that causes hard failure on emulators
+                try {
+                    com.google.firebase.messaging.FirebaseMessaging.getInstance().isAutoInitEnabled = false
+                } catch (e: Exception) {
+                    Log.w(TAG, "Notice setting FCM auto-init: ${e.message}")
+                }
+
                 // Enable Firestore offline persistence for smooth local caching & background sync
                 try {
                     FirebaseFirestore.getInstance().apply {
@@ -42,11 +63,8 @@ class SchoolApplication : Application() {
                     Log.w(TAG, "Firestore settings configuration notice: ${e.message}")
                 }
 
-                // Subscribe to Firebase Cloud Messaging (FCM) push notification topics
-                SchoolFirebaseMessagingService.subscribeToDefaultTopics()
-                SchoolFirebaseMessagingService.fetchFcmToken { token ->
-                    Log.d(TAG, "Initial FCM Device Token: $token")
-                }
+                // Initialize default push notification topics locally
+                SchoolFirebaseMessagingService.initDefaultTopicsLocally(this)
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error initializing Firebase / AppCheck / FCM: ${e.message}", e)

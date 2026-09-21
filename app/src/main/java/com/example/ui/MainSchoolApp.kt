@@ -570,7 +570,8 @@ fun MainSchoolApp(
             studentProfile = studentProfile,
             userRole = currentUser.role,
             onSelectRoute = { viewModel.selectBusRoute(it) },
-            onSimulateMovement = { viewModel.simulateBusMovement(it) }
+            onSimulateMovement = { viewModel.simulateBusMovement(it) },
+            onNavigateBack = { currentTab = NavigationTab.DASHBOARD }
           )
         }
 
@@ -1158,6 +1159,12 @@ fun MainSchoolApp(
       subscribedTopics = fcmSubscribedTopics,
       onToggleTopic = { topic ->
         viewModel.toggleTopicSubscription(topic)
+      },
+      onRefreshFcmToken = {
+        viewModel.refreshFcmToken()
+      },
+      onTestPushNotification = { type, title, message, targetRoute, isUrgent ->
+        viewModel.triggerTestPushNotification(type, title, message, targetRoute, isUrgent)
       },
       onDismiss = { showNotificationCenterSheet = false },
       onMarkAsRead = { notifId ->

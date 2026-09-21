@@ -1901,7 +1901,7 @@ class SchoolViewModel(
     type: NotificationType,
     title: String,
     message: String,
-    targetRoute: String,
+    targetRoute: String? = null,
     isUrgent: Boolean = false
   ) {
     appContext?.let { ctx ->

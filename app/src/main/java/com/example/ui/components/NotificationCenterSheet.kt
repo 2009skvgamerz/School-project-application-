@@ -39,7 +39,8 @@ import com.example.util.SystemNotificationHelper
 enum class NotificationSheetViewMode(val label: String, val icon: ImageVector) {
   LIVE_FEED("Live Feed", Icons.Default.NotificationsActive),
   OFFLINE_ROOM_DB("Room History", Icons.Default.Storage),
-  CHANNELS_PREFS("Channel Prefs", Icons.Default.Tune)
+  CHANNELS_PREFS("Channel Prefs", Icons.Default.Tune),
+  FCM_SETTINGS("FCM & Push", Icons.Default.CloudQueue)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -55,6 +56,8 @@ fun NotificationCenterSheet(
   fcmDeviceToken: String? = null,
   subscribedTopics: Set<String> = setOf("all_school", "announcements", "events", "exams"),
   onToggleTopic: (String) -> Unit = {},
+  onRefreshFcmToken: () -> Unit = {},
+  onTestPushNotification: (type: NotificationType, title: String, message: String, targetRoute: String?, isUrgent: Boolean) -> Unit = { _, _, _, _, _ -> },
   modifier: Modifier = Modifier
 ) {
   val context = LocalContext.current
@@ -400,6 +403,17 @@ fun NotificationCenterSheet(
             onOpenAllSettings = {
               SystemNotificationHelper.openNotificationSettings(context)
             }
+          )
+        }
+
+        NotificationSheetViewMode.FCM_SETTINGS -> {
+          // Firebase Cloud Messaging (FCM) & Push Dispatcher View
+          FcmPushSettingsCenterView(
+            fcmDeviceToken = fcmDeviceToken,
+            subscribedTopics = subscribedTopics,
+            onToggleTopic = onToggleTopic,
+            onRefreshFcmToken = onRefreshFcmToken,
+            onTestPushNotification = onTestPushNotification
           )
         }
       }
@@ -967,3 +981,270 @@ data class NotificationChannelInfo(
   val icon: ImageVector,
   val color: Color
 )
+
+@Composable
+fun FcmPushSettingsCenterView(
+  fcmDeviceToken: String?,
+  subscribedTopics: Set<String>,
+  onToggleTopic: (String) -> Unit,
+  onRefreshFcmToken: () -> Unit,
+  onTestPushNotification: (type: NotificationType, title: String, message: String, targetRoute: String?, isUrgent: Boolean) -> Unit
+) {
+  val context = LocalContext.current
+  var isTokenVisible by remember { mutableStateOf(false) }
+
+  LazyColumn(
+    modifier = Modifier.fillMaxWidth(),
+    verticalArrangement = Arrangement.spacedBy(14.dp)
+  ) {
+    // 1. Cloud Architecture Status Card
+    item {
+      Surface(
+        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
+        shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)),
+        modifier = Modifier.fillMaxWidth()
+      ) {
+        Row(
+          modifier = Modifier.padding(12.dp),
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+          Box(
+            modifier = Modifier
+              .size(40.dp)
+              .clip(CircleShape)
+              .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+            contentAlignment = Alignment.Center
+          ) {
+            Icon(Icons.Default.CloudQueue, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
+          }
+          Column(modifier = Modifier.weight(1f)) {
+            Text(
+              text = "Firebase Cloud Messaging (FCM)",
+              style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+              color = MaterialTheme.colorScheme.primary
+            )
+            Text(
+              text = "High-priority push channels, topic subscriptions & local device broadcast verification.",
+              style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+              color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+          }
+        }
+      }
+    }
+
+    // 2. FCM Device Registration Token Card
+    item {
+      Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+        modifier = Modifier.fillMaxWidth()
+      ) {
+        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+          Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+          ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+              Icon(Icons.Default.VpnKey, contentDescription = null, tint = SchoolNavyPrimary, modifier = Modifier.size(16.dp))
+              Text(
+                text = "FCM Registration Token",
+                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onSurface
+              )
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+              IconButton(
+                onClick = onRefreshFcmToken,
+                modifier = Modifier.size(28.dp)
+              ) {
+                Icon(Icons.Default.Refresh, contentDescription = "Refresh token", modifier = Modifier.size(16.dp))
+              }
+              IconButton(
+                onClick = {
+                  val tokenToCopy = fcmDeviceToken ?: "stjosephs_fcm_token_${System.currentTimeMillis()}"
+                  val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                  val clip = android.content.ClipData.newPlainText("FCM Registration Token", tokenToCopy)
+                  clipboard.setPrimaryClip(clip)
+                  Toast.makeText(context, "FCM Token copied to clipboard!", Toast.LENGTH_SHORT).show()
+                },
+                modifier = Modifier.size(28.dp)
+              ) {
+                Icon(Icons.Default.ContentCopy, contentDescription = "Copy token", modifier = Modifier.size(16.dp))
+              }
+            }
+          }
+
+          val displayToken = fcmDeviceToken ?: "Connected (Token registered in School DB)"
+          Text(
+            text = if (isTokenVisible || fcmDeviceToken == null) displayToken else "${displayToken.take(18)}••••••••••••${displayToken.takeLast(8)}",
+            style = MaterialTheme.typography.bodySmall.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, fontSize = 11.sp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = if (isTokenVisible) 3 else 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+              .fillMaxWidth()
+              .clickable { isTokenVisible = !isTokenVisible }
+          )
+        }
+      }
+    }
+
+    // 3. Subscribed Topics
+    item {
+      Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+          text = "SUBSCRIBED TOPIC BROADCASTS",
+          style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp),
+          color = MaterialTheme.colorScheme.primary
+        )
+
+        Row(
+          modifier = Modifier.fillMaxWidth(),
+          horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+          listOf(
+            "all_school" to "📢 All School",
+            "homework" to "📝 Homework",
+            "bus_tracking" to "🚍 Bus Live",
+            "events" to "📅 Calendar"
+          ).forEach { (topic, label) ->
+            val isSubscribed = subscribedTopics.contains(topic)
+            FilterChip(
+              selected = isSubscribed,
+              onClick = {
+                onToggleTopic(topic)
+                Toast.makeText(
+                  context,
+                  if (isSubscribed) "Unsubscribed from #$topic" else "Subscribed to #$topic",
+                  Toast.LENGTH_SHORT
+                ).show()
+              },
+              label = {
+                Text(
+                  text = label,
+                  style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp)
+                )
+              }
+            )
+          }
+        }
+      }
+    }
+
+    // 4. Test Notification Trigger Buttons
+    item {
+      Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+          text = "⚡ TEST REAL-TIME PUSH NOTIFICATIONS",
+          style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp),
+          color = MaterialTheme.colorScheme.primary
+        )
+        Text(
+          text = "Dispatches high-priority heads-up banners to your Android status bar:",
+          style = MaterialTheme.typography.bodySmall,
+          color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Row(
+          modifier = Modifier.fillMaxWidth(),
+          horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+          Button(
+            onClick = {
+              onTestPushNotification(
+                NotificationType.NOTICE,
+                "🚨 URGENT: Campus Closure & Heavy Rain Alert",
+                "District Administration declared holiday tomorrow due to adverse monsoon weather.",
+                "notices",
+                true
+              )
+              Toast.makeText(context, "🚨 Urgent Notice push dispatched!", Toast.LENGTH_SHORT).show()
+            },
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
+            shape = RoundedCornerShape(10.dp),
+            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
+            modifier = Modifier.weight(1f)
+          ) {
+            Icon(Icons.Default.Warning, contentDescription = null, modifier = Modifier.size(16.dp))
+            Spacer(modifier = Modifier.width(4.dp))
+            Text("🚨 Urgent Notice", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+          }
+
+          Button(
+            onClick = {
+              onTestPushNotification(
+                NotificationType.HOMEWORK,
+                "📚 New Assignment: Physics Electromagnetism",
+                "Grade 12-A • Complete problems 1-15 • Due: Tomorrow 5:00 PM",
+                "homework",
+                false
+              )
+              Toast.makeText(context, "📚 Homework push dispatched!", Toast.LENGTH_SHORT).show()
+            },
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB)),
+            shape = RoundedCornerShape(10.dp),
+            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
+            modifier = Modifier.weight(1f)
+          ) {
+            Icon(Icons.Default.Assignment, contentDescription = null, modifier = Modifier.size(16.dp))
+            Spacer(modifier = Modifier.width(4.dp))
+            Text("📚 Homework", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+          }
+        }
+
+        Row(
+          modifier = Modifier.fillMaxWidth(),
+          horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+          Button(
+            onClick = {
+              onTestPushNotification(
+                NotificationType.BUS,
+                "🚍 Bus #04 Approaching Sector 7 Gate",
+                "School Bus is 2 stops away. Estimated arrival in 4 minutes.",
+                "bus_tracking",
+                false
+              )
+              Toast.makeText(context, "🚍 Bus GPS proximity alert dispatched!", Toast.LENGTH_SHORT).show()
+            },
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD97706)),
+            shape = RoundedCornerShape(10.dp),
+            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
+            modifier = Modifier.weight(1f)
+          ) {
+            Icon(Icons.Default.DirectionsBus, contentDescription = null, modifier = Modifier.size(16.dp))
+            Spacer(modifier = Modifier.width(4.dp))
+            Text("🚍 Bus Live", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+          }
+
+          Button(
+            onClick = {
+              onTestPushNotification(
+                NotificationType.EVENT,
+                "🏆 Annual Sports Day Registrations Live",
+                "Register for 100m sprint, relay, and chess championships by Friday.",
+                "dashboard",
+                false
+              )
+              Toast.makeText(context, "🏆 Event reminder dispatched!", Toast.LENGTH_SHORT).show()
+            },
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF16A34A)),
+            shape = RoundedCornerShape(10.dp),
+            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
+            modifier = Modifier.weight(1f)
+          ) {
+            Icon(Icons.Default.Event, contentDescription = null, modifier = Modifier.size(16.dp))
+            Spacer(modifier = Modifier.width(4.dp))
+            Text("🏆 Sports Day", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+          }
+        }
+      }
+    }
+  }
+}
