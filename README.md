@@ -1,117 +1,184 @@
-# 🏫 St. Joseph's School Management System (v3.5.0 Production)
+<div align="center">
 
-<p align="center">
-  <a href="https://developer.android.com/about/versions/15"><img src="https://img.shields.io/badge/Platform-Android%2015%20%7C%2016-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Android" /></a>
-  <a href="https://kotlinlang.org"><img src="https://img.shields.io/badge/Kotlin-2.1.10-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white" alt="Kotlin" /></a>
-  <a href="https://developer.android.com/jetpack/compose"><img src="https://img.shields.io/badge/Jetpack%20Compose-M3%20Expressive-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white" alt="Jetpack Compose" /></a>
-  <a href="https://osmdroid.github.io/osmdroid/"><img src="https://img.shields.io/badge/Maps-OpenStreetMap%20(osmdroid)-7EBC6F?style=for-the-badge&logo=openstreetmap&logoColor=white" alt="OpenStreetMap" /></a>
-</p>
+  <img src="docs/assets/school_logo.png" alt="St. Joseph's Crest" width="110" />
+
+  # St. Joseph's Connected Campus
+  ### The Next-Generation Native Android Institutional Operating System
+
+  *Empowering Academics, Operations, and Transit with Precision Engineering*
+
+  <p align="center">
+    <a href="https://github.com/2009skvgamerz/School-project-application-/releases"><img src="https://img.shields.io/badge/Release-v3.5.0-00E676?style=for-the-badge&logo=github&logoColor=black" alt="Version 3.5.0" /></a>
+    <a href="https://developer.android.com/about/versions/15"><img src="https://img.shields.io/badge/Platform-Android%2015%20%7C%2016-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Android" /></a>
+    <a href="https://developer.android.com/jetpack/compose"><img src="https://img.shields.io/badge/Design%20System-Material%203%20Expressive-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white" alt="Material 3" /></a>
+    <a href="https://kotlinlang.org"><img src="https://img.shields.io/badge/Language-Kotlin%202.0-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white" alt="Kotlin" /></a>
+    <a href="https://developer.android.com/training/data-storage/room"><img src="https://img.shields.io/badge/Storage-Offline--First%20Room%20DB-FFCA28?style=for-the-badge&logo=sqlite&logoColor=black" alt="Room DB" /></a>
+    <a href="https://firebase.google.com"><img src="https://img.shields.io/badge/Cloud-Firebase%20FCM%20Sync-FF9100?style=for-the-badge&logo=firebase&logoColor=white" alt="Firebase" /></a>
+  </p>
+
+  <br />
+
+  <img src="docs/assets/hero_showcase.jpg" alt="St. Joseph's Android Platform Hero Showcase" width="100%" style="border-radius: 16px; box-shadow: 0 12px 36px rgba(0,0,0,0.18);" />
+
+</div>
+
+<br />
 
 ---
 
 ## 🌟 Executive Overview
 
-**St. Joseph's School Management System** is a production-grade, offline-first institutional OS designed for **St. Joseph Matriculation Higher Secondary School**. Powered by modern Jetpack Compose (Material 3 Expressive), an offline-first Room database, real-time OpenStreetMap telemetry, and Firebase Cloud Messaging, this application unifies daily workflows for students, teachers, administrators, school bus drivers, and developers into a cohesive mobile hub.
+**St. Joseph's Connected Campus** is a flagship enterprise mobile platform purpose-built for **St. Joseph Matriculation Higher Secondary School** (*Hosur, Tamil Nadu*). 
 
-Key pillars of v3.5.0:
-- **Zero-Billing Campus & Transit Maps**: 100% free OpenStreetMap (`osmdroid`) engine with multi-stop bus telemetry and interactive campus building directory.
-- **Unified Academic Administration**: Fast roll call, timetable schedules, homework dispatch, exam report cards, and digital student ID badges with QR/barcodes.
-- **Enterprise Offline-First Architecture**: Continuous Room SQLite caching with background `WorkManager` synchronization when network connectivity restores.
-- **Multi-Category Push Communications**: Categorized notification channels (Academics, Transport, Examinations, Events, Emergency) with exact-alarm delivery.
+Engineered from the ground up with **Kotlin 2.0** and **Jetpack Compose (Material Design 3)**, the platform replaces fragmented legacy school software with a unified, role-aware institutional operating system. Whether it is an instant morning roll call, real-time GPS fleet tracking of school buses, dynamic academic analytics, or instant push broadcasting, St. Joseph's Connected Campus delivers sub-second responsiveness with **100% offline-first reliability**.
 
 ---
 
-## 📱 Key Modules & Capabilities
+## 🏛️ 6 Purpose-Built Role Ecosystems
 
-### 1. 🎓 Student & Academic Hub
-- **Digital Student Badge**: Instant QR and barcode credential generation with crest styling and student identity details.
-- **Attendance Visualizer**: Live percentage tracking against mandatory institutional attendance thresholds.
-- **Fee Management**: Tuition, laboratory, and library fee ledger with invoice tracking.
-- **Timetable & Homework**: Daily schedule breakdown by period, classroom location, and assignment status.
+Every user profile is greeted by a custom-crafted interface designed strictly for their daily operational workflow:
 
-### 2. 👩‍🏫 Faculty & Classroom Tools
-- **Roster & Fast Roll Call**: One-tap student attendance marking (Present, Absent, Late, Excused) with bulk commit.
-- **Circular Dispatcher**: Instant announcements published school-wide or class-specific.
-- **Exam & Marks Entry**: Fast grade tracking and student report generation.
+<div align="center">
 
-### 3. 🚍 OpenStreetMap Bus Telemetry & Campus Guide
-- **OpenStreetMap (`osmdroid`) Engine**: Completely free mapping with vector/raster Mapnik tile streaming and offline caching. No Google Cloud billing or API key required.
-- **Live Bus Radar**: Real-time vehicle location tracking, driver contacts, speed telemetry, and route stop progress.
-- **Campus Building Guide**: Interactive directory mapping Academic Blocks, Laboratories, Sports Turf, Auditorium, and Bus Fleet Bays.
-- **Engine Switcher**: Seamless toggle between OpenStreetMap (Mapnik/OpenTopo), Vector Canvas, and Google Maps SDK.
+| 👨‍🎓 **Student Experience** | 👩‍🏫 **Faculty & Teacher Suite** |
+| :---: | :---: |
+| <img src="screenshots/screenshot_1.png" alt="Student Portal" width="340" style="border-radius: 12px;" /> | <img src="screenshots/screenshot_2.png" alt="Teacher Portal" width="340" style="border-radius: 12px;" /> |
+| *Academic GPA analytics, digital ID badge, daily period timetable, and instant homework submission tracking.* | *One-tap batch roll-call attendance, class performance trackers, assignment publishing, and syllabus pacing.* |
 
-### 4. 🔔 Multi-Category Notification Center
-- **Categorized Feed**: Filter alerts across *Academics*, *Transport*, *Examinations*, *Events*, and *Emergency*.
-- **Critical Alert Dispatch**: Emergency notifications delivered via `AlarmManager` and Android heads-up channels.
-- **FCM Push Manager**: Built-in Firebase Cloud Messaging client with topic subscription controls.
+<br />
 
-### 5. 🛠️ Systems & Developer Console
-- **Telemetry & Cache Diagnostics**: Cache purge, network state simulation, and manual sync triggering.
-- **Database Entity Inspector**: Live inspection of Room database tables and schema status.
-- **State Reset Utilities**: Reset demo data to initial factory states for testing.
+| 🛠️ **Campus Operations** | 🚍 **Live Transit & Fleet Radar** |
+| :---: | :---: |
+| <img src="screenshots/screenshot_3.png" alt="Staff Portal" width="340" style="border-radius: 12px;" /> | <img src="screenshots/screenshot_4.png" alt="Bus Driver Portal" width="340" style="border-radius: 12px;" /> |
+| *Facility shift schedules, campus duty checklists, infrastructure maintenance logging, and staff directory.* | *Real-time route telemetry, stop-by-stop passenger check-ins, delay broadcasts, and direct turn-by-turn navigation.* |
+
+<br />
+
+| 👑 **Executive Administration** | 💻 **Systems & Developer Hub** |
+| :---: | :---: |
+| <img src="screenshots/screenshot_5.png" alt="Admin Portal" width="340" style="border-radius: 12px;" /> | <img src="screenshots/screenshot_6.png" alt="Developer Portal" width="340" style="border-radius: 12px;" /> |
+| *Institutional strength KPIs, tuition fee collection tracking, school-wide circular authoring, and executive governance.* | *Real-time SQLite database inspection, live sync telemetry, omni-role switcher, and system cache controls.* |
+
+</div>
 
 ---
 
-## 🏗️ Technical Architecture
+## 🚀 Key Technological Innovations
 
-| Layer | Technology | Details |
+<div align="center">
+  <img src="docs/assets/ecosystem_banner.jpg" alt="Connected Campus Ecosystem" width="100%" style="border-radius: 14px; margin-bottom: 24px;" />
+</div>
+
+### 1. ⚡ Offline-First Architecture with SQLite Room Cache
+- **Instantaneous Cold-Start**: Zero network lag on startup. User dashboards, class schedules, and identity cards hydrate in milliseconds from the local Room database (`AppDatabase`).
+- **Resilient Background Synchronization**: Integrated `WorkManager` and `SchoolBackgroundSyncWorker` automatically queue offline transactions and synchronize seamlessly once network connectivity is restored.
+
+### 2. 🚍 Real-Time In-App Fleet & Campus Navigation (OpenStreetMap)
+- **100% Free OpenStreetMap Engine (`osmdroid`)**: Powered by native OpenStreetMap vector/raster tile streaming with zero dependency on Google Cloud billing or paid API keys.
+- **Dual-Mode Experience**: Instant one-tap switcher between **Campus Building Guide** (Academic Blocks, Labs, Library, Sports Arena, Bus Bays) and **Live Student Bus Radar**.
+- **Interactive Layers**: Toggle on-the-fly between standard OSM (Mapnik) and topographic relief (OpenTopo) terrain.
+- **Proximity Telemetry**: Live speed calculation, next-stop ETA countdowns, student boarding checklists, and one-tap external Google Maps navigation intent.
+
+### 3. 🔔 Comprehensive Multi-Category Notification Center
+- **Categorized Live Feeds**: Instant filters for Academics, Transport, Examinations, Campus Events, and Emergency circulars with unread badge counters.
+- **Permanent Offline Room Archive**: Offline SQLite logging of historical alerts with instant search and date indexing.
+- **FCM Push Manager**: Live Firebase Cloud Messaging token inspector, subscription topic management (`all_school`, `announcements`, `events`, `exams`), and broadcast simulator.
+- **Independent System Alarms**: Configured with Android `AlarmManager` (`setExactAndAllowWhileIdle`) to ensure critical alerts fire reliably even during deep Doze mode.
+
+### 4. 🪪 High-Security Digital Smart Badges
+- **Cryptographic Barcode & QR**: High-contrast, scannable digital student and faculty ID cards embedded with student roll numbers, blood group, emergency contacts, and institutional house insignias.
+- **Seamless Alpha Transparency**: True alpha-channel crest rendering across both dark and light modes.
+
+---
+
+## 🏗️ Technical Architecture & Engineering Stack
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│                     Jetpack Compose UI (Material 3)                      │
+│     (Floating Search Pill • Role Dashboards • Interactive Cards)         │
+└────────────────────────────────────┬─────────────────────────────────────┘
+                                     │ Reactive StateFlow
+                                     ▼
+┌──────────────────────────────────────────────────────────────────────────┐
+│                   State Management & ViewModel Layer                     │
+│           (SchoolViewModel • AuthenticationViewModel)                    │
+└────────────────────────────────────┬─────────────────────────────────────┘
+                                     │ Repository Orchestration
+                                     ▼
+┌──────────────────────────────────────────────────────────────────────────┐
+│                   Domain Repository & Sync Services                      │
+│            (SchoolRepository • BackgroundSyncManager)                    │
+└───────────────────┬──────────────────────────────────┬───────────────────┘
+                    │                                  │
+                    ▼ Local Storage                    ▼ Remote & System
+┌──────────────────────────────────────┐  ┌────────────────────────────────┐
+│         Android Room SQLite          │  │    AlarmManager & Firebase     │
+│   (DAOs • TypeConverters • KSP)      │  │ (SchoolAlarmReceiver • FCM)    │
+└──────────────────────────────────────┘  └────────────────────────────────┘
+```
+
+| Layer | Framework / Component | Technical Role |
 | :--- | :--- | :--- |
-| **Language** | Kotlin 2.1.10 | Coroutines, Flow, StateFlow, Serialization |
-| **UI Framework** | Jetpack Compose | Material Design 3 (M3 Expressive), Dynamic Theming |
-| **Database** | Android Jetpack Room | Local-first SQLite database with DAO abstractions |
-| **Mapping Engine** | OpenStreetMap (`osmdroid 6.1.20`) | Zero-API-key tile streaming with vector canvas fallback |
-| **Background Sync** | AndroidX WorkManager 2.10 | Battery-efficient, network-constrained background sync |
-| **Notifications** | FCM + Android NotificationManager | Priority channels, rich heads-up alerts, exact alarms |
-| **Architecture** | Unidirectional Data Flow (MVVM) | Clean Architecture with state hoisting and testable ViewModels |
+| **Language** | Kotlin 2.0 | Modern coroutines, Flow streams, sealed state hierarchies |
+| **UI Kit** | Jetpack Compose (M3) | Declarative UI, dynamic tonal color theming, edge-to-edge system insets |
+| **Local Storage** | Android Room DB | Local persistence, schema versioning, and zero-latency caching |
+| **Fleet Radar & Maps** | OpenStreetMap (`osmdroid`) | Hardware-accelerated native tile streaming, zero billing/API key required |
+| **Push Engine** | Firebase Cloud Messaging (FCM) | Priority heads-up push notifications with deep-link navigation |
+| **Background Sync** | Android WorkManager & AlarmManager | Exact alarm scheduling, boot recovery, and background network sync |
 
 ---
 
-## 👥 Demo Accounts & Access
+## 👥 Instant Access Demo Accounts
 
-The application includes pre-configured demo profiles for testing and evaluation across all supported roles:
-
-| Role | Username / ID | Default Profile | Assigned Privileges |
-| :--- | :--- | :--- | :--- |
-| **Student** | `STU-2024-001` | Aarav Sharma (Class 10-A) | Personal grades, attendance, timetable, digital badge, bus route |
-| **Teacher** | `TCH-101` | Priya Sundaram (Mathematics) | Roll-call submission, homework assignment, class announcements |
-| **Admin** | `ADM-001` | Sister Maria (Headmistress) | Institutional broadcast, fee oversight, student directory, reporting |
-| **Driver** | `DRV-001` | Murugan K. (Bus Route #4) | Live GPS ping transmission, student pickup checklist, emergency alert |
-| **Developer** | `DEV-001` | System Engineer | Room database explorer, sync telemetry, cache and state controls |
+The application includes pre-configured demo profiles to explore each operational role immediately:
 
 > 🔑 **Standard Prototype Password:** `password123`
 
+| Role | Username | Display Name | Assignment / Scope |
+| :--- | :--- | :--- | :--- |
+| 👨‍🎓 **Student** | `student01` | **Keerthivasan** | Class 12-A • Roll #1 • St. Francis House |
+| 👩‍🏫 **Teacher** | `teacher01` | **Prof. Sarah Jenkins** | Class 10-A Homeroom • Dept of Physics |
+| 🛠️ **Staff (Operations)** | `staff01` | **Mr. Thomas Wright** | Campus Safety & Facility Supervisor |
+| 🚍 **Staff (Driver)** | `driver01` | **Mr. Ramesh Kumar** | Fleet Pilot • Route #12 (SIPCOT Express) |
+| 👑 **Administrator** | `admin01` | **Dr. Arthur Pendelton** | Principal & Executive Head of Institution |
+| 💻 **Developer** | `root01` | **Keerthivasan** | Systems Architect • God-Mode Access |
+
+*Tip: Tap any role icon on the login screen or use the profile switcher to instantly preview any role's customized dashboard.*
+
 ---
 
-## ⚙️ Getting Started & Installation
+## 🛠️ Build & Installation
 
-### System Prerequisites
-- **Android OS**: Android 7.0 (API Level 24) or higher.
-- **Target OS**: Android 16 (API Level 36 readiness).
-- **IDE**: Android Studio Ladybug / Meerkat or later.
-- **JDK**: Java 17 or Java 21.
+### Option 1: Direct APK Download
+Grab the pre-compiled production APK from the [**GitHub Releases Tab**](https://github.com/2009skvgamerz/School-project-application-/releases) and install directly on any Android device running **Android 7.0 (API 24) or higher**.
 
-### Build & Run
-1. Clone the repository:
+### Option 2: Build from Source
+1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/example/st-joseph-school-app.git
+   git clone https://github.com/2009skvgamerz/School-project-application-.git
+   cd School-project-application-
    ```
-2. Open the project in Android Studio.
-3. Allow Gradle to sync dependencies from Maven Central and Google repositories.
-4. Select an Android device or emulator running **API 24+**.
-5. Click **Run (`Shift + F10`)** or build the debug APK:
+2. **Open in Android Studio** (Ladybug / Koala / Meerkat recommended).
+3. **Build Debug or Release APK**:
    ```bash
-   ./gradlew assembleDebug
+   gradle assembleDebug
    ```
-
-*Note on Maps:* OpenStreetMap (`osmdroid`) is configured out of the box — no Google Maps API key or billing account is required. The map will stream and cache tiles automatically.
+4. **Deploy**: Connect an Android device with USB Debugging enabled and run via Android Studio or `adb install`.
 
 ---
 
 ## 🏛️ Institutional Information
 
-- **Institution**: St. Joseph Matriculation Higher Secondary School
-- **Affiliation**: Tamil Nadu State Board of Matriculation
-- **Address**: 12, Church Road, Cantonment, Tiruchirappalli, Tamil Nadu 620001
-- **Phone**: +91 431 241 0422
-- **Email**: info@stjosephtrichy.edu.in
-- **Website**: https://stjosephtrichy.edu.in
+<div align="center">
+
+**St. Joseph Matriculation Higher Secondary School**  
+*Motto: "Shine and Let Shine"*  
+📍 SIPCOT, Gandhi Nagar Road, Mookondapalli, Hosur, Tamil Nadu 635126  
+📞 +91 4344 276544 &nbsp;|&nbsp; ✉️ info@stjosephshosur.edu.in  
+
+<br />
+
+<sub>Designed and developed for excellence in modern institutional digital governance. Powered by Google AI Studio.</sub>
+
+</div>
