@@ -1,8 +1,13 @@
 package com.example.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -17,6 +22,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -25,6 +33,7 @@ import androidx.compose.ui.unit.sp
 import com.example.data.local.entity.AttendanceEntity
 import com.example.model.AttendanceStatus
 import com.example.model.TeacherProfile
+import com.example.ui.components.SpringProgressRing
 import com.example.ui.components.StatCard
 import com.example.ui.theme.*
 
@@ -134,10 +143,12 @@ fun TeacherClassAttendanceScreen(
             }
           }
 
-          // Quick Action: Mark All Full Day
+          // Quick Action: Mark All Full Day with tactile haptic response
           if (isDesignatedClassTeacher) {
+            val haptic = LocalHapticFeedback.current
             Button(
               onClick = {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                 onMarkAllFullDay(selectedClass)
                 showSuccessBanner = true
               },
@@ -553,6 +564,7 @@ private fun TeacherRollCallRow(
         }
 
         // 4 Status Action Badges: Full-day (FD), Half-day (HD), On-duty (OD), Absent (AB)
+        val haptic = LocalHapticFeedback.current
         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
           listOf(
             AttendanceStatus.FULL_DAY,
@@ -562,12 +574,38 @@ private fun TeacherRollCallRow(
           ).forEach { status ->
             val isSelected = record.status == status
             val statusColor = Color(status.colorHex)
+            val btnInteractionSource = remember { MutableInteractionSource() }
+            val isBtnPressed by btnInteractionSource.collectIsPressedAsState()
+
+            val btnSpringScale by animateFloatAsState(
+              targetValue = if (isBtnPressed) 0.86f else if (isSelected) 1.05f else 1.0f,
+              animationSpec = spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessLow
+              ),
+              label = "teacher_attendance_btn_spring"
+            )
 
             Surface(
               color = if (isSelected) statusColor else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
               shape = RoundedCornerShape(6.dp),
               modifier = Modifier
-                .clickable(enabled = isEditable) { onStatusSelect(status) }
+                .graphicsLayer {
+                  scaleX = btnSpringScale
+                  scaleY = btnSpringScale
+                }
+                .clickable(
+                  enabled = isEditable,
+                  interactionSource = btnInteractionSource,
+                  indication = null
+                ) {
+                  if (status == AttendanceStatus.ABSENT) {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                  } else {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                  }
+                  onStatusSelect(status)
+                }
                 .testTag("teacher_status_${status.code.lowercase()}_${record.rollNo}")
             ) {
               Text(

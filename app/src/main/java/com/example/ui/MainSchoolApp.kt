@@ -1,5 +1,6 @@
 package com.example.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
@@ -20,6 +21,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -40,6 +43,7 @@ import com.example.viewmodel.SchoolViewModel
 fun MainSchoolApp(
   viewModel: SchoolViewModel = viewModel()
 ) {
+  val haptic = LocalHapticFeedback.current
   val currentUser by viewModel.currentUser.collectAsState()
   val currentThemeMode by viewModel.themeMode.collectAsState()
   val studentProfile by viewModel.studentProfile.collectAsState()
@@ -108,8 +112,69 @@ fun MainSchoolApp(
   val isAuthenticated by viewModel.isAuthenticated.collectAsState()
   var isLoggingIn by remember { mutableStateOf(false) }
   var loginErrorMessage by remember { mutableStateOf<String?>(null) }
+  val backStack = remember { mutableStateListOf(NavigationTab.DASHBOARD) }
   var currentTab by remember { mutableStateOf(NavigationTab.DASHBOARD) }
   val coroutineScope = rememberCoroutineScope()
+
+  val navigateToTab: (NavigationTab) -> Unit = { tab ->
+    if (tab == NavigationTab.DASHBOARD) {
+      backStack.clear()
+      backStack.add(NavigationTab.DASHBOARD)
+    } else {
+      if (backStack.lastOrNull() != tab) {
+        backStack.remove(tab)
+        backStack.add(tab)
+      }
+    }
+    currentTab = tab
+  }
+
+  val navigateBack: () -> Unit = {
+    if (backStack.size > 1) {
+      backStack.removeAt(backStack.lastIndex)
+      currentTab = backStack.lastOrNull() ?: NavigationTab.DASHBOARD
+    } else if (currentTab != NavigationTab.DASHBOARD) {
+      currentTab = NavigationTab.DASHBOARD
+      backStack.clear()
+      backStack.add(NavigationTab.DASHBOARD)
+    }
+  }
+
+  // Ensure backStack stays synchronized whenever currentTab is set directly
+  LaunchedEffect(currentTab) {
+    if (currentTab == NavigationTab.DASHBOARD) {
+      if (backStack.size > 1 || backStack.firstOrNull() != NavigationTab.DASHBOARD) {
+        backStack.clear()
+        backStack.add(NavigationTab.DASHBOARD)
+      }
+    } else {
+      if (backStack.lastOrNull() != currentTab) {
+        backStack.remove(currentTab)
+        backStack.add(currentTab)
+      }
+    }
+  }
+
+  // Predictive & Physical Back Navigation Handler
+  var lastBackPressTimestamp by remember { mutableLongStateOf(0L) }
+  BackHandler(enabled = isAuthenticated && !isLoggingIn && !showSplash) {
+    if (backStack.size > 1 || currentTab != NavigationTab.DASHBOARD) {
+      navigateBack()
+    } else {
+      val currentTime = System.currentTimeMillis()
+      if (currentTime - lastBackPressTimestamp < 2000L) {
+        (context as? android.app.Activity)?.finish()
+      } else {
+        lastBackPressTimestamp = currentTime
+        coroutineScope.launch {
+          snackbarHostState.showSnackbar(
+            message = "Press back again to exit St. Joseph's ERP",
+            duration = SnackbarDuration.Short
+          )
+        }
+      }
+    }
+  }
 
   LaunchedEffect(Unit) {
     kotlinx.coroutines.delay(600)
@@ -120,18 +185,18 @@ fun MainSchoolApp(
   LaunchedEffect(deepLinkRoute) {
     deepLinkRoute?.let { route ->
       when (route.lowercase()) {
-        "homework", "hw" -> currentTab = NavigationTab.HOMEWORK
-        "attendance", "att" -> currentTab = NavigationTab.ATTENDANCE
-        "timetable", "schedule" -> currentTab = NavigationTab.TIMETABLE
-        "calendar", "events", "exam" -> currentTab = NavigationTab.CALENDAR
-        "bus", "bustracking", "transport" -> currentTab = NavigationTab.BUS_TRACKING
-        "announcements", "broadcast", "broadcasts" -> currentTab = NavigationTab.ANNOUNCEMENTS
-        "directory", "contacts", "sos" -> currentTab = NavigationTab.DIRECTORY
-        "notices", "bulletin", "bulletins", "circular" -> currentTab = NavigationTab.NOTICES
-        "profile" -> currentTab = NavigationTab.PROFILE
-        "classes" -> currentTab = NavigationTab.CLASSES
-        "duties" -> currentTab = NavigationTab.DUTIES
-        else -> currentTab = NavigationTab.DASHBOARD
+        "homework", "hw" -> navigateToTab(NavigationTab.HOMEWORK)
+        "attendance", "att" -> navigateToTab(NavigationTab.ATTENDANCE)
+        "timetable", "schedule" -> navigateToTab(NavigationTab.TIMETABLE)
+        "calendar", "events", "exam" -> navigateToTab(NavigationTab.CALENDAR)
+        "bus", "bustracking", "transport" -> navigateToTab(NavigationTab.BUS_TRACKING)
+        "announcements", "broadcast", "broadcasts" -> navigateToTab(NavigationTab.ANNOUNCEMENTS)
+        "directory", "contacts", "sos" -> navigateToTab(NavigationTab.DIRECTORY)
+        "notices", "bulletin", "bulletins", "circular" -> navigateToTab(NavigationTab.NOTICES)
+        "profile" -> navigateToTab(NavigationTab.PROFILE)
+        "classes" -> navigateToTab(NavigationTab.CLASSES)
+        "duties" -> navigateToTab(NavigationTab.DUTIES)
+        else -> navigateToTab(NavigationTab.DASHBOARD)
       }
       viewModel.clearDeepLinkRoute()
     }
@@ -212,6 +277,7 @@ fun MainSchoolApp(
   var showCreateNoticeDialog by remember { mutableStateOf(false) }
   var showAddDutyDialog by remember { mutableStateOf(false) }
   var showNotificationCenterSheet by remember { mutableStateOf(false) }
+  var showIdCardDialog by remember { mutableStateOf(false) }
   var selectedHomeworkForSubmission by remember { mutableStateOf<Homework?>(null) }
   var selectedNoticeDetail by remember { mutableStateOf<Notice?>(null) }
 
@@ -263,14 +329,16 @@ fun MainSchoolApp(
   // Gracefully switch back to Dashboard if the active tab is not accessible in the new user role
   LaunchedEffect(currentUser.role) {
     if (currentTab != NavigationTab.SETTINGS && !visibleTabs.contains(currentTab)) {
-      currentTab = NavigationTab.DASHBOARD
+      navigateToTab(NavigationTab.DASHBOARD)
     }
   }
 
     BaseDashboardScaffold(
       currentUser = currentUser,
       currentTab = currentTab,
-      onTabSelected = { currentTab = it },
+      onTabSelected = { navigateToTab(it) },
+      canNavigateBack = backStack.size > 1 || currentTab != NavigationTab.DASHBOARD,
+      onNavigateBack = { navigateBack() },
       visibleBottomTabs = visibleTabs,
       networkState = networkState,
       unreadNotificationsCount = unreadNotificationsCount,
@@ -290,7 +358,43 @@ fun MainSchoolApp(
       onToggleSimulatedOffline = { viewModel.setSimulatedOffline(it) },
       isSimulatedOffline = isSimulatedOffline,
       cloudSyncInfo = cloudSyncInfo,
-      snackbarHostState = snackbarHostState
+      snackbarHostState = snackbarHostState,
+      floatingActionButton = {
+        QuickActionSpeedDialFab(
+          currentUser = currentUser,
+          roleColor = when (currentUser.role) {
+            UserRole.STUDENT -> RoleStudentColor
+            UserRole.TEACHER -> RoleTeacherColor
+            UserRole.STAFF -> RoleStaffColor
+            UserRole.DRIVER -> RoleDriverColor
+            UserRole.ADMIN -> RoleAdminColor
+            UserRole.DEVELOPER -> Color(0xFF10B981)
+          },
+          onNavigateToTab = { navigateToTab(it) },
+          onOpenIdCard = { showIdCardDialog = true },
+          onOpenCreateNotice = { showCreateNoticeDialog = true },
+          onOpenAssignHomework = { showAssignHomeworkDialog = true },
+          onOpenDeveloperTerminal = { showDeveloperConsoleSheet = true },
+          onOpenRoleSwitcher = { showRoleSwitcherDialog = true },
+          onTriggerEmergencySos = {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            coroutineScope.launch {
+              snackbarHostState.showSnackbar(
+                "🚨 Emergency SOS broadcast transmitted to Campus Command",
+                duration = SnackbarDuration.Short
+              )
+            }
+          },
+          onTriggerGpsPing = {
+            coroutineScope.launch {
+              snackbarHostState.showSnackbar(
+                "📍 Route GPS telemetry ping broadcasted successfully",
+                duration = SnackbarDuration.Short
+              )
+            }
+          }
+        )
+      }
     ) { innerPadding ->
       ConditionalPullToRefreshBox(
         isRefreshing = isRefreshing,
@@ -697,6 +801,7 @@ fun MainSchoolApp(
               modifier = Modifier
                 .fillMaxWidth()
                 .clickable {
+                  haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                   viewModel.switchRole(role)
                   currentTab = NavigationTab.DASHBOARD
                   showRoleSwitcherDialog = false

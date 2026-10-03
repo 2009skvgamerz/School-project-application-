@@ -1,7 +1,7 @@
 package com.example.ui.components
 
 import androidx.compose.animation.*
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -22,8 +22,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -77,6 +80,8 @@ fun BaseDashboardScaffold(
   onTriggerCloudSync: () -> Unit = {},
   snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
   floatingActionButton: @Composable () -> Unit = {},
+  canNavigateBack: Boolean = false,
+  onNavigateBack: () -> Unit = {},
   modifier: Modifier = Modifier,
   content: @Composable (PaddingValues) -> Unit
 ) {
@@ -136,94 +141,123 @@ fun BaseDashboardScaffold(
       }
     }
   ) {
-    Scaffold(
-      modifier = Modifier.fillMaxSize().testTag("base_dashboard_scaffold"),
-      snackbarHost = { SnackbarHost(snackbarHostState) },
-      topBar = {
-        Column(
-          modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.background)
-            .statusBarsPadding()
-        ) {
-          ResponsiveGoogleTopAppBar(
-            currentUser = currentUser,
-            currentTab = currentTab,
-            networkState = networkState,
-            unreadNotificationsCount = unreadNotificationsCount,
-            roleColor = roleColor,
-            cloudSyncInfo = cloudSyncInfo,
-            onTriggerCloudSync = onTriggerCloudSync,
-            onToggleSimulatedOffline = onToggleSimulatedOffline,
-            isSimulatedOffline = isSimulatedOffline,
-            onNavigationIconClick = {
-              coroutineScope.launch {
-                if (drawerState.isClosed) drawerState.open() else drawerState.close()
-              }
-            },
-            onOpenRoleSwitcher = onOpenRoleSwitcher,
-            onOpenNotificationCenter = onOpenNotificationCenter,
-            onOpenDeveloperTerminal = onOpenDeveloperTerminal,
-            onNavigateToTab = { tab ->
-              onTabSelected(tab)
-            },
-            onSignOut = onSignOut
-          )
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+      val isTabletLayout = maxWidth >= 720.dp
+      val haptic = LocalHapticFeedback.current
 
-          // Real-time Network Status Banner
-          NetworkStatusBanner(
-            networkState = networkState,
-            onRetryConnection = onRetryConnection,
-            onToggleSimulatedOffline = onToggleSimulatedOffline,
-            isSimulated = isSimulatedOffline
-          )
-        }
-      },
-      bottomBar = {
-        if (visibleBottomTabs.isNotEmpty()) {
+      Row(modifier = Modifier.fillMaxSize()) {
+        // Tablet / Desktop Adaptive Navigation Rail
+        if (isTabletLayout && visibleBottomTabs.isNotEmpty()) {
           Surface(
-            tonalElevation = 3.dp,
-            shadowElevation = 4.dp,
-            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
             color = MaterialTheme.colorScheme.surfaceContainerLow,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+            tonalElevation = 3.dp,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
+            modifier = Modifier
+              .fillMaxHeight()
+              .width(88.dp)
+              .testTag("tablet_navigation_rail_surface")
           ) {
-            NavigationBar(
+            NavigationRail(
               containerColor = Color.Transparent,
-              tonalElevation = 0.dp,
+              contentColor = MaterialTheme.colorScheme.onSurface,
+              header = {
+                Column(
+                  horizontalAlignment = Alignment.CenterHorizontally,
+                  verticalArrangement = Arrangement.spacedBy(8.dp),
+                  modifier = Modifier
+                    .padding(top = 16.dp, bottom = 8.dp)
+                    .statusBarsPadding()
+                ) {
+                  Image(
+                    painter = painterResource(id = R.drawable.school_logo),
+                    contentDescription = "School Logo",
+                    modifier = Modifier
+                      .size(44.dp)
+                      .clip(CircleShape)
+                      .clickable { onTabSelected(NavigationTab.DASHBOARD) }
+                  )
+                  Surface(
+                    color = roleColor.copy(alpha = 0.15f),
+                    shape = RoundedCornerShape(8.dp),
+                    border = BorderStroke(1.dp, roleColor.copy(alpha = 0.3f))
+                  ) {
+                    Text(
+                      text = currentUser.role.label.take(4).uppercase(),
+                      style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 9.sp),
+                      color = roleColor,
+                      modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                  }
+                }
+              },
               modifier = Modifier
-                .fillMaxWidth()
-                .windowInsetsPadding(WindowInsets.navigationBars)
-                .testTag("base_dashboard_bottom_bar")
+                .fillMaxHeight()
+                .testTag("tablet_navigation_rail")
             ) {
+              Spacer(modifier = Modifier.height(12.dp))
               visibleBottomTabs.forEach { tab ->
                 val isSelected = currentTab == tab
-                NavigationBarItem(
+                val iconScale by animateFloatAsState(
+                  targetValue = if (isSelected) 1.15f else 1.0f,
+                  animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessLow
+                  ),
+                  label = "tab_icon_scale_rail"
+                )
+                val railPillWidth by animateFloatAsState(
+                  targetValue = if (isSelected) 56f else 28f,
+                  animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessLow
+                  ),
+                  label = "tab_rail_pill_width"
+                )
+                val railPillAlpha by animateFloatAsState(
+                  targetValue = if (isSelected) 1f else 0f,
+                  animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioNoBouncy,
+                    stiffness = Spring.StiffnessMedium
+                  ),
+                  label = "tab_rail_pill_alpha"
+                )
+
+                NavigationRailItem(
                   icon = {
-                    if (tab == NavigationTab.HOMEWORK && currentUser.role == UserRole.STUDENT && pendingHomeworkCount > 0) {
-                      BadgedBox(badge = {
-                        Badge(
-                          containerColor = SchoolAccentAmber,
-                          contentColor = Color.Black
-                        ) {
-                          Text("$pendingHomeworkCount", fontWeight = FontWeight.Bold)
+                    Box(
+                      contentAlignment = Alignment.Center,
+                      modifier = Modifier
+                        .width(railPillWidth.dp)
+                        .height(32.dp)
+                        .clip(CircleShape)
+                        .background(roleColor.copy(alpha = 0.18f * railPillAlpha))
+                    ) {
+                      Box(
+                        modifier = Modifier.graphicsLayer {
+                          scaleX = iconScale
+                          scaleY = iconScale
                         }
-                      }) {
-                        Icon(imageVector = tab.icon, contentDescription = tab.label)
-                      }
-                    } else if (tab == NavigationTab.NOTICES && unreadNotificationsCount > 0) {
-                      BadgedBox(badge = {
-                        Badge(
-                          containerColor = GoogleRed,
-                          contentColor = Color.White
-                        ) {
-                          Text("$unreadNotificationsCount", fontWeight = FontWeight.Bold)
+                      ) {
+                        if (tab == NavigationTab.HOMEWORK && currentUser.role == UserRole.STUDENT && pendingHomeworkCount > 0) {
+                          BadgedBox(badge = {
+                            Badge(containerColor = SchoolAccentAmber, contentColor = Color.Black) {
+                              Text("$pendingHomeworkCount", fontWeight = FontWeight.Bold)
+                            }
+                          }) {
+                            Icon(imageVector = tab.icon, contentDescription = tab.label)
+                          }
+                        } else if (tab == NavigationTab.NOTICES && unreadNotificationsCount > 0) {
+                          BadgedBox(badge = {
+                            Badge(containerColor = GoogleRed, contentColor = Color.White) {
+                              Text("$unreadNotificationsCount", fontWeight = FontWeight.Bold)
+                            }
+                          }) {
+                            Icon(imageVector = tab.icon, contentDescription = tab.label)
+                          }
+                        } else {
+                          Icon(imageVector = tab.icon, contentDescription = tab.label)
                         }
-                      }) {
-                        Icon(imageVector = tab.icon, contentDescription = tab.label)
                       }
-                    } else {
-                      Icon(imageVector = tab.icon, contentDescription = tab.label)
                     }
                   },
                   label = {
@@ -231,33 +265,206 @@ fun BaseDashboardScaffold(
                       text = tab.label,
                       style = MaterialTheme.typography.labelSmall.copy(
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                        letterSpacing = if (visibleBottomTabs.size > 4) (-0.3).sp else 0.sp,
-                        fontSize = if (visibleBottomTabs.size > 5) 9.5.sp else 10.5.sp
+                        fontSize = 10.sp
                       ),
                       maxLines = 1,
-                      softWrap = false,
                       overflow = TextOverflow.Ellipsis
                     )
                   },
                   selected = isSelected,
-                  onClick = { onTabSelected(tab) },
-                  colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = SchoolNavyOnContainer,
-                    selectedTextColor = MaterialTheme.colorScheme.onSurface,
-                    indicatorColor = SchoolNavyContainer,
-                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
-                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f)
+                  onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    onTabSelected(tab)
+                  },
+                  colors = NavigationRailItemDefaults.colors(
+                    selectedIconColor = roleColor,
+                    selectedTextColor = roleColor,
+                    indicatorColor = Color.Transparent,
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.70f),
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.70f)
                   ),
-                  modifier = Modifier.testTag("nav_tab_${tab.name.lowercase()}")
+                  modifier = Modifier.testTag("rail_tab_${tab.name.lowercase()}")
                 )
               }
             }
           }
         }
-      },
-      floatingActionButton = floatingActionButton
-    ) { innerPadding ->
-      content(innerPadding)
+
+        // Main App Scaffold (takes remaining width on tablet or full screen on phone)
+        Scaffold(
+          modifier = Modifier
+            .weight(1f)
+            .fillMaxHeight()
+            .testTag("base_dashboard_scaffold"),
+          snackbarHost = { SnackbarHost(snackbarHostState) },
+          topBar = {
+            Column(
+              modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.background)
+                .statusBarsPadding()
+            ) {
+              ResponsiveGoogleTopAppBar(
+                currentUser = currentUser,
+                currentTab = currentTab,
+                networkState = networkState,
+                unreadNotificationsCount = unreadNotificationsCount,
+                roleColor = roleColor,
+                cloudSyncInfo = cloudSyncInfo,
+                onTriggerCloudSync = onTriggerCloudSync,
+                onToggleSimulatedOffline = onToggleSimulatedOffline,
+                isSimulatedOffline = isSimulatedOffline,
+                onNavigationIconClick = {
+                  coroutineScope.launch {
+                    if (drawerState.isClosed) drawerState.open() else drawerState.close()
+                  }
+                },
+                onOpenRoleSwitcher = onOpenRoleSwitcher,
+                onOpenNotificationCenter = onOpenNotificationCenter,
+                onOpenDeveloperTerminal = onOpenDeveloperTerminal,
+                onNavigateToTab = { tab ->
+                  onTabSelected(tab)
+                },
+                onSignOut = onSignOut,
+                canNavigateBack = canNavigateBack,
+                onNavigateBack = onNavigateBack
+              )
+
+              // Real-time Network Status Banner
+              NetworkStatusBanner(
+                networkState = networkState,
+                onRetryConnection = onRetryConnection,
+                onToggleSimulatedOffline = onToggleSimulatedOffline,
+                isSimulated = isSimulatedOffline
+              )
+            }
+          },
+          bottomBar = {
+            // Render Bottom Navigation Bar only for Compact/Mobile screens
+            if (!isTabletLayout && visibleBottomTabs.isNotEmpty()) {
+              Surface(
+                tonalElevation = 4.dp,
+                shadowElevation = 6.dp,
+                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerLow,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+              ) {
+                NavigationBar(
+                  containerColor = Color.Transparent,
+                  tonalElevation = 0.dp,
+                  modifier = Modifier
+                    .fillMaxWidth()
+                    .windowInsetsPadding(WindowInsets.navigationBars)
+                    .testTag("base_dashboard_bottom_bar")
+                ) {
+                  visibleBottomTabs.forEach { tab ->
+                    val isSelected = currentTab == tab
+                    val iconScale by animateFloatAsState(
+                      targetValue = if (isSelected) 1.15f else 1.0f,
+                      animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessLow
+                      ),
+                      label = "tab_icon_scale"
+                    )
+                    val pillWidth by animateFloatAsState(
+                      targetValue = if (isSelected) 56f else 24f,
+                      animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessLow
+                      ),
+                      label = "tab_pill_width"
+                    )
+                    val pillAlpha by animateFloatAsState(
+                      targetValue = if (isSelected) 1f else 0f,
+                      animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioNoBouncy,
+                        stiffness = Spring.StiffnessMedium
+                      ),
+                      label = "tab_pill_alpha"
+                    )
+
+                    NavigationBarItem(
+                      icon = {
+                        Box(
+                          contentAlignment = Alignment.Center,
+                          modifier = Modifier
+                            .width(pillWidth.dp)
+                            .height(30.dp)
+                            .clip(CircleShape)
+                            .background(roleColor.copy(alpha = 0.18f * pillAlpha))
+                        ) {
+                          Box(
+                            modifier = Modifier.graphicsLayer {
+                              scaleX = iconScale
+                              scaleY = iconScale
+                            }
+                          ) {
+                            if (tab == NavigationTab.HOMEWORK && currentUser.role == UserRole.STUDENT && pendingHomeworkCount > 0) {
+                              BadgedBox(badge = {
+                                Badge(
+                                  containerColor = SchoolAccentAmber,
+                                  contentColor = Color.Black
+                                ) {
+                                  Text("$pendingHomeworkCount", fontWeight = FontWeight.Bold)
+                                }
+                              }) {
+                                Icon(imageVector = tab.icon, contentDescription = tab.label)
+                              }
+                            } else if (tab == NavigationTab.NOTICES && unreadNotificationsCount > 0) {
+                              BadgedBox(badge = {
+                                Badge(
+                                  containerColor = GoogleRed,
+                                  contentColor = Color.White
+                                ) {
+                                  Text("$unreadNotificationsCount", fontWeight = FontWeight.Bold)
+                                }
+                              }) {
+                                Icon(imageVector = tab.icon, contentDescription = tab.label)
+                              }
+                            } else {
+                              Icon(imageVector = tab.icon, contentDescription = tab.label)
+                            }
+                          }
+                        }
+                      },
+                      label = {
+                        Text(
+                          text = tab.label,
+                          style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                            letterSpacing = if (visibleBottomTabs.size > 4) (-0.3).sp else 0.sp,
+                            fontSize = if (visibleBottomTabs.size > 5) 9.5.sp else 10.5.sp
+                          ),
+                          maxLines = 1,
+                          softWrap = false,
+                          overflow = TextOverflow.Ellipsis
+                        )
+                      },
+                      selected = isSelected,
+                      onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        onTabSelected(tab)
+                      },
+                      colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = roleColor,
+                        selectedTextColor = roleColor,
+                        indicatorColor = Color.Transparent,
+                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.70f),
+                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.70f)
+                      ),
+                      modifier = Modifier.testTag("nav_tab_${tab.name.lowercase()}")
+                    )
+                  }
+                }
+              }
+            }
+          },
+          floatingActionButton = floatingActionButton
+        ) { innerPadding ->
+          content(innerPadding)
+        }
+      }
     }
   }
 }
@@ -286,6 +493,8 @@ fun CommonDashboardTopAppBar(
   onSignOut: () -> Unit,
   modifier: Modifier = Modifier
 ) {
+  val haptic = LocalHapticFeedback.current
+
   TopAppBar(
     modifier = modifier.testTag("common_dashboard_top_app_bar"),
     navigationIcon = {
@@ -511,6 +720,7 @@ fun CommonDashboardTopAppBar(
             text = { Text("Switch Role") },
             leadingIcon = { Icon(Icons.Default.SwapHoriz, contentDescription = null) },
             onClick = {
+              haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
               onDismissProfileDropdown()
               onOpenRoleSwitcher()
             },

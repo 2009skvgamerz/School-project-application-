@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import com.example.model.SchoolClass
 import com.example.model.TeacherProfile
 import com.example.model.UserRole
+import com.example.ui.components.GradebookEntryDialog
 import com.example.ui.theme.SchoolAccentGreen
 import com.example.ui.theme.SchoolNavyPrimary
 
@@ -29,6 +30,9 @@ fun ClassesScreen(
   userRole: UserRole = UserRole.TEACHER,
   teacherProfile: TeacherProfile? = null
 ) {
+  var selectedClassForGradebook by remember { mutableStateOf<SchoolClass?>(null) }
+  var gradebookStatusMessage by remember { mutableStateOf<String?>(null) }
+
   Column(
     modifier = modifier
       .fillMaxSize()
@@ -36,11 +40,34 @@ fun ClassesScreen(
       .padding(16.dp),
     verticalArrangement = Arrangement.spacedBy(16.dp)
   ) {
-    Text(
-      text = "Academic Classes & Homeroom Rosters",
-      style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-      color = MaterialTheme.colorScheme.onSurface
-    )
+    Row(
+      modifier = Modifier.fillMaxWidth(),
+      horizontalArrangement = Arrangement.SpaceBetween,
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      Text(
+        text = "Academic Classes & Homeroom Rosters",
+        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+        color = MaterialTheme.colorScheme.onSurface
+      )
+    }
+
+    gradebookStatusMessage?.let { msg ->
+      Surface(
+        color = Color(0xFF059669).copy(alpha = 0.15f),
+        shape = RoundedCornerShape(10.dp),
+        modifier = Modifier.fillMaxWidth()
+      ) {
+        Row(
+          modifier = Modifier.padding(10.dp),
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+          Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF059669))
+          Text(msg, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium), color = Color(0xFF059669))
+        }
+      }
+    }
 
     LazyColumn(
       verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -140,9 +167,23 @@ fun ClassesScreen(
               horizontalArrangement = Arrangement.End,
               verticalAlignment = Alignment.CenterVertically
             ) {
+              // Teacher Gradebook Marks Entry Button
+              OutlinedButton(
+                onClick = { selectedClassForGradebook = cls },
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.testTag("gradebook_entry_btn_${cls.id}")
+              ) {
+                Icon(imageVector = Icons.Default.Assessment, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Marks & Grades", style = MaterialTheme.typography.labelSmall)
+              }
+
+              Spacer(modifier = Modifier.width(6.dp))
+
               OutlinedButton(
                 onClick = onOpenAssignHomework,
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
                 shape = RoundedCornerShape(8.dp)
               ) {
                 Icon(imageVector = Icons.Default.PostAdd, contentDescription = null, modifier = Modifier.size(16.dp))
@@ -150,11 +191,11 @@ fun ClassesScreen(
                 Text("Assign HW", style = MaterialTheme.typography.labelSmall)
               }
 
-              Spacer(modifier = Modifier.width(8.dp))
+              Spacer(modifier = Modifier.width(6.dp))
 
               Button(
                 onClick = { onOpenAttendanceForClass(fullClassName) },
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
                 shape = RoundedCornerShape(8.dp),
                 colors = if (isClassTeacherForThis) {
                   ButtonDefaults.buttonColors(containerColor = SchoolAccentGreen)
@@ -169,7 +210,7 @@ fun ClassesScreen(
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                  text = if (isClassTeacherForThis) "Take Daily Roll Call" else "View (Read-Only)",
+                  text = if (isClassTeacherForThis) "Daily Roll Call" else "View (Read-Only)",
                   style = MaterialTheme.typography.labelSmall
                 )
               }
@@ -178,5 +219,17 @@ fun ClassesScreen(
         }
       }
     }
+  }
+
+  // Gradebook Dialog
+  selectedClassForGradebook?.let { targetClass ->
+    GradebookEntryDialog(
+      schoolClass = targetClass,
+      onDismiss = { selectedClassForGradebook = null },
+      onSaveMarks = { subject, exam, marks ->
+        gradebookStatusMessage = "Grades recorded for $subject ($exam) in ${targetClass.name}-${targetClass.section} • Student GPA updated!"
+        selectedClassForGradebook = null
+      }
+    )
   }
 }

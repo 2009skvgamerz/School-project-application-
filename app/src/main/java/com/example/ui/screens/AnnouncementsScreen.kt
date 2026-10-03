@@ -21,6 +21,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -716,6 +718,7 @@ fun PublishAnnouncementDialog(
   var selectedPriority by remember { mutableStateOf(AnnouncementPriority.HIGH) }
   var selectedAudience by remember { mutableStateOf(AnnouncementAudience.ALL_SCHOOL) }
   var isEmergency by remember { mutableStateOf(false) }
+  val haptic = LocalHapticFeedback.current
 
   AlertDialog(
     onDismissRequest = onDismiss,
@@ -770,12 +773,21 @@ fun PublishAnnouncementDialog(
           }
         }
 
-        // Emergency Siren checkbox
+        // Emergency Siren checkbox with tactile response
         Row(
           verticalAlignment = Alignment.CenterVertically,
-          modifier = Modifier.clickable { isEmergency = !isEmergency }
+          modifier = Modifier.clickable {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            isEmergency = !isEmergency
+          }
         ) {
-          Checkbox(checked = isEmergency, onCheckedChange = { isEmergency = it })
+          Checkbox(
+            checked = isEmergency,
+            onCheckedChange = {
+              haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+              isEmergency = it
+            }
+          )
           Spacer(modifier = Modifier.width(6.dp))
           Text("Flag as Emergency Siren Alert (High Visibility)", style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold, color = Color(0xFFDC2626)))
         }
@@ -805,6 +817,11 @@ fun PublishAnnouncementDialog(
       Button(
         onClick = {
           if (title.isNotBlank() && content.isNotBlank()) {
+            if (isEmergency || selectedPriority == AnnouncementPriority.URGENT) {
+              haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            } else {
+              haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+            }
             val newAnnouncement = SchoolAnnouncement(
               id = "ann_${System.currentTimeMillis()}",
               title = title.trim(),

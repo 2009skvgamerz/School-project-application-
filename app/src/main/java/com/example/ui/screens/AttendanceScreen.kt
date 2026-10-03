@@ -1,12 +1,13 @@
 package com.example.ui.screens
 
 import androidx.compose.animation.*
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -23,6 +24,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -68,12 +72,14 @@ fun AttendanceScreen(
 ) {
   var showSuccessBanner by remember { mutableStateOf(false) }
   var showLockedWarningDialog by remember { mutableStateOf<String?>(null) }
+  var showCertificateExportDialog by remember { mutableStateOf(false) }
   var statusFilter by remember { mutableStateOf<AttendanceStatus?>(null) }
   var searchQuery by remember { mutableStateOf("") }
   var editingNoteStudentId by remember { mutableStateOf<String?>(null) }
   var noteStudentName by remember { mutableStateOf("") }
   var noteInputText by remember { mutableStateOf("") }
   var currentStudentStatusForNote by remember { mutableStateOf(AttendanceStatus.FULL_DAY) }
+  val hapticFeedback = LocalHapticFeedback.current
 
   // Classes list for selector
   val availableClasses = remember(classes) {
@@ -195,31 +201,37 @@ fun AttendanceScreen(
               verticalAlignment = Alignment.CenterVertically,
               horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-              // Circular Percentage Gauge
+              // Circular Percentage Gauge with Physics Spring Animation
               Box(
                 modifier = Modifier
-                  .size(90.dp)
-                  .clip(CircleShape)
-                  .background(
-                    if (isExamEligible) SchoolAccentGreen.copy(alpha = 0.15f)
-                    else SchoolError.copy(alpha = 0.15f)
-                  ),
+                  .size(92.dp),
                 contentAlignment = Alignment.Center
               ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                  Text(
-                    text = "${String.format("%.1f", studentPercentage)}%",
-                    style = MaterialTheme.typography.titleLarge.copy(
-                      fontWeight = FontWeight.ExtraBold,
-                      fontSize = 20.sp
-                    ),
-                    color = if (isExamEligible) SchoolAccentGreen else SchoolError
-                  )
-                  Text(
-                    text = "Overall",
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
-                    color = if (isExamEligible) SchoolAccentGreen else SchoolError
-                  )
+                SpringProgressRing(
+                  progress = (studentPercentage / 100.0).toFloat(),
+                  strokeWidth = 7.5.dp,
+                  progressColor = if (isExamEligible) SchoolAccentGreen else SchoolError,
+                  trackColor = if (isExamEligible) SchoolAccentGreen.copy(alpha = 0.16f) else SchoolError.copy(alpha = 0.16f),
+                  modifier = Modifier.fillMaxSize()
+                ) {
+                  Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                      text = "${String.format("%.1f", studentPercentage)}%",
+                      style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 17.sp
+                      ),
+                      color = if (isExamEligible) SchoolAccentGreen else SchoolError
+                    )
+                    Text(
+                      text = if (isExamEligible) "Eligible" else "Shortage",
+                      style = MaterialTheme.typography.labelSmall.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 9.sp
+                      ),
+                      color = if (isExamEligible) SchoolAccentGreen else SchoolError
+                    )
+                  }
                 }
               }
 
@@ -258,6 +270,22 @@ fun AttendanceScreen(
                       color = if (isExamEligible) SchoolAccentGreen else SchoolError
                     )
                   }
+                }
+
+                // Official Certificate & Transcript Generator Button
+                OutlinedButton(
+                  onClick = { showCertificateExportDialog = true },
+                  shape = RoundedCornerShape(10.dp),
+                  contentPadding = PaddingValues(horizontal = 10.dp, vertical = 5.dp),
+                  border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)),
+                  modifier = Modifier.testTag("export_attendance_certificate_btn")
+                ) {
+                  Icon(Icons.Default.Print, contentDescription = null, modifier = Modifier.size(15.dp))
+                  Spacer(modifier = Modifier.width(6.dp))
+                  Text(
+                    "Official Certificate & Transcript",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold)
+                  )
                 }
               }
             }
@@ -823,10 +851,13 @@ fun AttendanceScreen(
         }
       }
 
-      // Bottom Save / Sync Action Bar (Dark Mode Safe)
+      // Bottom Save / Sync Action Bar (Dark Mode Safe) with tactile feedback
       if (isAuthorizedHomeroomTeacher) {
         Button(
-          onClick = { showSuccessBanner = true },
+          onClick = {
+            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+            showSuccessBanner = true
+          },
           modifier = Modifier
             .fillMaxWidth()
             .testTag("save_attendance_btn"),
@@ -846,6 +877,7 @@ fun AttendanceScreen(
       } else {
         OutlinedButton(
           onClick = {
+            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
             showLockedWarningDialog = "Attendance modifications are disabled. Only $homeroomTeacherName (Homeroom Teacher) is authorized to submit roll call for $selectedClass."
           },
           modifier = Modifier
@@ -1026,6 +1058,17 @@ fun AttendanceScreen(
       }
     )
   }
+
+  // Official Academic Transcript & Attendance Certificate Generator Dialog
+  if (showCertificateExportDialog) {
+    AcademicTranscriptExportDialog(
+      studentProfile = studentProfile,
+      onDismiss = { showCertificateExportDialog = false },
+      onExportSuccess = { msg ->
+        showSuccessBanner = true
+      }
+    )
+  }
 }
 
 @Composable
@@ -1080,6 +1123,8 @@ fun RollCallStudentCard(
   isEditable: Boolean = true,
   onLockedAttempt: () -> Unit = {}
 ) {
+  val haptic = LocalHapticFeedback.current
+
   Card(
     modifier = Modifier
       .fillMaxWidth()
@@ -1145,7 +1190,7 @@ fun RollCallStudentCard(
           }
         }
 
-        // 4 Status Badges (FD, HD, OD, AB)
+        // 4 Status Badges (FD, HD, OD, AB) with tactile haptics & spring button physics
         Row(
           horizontalArrangement = Arrangement.spacedBy(5.dp),
           verticalAlignment = Alignment.CenterVertically
@@ -1158,6 +1203,17 @@ fun RollCallStudentCard(
           ).forEach { status ->
             val isSelected = record.status == status
             val statusColor = Color(status.colorHex)
+            val btnInteractionSource = remember { MutableInteractionSource() }
+            val isBtnPressed by btnInteractionSource.collectIsPressedAsState()
+
+            val btnSpringScale by animateFloatAsState(
+              targetValue = if (isBtnPressed) 0.86f else if (isSelected) 1.05f else 1.0f,
+              animationSpec = spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessLow
+              ),
+              label = "attendance_btn_spring"
+            )
 
             Surface(
               color = when {
@@ -1167,10 +1223,23 @@ fun RollCallStudentCard(
               },
               shape = RoundedCornerShape(8.dp),
               modifier = Modifier
-                .clickable {
+                .graphicsLayer {
+                  scaleX = btnSpringScale
+                  scaleY = btnSpringScale
+                }
+                .clickable(
+                  interactionSource = btnInteractionSource,
+                  indication = null
+                ) {
                   if (isEditable) {
+                    if (status == AttendanceStatus.ABSENT) {
+                      haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    } else {
+                      haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    }
                     onStatusSelect(status)
                   } else {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     onLockedAttempt()
                   }
                 }
@@ -1196,8 +1265,10 @@ fun RollCallStudentCard(
           IconButton(
             onClick = {
               if (isEditable) {
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 onAddRemark()
               } else {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                 onLockedAttempt()
               }
             },

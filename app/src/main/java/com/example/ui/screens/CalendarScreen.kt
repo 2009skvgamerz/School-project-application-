@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import androidx.compose.animation.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -36,6 +37,21 @@ import com.example.ui.theme.SchoolGold
 import com.example.ui.theme.SchoolNavyDark
 import com.example.ui.theme.SchoolNavyPrimary
 
+enum class CombinedItemType {
+  PERIOD,
+  HOMEWORK,
+  CIRCULAR,
+  EVENT
+}
+
+data class CombinedScheduleItem(
+  val time: String,
+  val title: String,
+  val subtitle: String,
+  val type: CombinedItemType,
+  val color: Color
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CalendarScreen(
@@ -48,6 +64,7 @@ fun CalendarScreen(
 ) {
   var selectedCategory by remember { mutableStateOf<CalendarCategory?>(null) }
   var isMonthView by remember { mutableStateOf(false) }
+  var isCombinedView by remember { mutableStateOf(false) }
   var selectedDateNumber by remember { mutableStateOf(20) } // August 20
   var showAddEventDialog by remember { mutableStateOf(false) }
   var selectedEventForDetail by remember { mutableStateOf<CalendarEvent?>(null) }
@@ -304,14 +321,40 @@ fun CalendarScreen(
       ) {
         item(key = "cat_all") {
           FilterChip(
-            selected = selectedCategory == null || selectedCategory == CalendarCategory.ALL,
-            onClick = { selectedCategory = null },
-            label = { Text("All (${events.size})") },
+            selected = (!isCombinedView) && (selectedCategory == null || selectedCategory == CalendarCategory.ALL),
+            onClick = {
+              isCombinedView = false
+              selectedCategory = null
+            },
+            label = { Text("Events (${events.size})") },
             leadingIcon = {
-              if (selectedCategory == null || selectedCategory == CalendarCategory.ALL) {
+              if ((!isCombinedView) && (selectedCategory == null || selectedCategory == CalendarCategory.ALL)) {
                 Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
               }
             }
+          )
+        }
+
+        item(key = "cat_combined") {
+          FilterChip(
+            selected = isCombinedView,
+            onClick = {
+              isCombinedView = !isCombinedView
+              if (isCombinedView) selectedCategory = null
+            },
+            label = { Text("Combined View ★") },
+            leadingIcon = {
+              Icon(
+                imageVector = Icons.Default.MergeType,
+                contentDescription = null,
+                tint = if (isCombinedView) SchoolGold else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(16.dp)
+              )
+            },
+            colors = FilterChipDefaults.filterChipColors(
+              selectedContainerColor = SchoolNavyPrimary,
+              selectedLabelColor = Color.White
+            )
           )
         }
 
@@ -363,8 +406,145 @@ fun CalendarScreen(
         }
       }
 
-      // 4. Events Agenda List
-      if (filteredEvents.isEmpty()) {
+      // 4. Events Agenda List / Combined Academic View
+      if (isCombinedView) {
+        LazyColumn(
+          modifier = Modifier
+            .fillMaxWidth()
+            .weight(1f)
+            .testTag("calendar_combined_view_column"),
+          verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+          item {
+            Surface(
+              color = SchoolGold.copy(alpha = 0.12f),
+              shape = RoundedCornerShape(12.dp),
+              border = BorderStroke(1.dp, SchoolGold.copy(alpha = 0.3f)),
+              modifier = Modifier.fillMaxWidth()
+            ) {
+              Row(
+                modifier = Modifier.padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+              ) {
+                Icon(Icons.Default.MergeType, contentDescription = null, tint = SchoolGold)
+                Text(
+                  text = "Unified Academic View: Class Timetable + Homework Deadlines + Circulars",
+                  style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                  color = MaterialTheme.colorScheme.onSurface
+                )
+              }
+            }
+          }
+
+          val combinedTimeline = listOf(
+            CombinedScheduleItem(
+              time = "08:30 AM",
+              title = "Homeroom Assembly & Daily Roll Call",
+              subtitle = "Main Ground • All Faculty & Students",
+              type = CombinedItemType.PERIOD,
+              color = Color(0xFF2563EB)
+            ),
+            CombinedScheduleItem(
+              time = "09:15 AM",
+              title = "Period 1: Advanced Calculus & Limits",
+              subtitle = "Prof. Sarah Jenkins • Room 204",
+              type = CombinedItemType.PERIOD,
+              color = Color(0xFF2563EB)
+            ),
+            CombinedScheduleItem(
+              time = "10:00 AM",
+              title = "Period 2: Physics Lab (Electromagnetic Induction)",
+              subtitle = "Dr. Robert Vance • Physics Lab 1",
+              type = CombinedItemType.PERIOD,
+              color = Color(0xFF0284C7)
+            ),
+            CombinedScheduleItem(
+              time = "12:00 PM",
+              title = "HOMEWORK DUE: Mathematics Problem Set #4",
+              subtitle = "Class 12-A • Submit before 12:00 PM via Portal",
+              type = CombinedItemType.HOMEWORK,
+              color = Color(0xFFD97706)
+            ),
+            CombinedScheduleItem(
+              time = "01:15 PM",
+              title = "Period 4: Computer Science & Data Structures",
+              subtitle = "Mr. David Miller • Computer Lab 2",
+              type = CombinedItemType.PERIOD,
+              color = Color(0xFF7C3AED)
+            ),
+            CombinedScheduleItem(
+              time = "02:30 PM",
+              title = "CIRCULAR: Inter-House Science Fair Registration",
+              subtitle = "Science Department • Entry deadline for Projects",
+              type = CombinedItemType.CIRCULAR,
+              color = Color(0xFFDC2626)
+            ),
+            CombinedScheduleItem(
+              time = "03:30 PM",
+              title = "Transit Fleet Departure: Route #12 SIPCOT",
+              subtitle = "Bus Bay 3 • Driver Ramesh Kumar",
+              type = CombinedItemType.EVENT,
+              color = Color(0xFF059669)
+            )
+          )
+
+          items(combinedTimeline) { item ->
+            Card(
+              shape = RoundedCornerShape(14.dp),
+              colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+              border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
+              elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+              modifier = Modifier.fillMaxWidth()
+            ) {
+              Row(
+                modifier = Modifier.padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+              ) {
+                Surface(
+                  color = item.color.copy(alpha = 0.14f),
+                  shape = RoundedCornerShape(10.dp),
+                  modifier = Modifier.width(76.dp)
+                ) {
+                  Text(
+                    text = item.time,
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 9.5.sp),
+                    color = item.color,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(vertical = 8.dp, horizontal = 4.dp)
+                  )
+                }
+
+                Column(modifier = Modifier.weight(1f)) {
+                  Text(
+                    text = item.title,
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, fontSize = 13.5.sp),
+                    color = MaterialTheme.colorScheme.onSurface
+                  )
+                  Text(
+                    text = item.subtitle,
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.5.sp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                  )
+                }
+
+                Surface(
+                  color = item.color.copy(alpha = 0.15f),
+                  shape = RoundedCornerShape(6.dp)
+                ) {
+                  Text(
+                    text = item.type.name,
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 8.5.sp),
+                    color = item.color,
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                  )
+                }
+              }
+            }
+          }
+        }
+      } else if (filteredEvents.isEmpty()) {
         Box(
           modifier = Modifier
             .fillMaxWidth()

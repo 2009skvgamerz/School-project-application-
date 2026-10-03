@@ -17,6 +17,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -54,6 +56,7 @@ fun DeveloperDashboardScreen(
   var showBroadcastDialog by remember { mutableStateOf(false) }
   var broadcastTitle by remember { mutableStateOf("") }
   var broadcastMessage by remember { mutableStateOf("") }
+  val haptic = LocalHapticFeedback.current
 
   LazyColumn(
     modifier = Modifier
@@ -333,7 +336,10 @@ fun DeveloperDashboardScreen(
         }
 
         Button(
-          onClick = { showBroadcastDialog = true },
+          onClick = {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            showBroadcastDialog = true
+          },
           colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
           shape = RoundedCornerShape(12.dp),
           modifier = Modifier.weight(1f).testTag("dev_broadcast_alert_btn")
@@ -652,6 +658,7 @@ fun DeveloperDashboardScreen(
         Button(
           onClick = {
             if (broadcastTitle.isNotBlank() && broadcastMessage.isNotBlank()) {
+              haptic.performHapticFeedback(HapticFeedbackType.LongPress)
               viewModel.broadcastDeveloperNotice(broadcastTitle, broadcastMessage, isUrgent = true)
               showBroadcastDialog = false
               broadcastTitle = ""

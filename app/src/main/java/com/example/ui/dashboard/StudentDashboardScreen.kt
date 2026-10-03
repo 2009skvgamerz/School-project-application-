@@ -493,22 +493,28 @@ fun QuickActionButton(
     horizontalAlignment = Alignment.CenterHorizontally,
     verticalArrangement = Arrangement.spacedBy(6.dp),
     modifier = Modifier
+      .clip(RoundedCornerShape(16.dp))
       .clickable { onClick() }
-      .padding(4.dp)
+      .padding(6.dp)
   ) {
-    Box(
-      modifier = Modifier
-        .size(52.dp)
-        .clip(RoundedCornerShape(16.dp))
-        .background(color.copy(alpha = 0.12f)),
-      contentAlignment = Alignment.Center
+    Surface(
+      modifier = Modifier.size(54.dp),
+      shape = RoundedCornerShape(16.dp),
+      color = color.copy(alpha = 0.12f),
+      border = androidx.compose.foundation.BorderStroke(1.dp, color.copy(alpha = 0.25f)),
+      tonalElevation = 1.dp
     ) {
-      Icon(
-        imageVector = icon,
-        contentDescription = title,
-        tint = color,
-        modifier = Modifier.size(24.dp)
-      )
+      Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier.fillMaxSize()
+      ) {
+        Icon(
+          imageVector = icon,
+          contentDescription = title,
+          tint = color,
+          modifier = Modifier.size(26.dp)
+        )
+      }
     }
     Text(
       text = title,

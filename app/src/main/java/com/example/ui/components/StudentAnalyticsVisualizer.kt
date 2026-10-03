@@ -66,6 +66,7 @@ fun StudentAnalyticsVisualizer(
 ) {
   var selectedTab by remember { mutableStateOf(AnalyticsTab.PERFORMANCE) }
   var chartEngine by remember { mutableStateOf(ChartEngine.NATIVE_COMPOSE) }
+  var showCertificateDialog by remember { mutableStateOf(false) }
   val isDark = isSystemInDarkTheme()
 
   Card(
@@ -130,35 +131,54 @@ fun StudentAnalyticsVisualizer(
           }
         }
 
-        // Engine Toggle Switch (Native Compose vs D3/SVG)
-        Surface(
-          shape = RoundedCornerShape(20.dp),
-          color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-          border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
-          modifier = Modifier.clickable {
-            chartEngine = if (chartEngine == ChartEngine.NATIVE_COMPOSE) {
-              ChartEngine.D3_RECHARTS
-            } else {
-              ChartEngine.NATIVE_COMPOSE
-            }
-          }
+        // Engine Toggle Switch & Certificate Button
+        Row(
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-          Row(
-            modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(5.dp)
+          IconButton(
+            onClick = { showCertificateDialog = true },
+            modifier = Modifier
+              .size(34.dp)
+              .testTag("analytics_download_report_btn")
           ) {
-            Box(
-              modifier = Modifier
-                .size(7.dp)
-                .clip(CircleShape)
-                .background(if (chartEngine == ChartEngine.NATIVE_COMPOSE) Color(0xFF059669) else Color(0xFF2563EB))
+            Icon(
+              imageVector = Icons.Default.Print,
+              contentDescription = "Official Transcript & Certificate",
+              tint = MaterialTheme.colorScheme.primary,
+              modifier = Modifier.size(18.dp)
             )
-            Text(
-              text = chartEngine.label,
-              style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold, fontSize = 10.sp),
-              color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+          }
+
+          Surface(
+            shape = RoundedCornerShape(20.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
+            modifier = Modifier.clickable {
+              chartEngine = if (chartEngine == ChartEngine.NATIVE_COMPOSE) {
+                ChartEngine.D3_RECHARTS
+              } else {
+                ChartEngine.NATIVE_COMPOSE
+              }
+            }
+          ) {
+            Row(
+              modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
+              verticalAlignment = Alignment.CenterVertically,
+              horizontalArrangement = Arrangement.spacedBy(5.dp)
+            ) {
+              Box(
+                modifier = Modifier
+                  .size(7.dp)
+                  .clip(CircleShape)
+                  .background(if (chartEngine == ChartEngine.NATIVE_COMPOSE) Color(0xFF059669) else Color(0xFF2563EB))
+              )
+              Text(
+                text = chartEngine.label,
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold, fontSize = 10.sp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+              )
+            }
           }
         }
       }
@@ -231,6 +251,14 @@ fun StudentAnalyticsVisualizer(
       // 5. Chart Legend & Benchmark Explanation
       ChartLegendBar(tab = selectedTab)
     }
+  }
+
+  if (showCertificateDialog) {
+    AcademicTranscriptExportDialog(
+      studentProfile = null,
+      analyticsProfile = analyticsProfile,
+      onDismiss = { showCertificateDialog = false }
+    )
   }
 }
 
@@ -638,17 +666,40 @@ private fun NativeComposeCanvasChart(
               )
             }
 
-            Column(horizontalAlignment = Alignment.End) {
-              Text(
-                text = "${activeMonth.attendanceRate}%",
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold, fontSize = 16.sp),
-                color = attendanceColor
-              )
-              Text(
-                text = "Exam Safe (>75%)",
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 10.sp),
-                color = attendanceColor
-              )
+            Row(
+              verticalAlignment = Alignment.CenterVertically,
+              horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+              Box(modifier = Modifier.size(46.dp), contentAlignment = Alignment.Center) {
+                SpringProgressRing(
+                  progress = (activeMonth.attendanceRate / 100.0).toFloat(),
+                  strokeWidth = 4.5.dp,
+                  progressColor = attendanceColor,
+                  modifier = Modifier.fillMaxSize()
+                ) {
+                  Text(
+                    text = "${activeMonth.attendanceRate.toInt()}%",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                      fontWeight = FontWeight.ExtraBold,
+                      fontSize = 11.sp
+                    ),
+                    color = attendanceColor
+                  )
+                }
+              }
+
+              Column(horizontalAlignment = Alignment.End) {
+                Text(
+                  text = "${activeMonth.attendanceRate}%",
+                  style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold, fontSize = 15.sp),
+                  color = attendanceColor
+                )
+                Text(
+                  text = if (activeMonth.attendanceRate >= 75.0) "Exam Safe (>75%)" else "At Risk (<75%)",
+                  style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 9.5.sp),
+                  color = attendanceColor
+                )
+              }
             }
           }
         }

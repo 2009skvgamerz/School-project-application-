@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -86,6 +87,8 @@ fun ResponsiveGoogleTopAppBar(
   onOpenDeveloperTerminal: () -> Unit,
   onNavigateToTab: (NavigationTab) -> Unit,
   onSignOut: () -> Unit,
+  canNavigateBack: Boolean = false,
+  onNavigateBack: () -> Unit = {},
   modifier: Modifier = Modifier
 ) {
   var isSearchActive by remember { mutableStateOf(false) }
@@ -223,7 +226,7 @@ fun ResponsiveGoogleTopAppBar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
           ) {
-            // Left: Navigation Drawer Button & School Branding
+            // Left: Navigation Drawer Hamburger Button & School Branding
             Row(
               verticalAlignment = Alignment.CenterVertically,
               horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -256,7 +259,9 @@ fun ResponsiveGoogleTopAppBar(
                   painter = painterResource(id = R.drawable.school_logo),
                   contentDescription = "School Logo",
                   contentScale = ContentScale.Fit,
-                  modifier = Modifier.size(32.dp)
+                  modifier = Modifier
+                    .size(32.dp)
+                    .clickable { onNavigationIconClick() }
                 )
 
                 Column(verticalArrangement = Arrangement.Center) {
@@ -270,13 +275,34 @@ fun ResponsiveGoogleTopAppBar(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                   )
-                  Text(
-                    text = if (isExpandedLayout) "Search homework, circulars, classes..." else currentTab.label,
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.5.sp),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                  )
+                  Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                  ) {
+                    if (currentTab != NavigationTab.DASHBOARD) {
+                      Text(
+                        text = "Home",
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.clickable { onNavigateToTab(NavigationTab.DASHBOARD) }
+                      )
+                      Text(
+                        text = "›",
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                      )
+                    }
+                    Text(
+                      text = if (isExpandedLayout) "Search homework, circulars, classes..." else currentTab.label,
+                      style = MaterialTheme.typography.labelSmall.copy(
+                        fontSize = 10.5.sp,
+                        fontWeight = if (currentTab != NavigationTab.DASHBOARD) FontWeight.SemiBold else FontWeight.Normal
+                      ),
+                      color = if (currentTab != NavigationTab.DASHBOARD) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                      maxLines = 1,
+                      overflow = TextOverflow.Ellipsis
+                    )
+                  }
                 }
               }
             }

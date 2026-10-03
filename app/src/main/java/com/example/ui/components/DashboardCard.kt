@@ -1,9 +1,14 @@
 package com.example.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -12,11 +17,16 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -333,13 +343,41 @@ private fun QuickStatTile(
   testTag: String = "",
   onClick: (() -> Unit)? = null
 ) {
+  val haptic = LocalHapticFeedback.current
+  val interactionSource = remember { MutableInteractionSource() }
+  val isPressed by interactionSource.collectIsPressedAsState()
+
+  // Spring animation for touch/press interaction
+  val springScale by animateFloatAsState(
+    targetValue = if (isPressed) 0.94f else 1.0f,
+    animationSpec = spring(
+      dampingRatio = Spring.DampingRatioMediumBouncy,
+      stiffness = Spring.StiffnessLow
+    ),
+    label = "quick_stat_spring_scale"
+  )
+
   Surface(
     shape = RoundedCornerShape(14.dp),
     color = color.copy(alpha = 0.08f),
     border = BorderStroke(1.dp, color.copy(alpha = 0.25f)),
     modifier = modifier
+      .graphicsLayer {
+        scaleX = springScale
+        scaleY = springScale
+      }
       .then(if (testTag.isNotEmpty()) Modifier.testTag(testTag) else Modifier)
-      .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
+      .then(
+        if (onClick != null) {
+          Modifier.clickable(
+            interactionSource = interactionSource,
+            indication = null
+          ) {
+            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+            onClick()
+          }
+        } else Modifier
+      )
   ) {
     Column(
       modifier = Modifier
@@ -419,7 +457,14 @@ fun AttendanceDashboardCard(
   modifier: Modifier = Modifier,
   testTag: String = "attendance_dashboard_card"
 ) {
-  val progress = (attendanceData.percentage / 100f).coerceIn(0f, 1f)
+  val animatedProgress by animateFloatAsState(
+    targetValue = (attendanceData.percentage / 100f).coerceIn(0f, 1f),
+    animationSpec = spring(
+      dampingRatio = Spring.DampingRatioMediumBouncy,
+      stiffness = Spring.StiffnessLow
+    ),
+    label = "attendance_card_spring_progress"
+  )
 
   DashboardCard(
     title = "Attendance Summary",
@@ -433,52 +478,90 @@ fun AttendanceDashboardCard(
     modifier = modifier,
     testTag = testTag
   ) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-      Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+    Row(
+      modifier = Modifier.fillMaxWidth(),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+      // Fluid Spring Progress Ring
+      Box(
+        modifier = Modifier.size(76.dp),
+        contentAlignment = Alignment.Center
       ) {
-        Text(
-          text = "Overall Attendance",
-          style = MaterialTheme.typography.bodySmall,
-          color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-          text = attendanceData.statusLabel,
-          style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-          color = SchoolAccentGreen
-        )
+        SpringProgressRing(
+          progress = attendanceData.percentage / 100f,
+          strokeWidth = 6.5.dp,
+          progressColor = SchoolAccentGreen,
+          modifier = Modifier.fillMaxSize()
+        ) {
+          Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+              text = "${attendanceData.percentage.toInt()}%",
+              style = MaterialTheme.typography.titleSmall.copy(
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 15.sp
+              ),
+              color = SchoolAccentGreen
+            )
+            Text(
+              text = "Record",
+              style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.5.sp),
+              color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+          }
+        }
       }
 
-      LinearProgressIndicator(
-        progress = { progress },
-        modifier = Modifier
-          .fillMaxWidth()
-          .height(8.dp)
-          .clip(CircleShape),
-        color = SchoolAccentGreen,
-        trackColor = SchoolAccentGreen.copy(alpha = 0.15f)
-      )
-
-      Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+      Column(
+        modifier = Modifier.weight(1f),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
       ) {
-        MiniStatPill(
-          label = "Present",
-          value = "${attendanceData.presentDays}d",
-          icon = Icons.Default.Check,
+        Row(
+          modifier = Modifier.fillMaxWidth(),
+          horizontalArrangement = Arrangement.SpaceBetween,
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          Text(
+            text = "Status Standing",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+          )
+          Text(
+            text = attendanceData.statusLabel,
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+            color = SchoolAccentGreen
+          )
+        }
+
+        LinearProgressIndicator(
+          progress = { animatedProgress },
+          modifier = Modifier
+            .fillMaxWidth()
+            .height(8.dp)
+            .clip(CircleShape),
           color = SchoolAccentGreen,
-          modifier = Modifier.weight(1f)
+          trackColor = SchoolAccentGreen.copy(alpha = 0.15f)
         )
-        MiniStatPill(
-          label = "Absent",
-          value = "${attendanceData.totalDays - attendanceData.presentDays}d",
-          icon = Icons.Default.Close,
-          color = MaterialTheme.colorScheme.error,
-          modifier = Modifier.weight(1f)
-        )
+
+        Row(
+          modifier = Modifier.fillMaxWidth(),
+          horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+          MiniStatPill(
+            label = "Present",
+            value = "${attendanceData.presentDays}d",
+            icon = Icons.Default.Check,
+            color = SchoolAccentGreen,
+            modifier = Modifier.weight(1f)
+          )
+          MiniStatPill(
+            label = "Absent",
+            value = "${attendanceData.totalDays - attendanceData.presentDays}d",
+            icon = Icons.Default.Close,
+            color = MaterialTheme.colorScheme.error,
+            modifier = Modifier.weight(1f)
+          )
+        }
       }
     }
   }
