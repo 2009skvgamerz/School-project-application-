@@ -197,10 +197,13 @@ fun DeveloperDashboardScreen(
         contentColor = Color(0xFF10B981),
         edgePadding = 0.dp
       ) {
-        listOf("🔥 Firestore DB", "🌐 Omni Access", "👥 Users DB", "⚡ System Actions").forEachIndexed { idx, title ->
+        listOf("🗂️ Data Files", "🔥 Firestore DB", "🌐 Omni Access", "👥 Users DB", "⚡ System Actions").forEachIndexed { idx, title ->
           Tab(
             selected = selectedSection == idx,
-            onClick = { selectedSection = idx },
+            onClick = {
+              haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+              selectedSection = idx
+            },
             text = {
               Text(
                 text = title,
@@ -210,14 +213,26 @@ fun DeveloperDashboardScreen(
                 ),
                 color = if (selectedSection == idx) Color(0xFF10B981) else Color(0xFF94A3B8)
               )
-            }
+            },
+            modifier = Modifier.testTag("dev_section_tab_$idx")
           )
         }
       }
     }
 
-    // SECTION 0: FIRESTORE GOD MODE CLOUD DB
+    // SECTION 0: ORGANIZED DATA FILES EXPLORER
     if (selectedSection == 0) {
+      item {
+        OrganizedDataFilesExplorer(
+          viewModel = viewModel,
+          onNavigateToTab = onNavigateToTab,
+          isDarkThemeStyle = true
+        )
+      }
+    }
+
+    // SECTION 1: FIRESTORE GOD MODE CLOUD DB
+    if (selectedSection == 1) {
       item {
         FirestoreGodModeConsole(
           viewModel = viewModel,
@@ -227,8 +242,8 @@ fun DeveloperDashboardScreen(
       }
     }
 
-    // SECTION 1: OMNI ACCESS SCREEN JUMPER
-    if (selectedSection == 1) {
+    // SECTION 2: OMNI ACCESS SCREEN JUMPER
+    if (selectedSection == 2) {
       item {
         Surface(
           color = Color(0xFF1E293B),
@@ -306,7 +321,7 @@ fun DeveloperDashboardScreen(
     }
 
     // 4. Fast Command Actions
-    if (selectedSection == 3) {
+    if (selectedSection == 4) {
     item {
       Text(
         text = "⚡ QUICK GOD MODE ACTIONS",
@@ -425,8 +440,8 @@ fun DeveloperDashboardScreen(
       }
     }
 
-    // SECTION 2: MASTER USER ROSTER & EDITOR
-    if (selectedSection == 2) {
+    // SECTION 3: MASTER USER ROSTER & EDITOR
+    if (selectedSection == 3) {
       item {
         Row(
           modifier = Modifier.fillMaxWidth(),

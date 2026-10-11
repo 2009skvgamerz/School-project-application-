@@ -177,7 +177,7 @@ fun MainSchoolApp(
   }
 
   LaunchedEffect(Unit) {
-    kotlinx.coroutines.delay(600)
+    kotlinx.coroutines.delay(1200)
     showSplash = false
   }
 
@@ -229,7 +229,7 @@ fun MainSchoolApp(
               loginErrorMessage = null
               val localResult = viewModel.login(username, password)
               if (localResult.isSuccess) {
-                kotlinx.coroutines.delay(1400)
+                kotlinx.coroutines.delay(600)
                 loginErrorMessage = null
                 currentTab = NavigationTab.DASHBOARD
                 isLoggingIn = false
@@ -240,7 +240,7 @@ fun MainSchoolApp(
                   role = role,
                   onSuccess = {
                     coroutineScope.launch {
-                      kotlinx.coroutines.delay(1400)
+                      kotlinx.coroutines.delay(600)
                       loginErrorMessage = null
                       currentTab = NavigationTab.DASHBOARD
                       isLoggingIn = false
@@ -259,7 +259,7 @@ fun MainSchoolApp(
               isLoggingIn = true
               loginErrorMessage = null
               viewModel.switchRole(role)
-              kotlinx.coroutines.delay(1400)
+              kotlinx.coroutines.delay(600)
               loginErrorMessage = null
               currentTab = NavigationTab.DASHBOARD
               isLoggingIn = false
@@ -718,7 +718,11 @@ fun MainSchoolApp(
         }
 
         NavigationTab.MANAGEMENT -> {
-          ManagementScreen(classes = schoolClasses, viewModel = viewModel)
+          ManagementScreen(
+            classes = schoolClasses,
+            viewModel = viewModel,
+            onNavigateToTab = { navigateToTab(it) }
+          )
         }
 
         NavigationTab.PROFILE -> {

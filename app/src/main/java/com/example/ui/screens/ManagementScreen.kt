@@ -15,13 +15,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.model.NavigationTab
 import com.example.model.SchoolClass
 import com.example.model.SystemUserRecord
 import com.example.model.UserRole
 import com.example.ui.components.EditUserDialog
+import com.example.ui.components.OrganizedDataFilesExplorer
 import com.example.ui.theme.SchoolNavyPrimary
 import com.example.viewmodel.SchoolViewModel
 
@@ -29,29 +33,33 @@ import com.example.viewmodel.SchoolViewModel
 fun ManagementScreen(
   classes: List<SchoolClass>,
   modifier: Modifier = Modifier,
-  viewModel: SchoolViewModel? = null
+  viewModel: SchoolViewModel? = null,
+  onNavigateToTab: ((NavigationTab) -> Unit)? = null
 ) {
+  var selectedManagementTab by remember { mutableStateOf(0) }
   var searchQuery by remember { mutableStateOf("") }
   var selectedFilterRole by remember { mutableStateOf<UserRole?>(null) }
   var userToEdit by remember { mutableStateOf<SystemUserRecord?>(null) }
   var showAddUserDialog by remember { mutableStateOf(false) }
 
+  val haptic = LocalHapticFeedback.current
   val systemUsers by viewModel?.systemUsers?.collectAsState() ?: remember { mutableStateOf(emptyList()) }
   val currentUser by viewModel?.currentUser?.collectAsState() ?: remember { mutableStateOf(null) }
   val isDeveloper = currentUser?.role == UserRole.DEVELOPER
-  val isAdmin = currentUser?.role == UserRole.ADMIN
 
-  val displayList = if (systemUsers.isNotEmpty()) {
-    systemUsers.filter { member ->
-      (selectedFilterRole == null || member.role == selectedFilterRole) &&
-      (searchQuery.isBlank() ||
-          member.fullName.contains(searchQuery, ignoreCase = true) ||
-          member.email.contains(searchQuery, ignoreCase = true) ||
-          member.designation.contains(searchQuery, ignoreCase = true) ||
-          member.departmentOrGrade.contains(searchQuery, ignoreCase = true))
+  val displayList = remember(systemUsers, selectedFilterRole, searchQuery) {
+    if (systemUsers.isNotEmpty()) {
+      systemUsers.filter { member ->
+        (selectedFilterRole == null || member.role == selectedFilterRole) &&
+        (searchQuery.isBlank() ||
+            member.fullName.contains(searchQuery, ignoreCase = true) ||
+            member.email.contains(searchQuery, ignoreCase = true) ||
+            member.designation.contains(searchQuery, ignoreCase = true) ||
+            member.departmentOrGrade.contains(searchQuery, ignoreCase = true))
+      }
+    } else {
+      emptyList()
     }
-  } else {
-    emptyList()
   }
 
   Column(
@@ -59,7 +67,7 @@ fun ManagementScreen(
       .fillMaxSize()
       .testTag("management_screen")
       .padding(16.dp),
-    verticalArrangement = Arrangement.spacedBy(14.dp)
+    verticalArrangement = Arrangement.spacedBy(12.dp)
   ) {
     Row(
       modifier = Modifier.fillMaxWidth(),
@@ -68,20 +76,26 @@ fun ManagementScreen(
     ) {
       Column(modifier = Modifier.weight(1f)) {
         Text(
-          text = "Institutional Directory & Master Records",
+          text = "Institutional Records & Data Architecture",
           style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
           color = MaterialTheme.colorScheme.onSurface
         )
         if (isDeveloper) {
           Text(
-            text = "⚡ Developer God Mode: Full edit & override permissions active",
+            text = "⚡ Developer God Mode: Full edit & data catalog access active",
             style = MaterialTheme.typography.labelSmall,
             color = Color(0xFF059669)
+          )
+        } else {
+          Text(
+            text = "Organized view of master personnel roster & structured data files",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
           )
         }
       }
 
-      if (isDeveloper && viewModel != null) {
+      if (isDeveloper && viewModel != null && selectedManagementTab == 0) {
         FilledTonalButton(
           onClick = { showAddUserDialog = true },
           colors = ButtonDefaults.filledTonalButtonColors(
@@ -98,146 +112,214 @@ fun ManagementScreen(
       }
     }
 
-    // Search bar
-    OutlinedTextField(
-      value = searchQuery,
-      onValueChange = { searchQuery = it },
-      label = { Text("Search by name, class, designation, or email") },
-      leadingIcon = { Icon(imageVector = Icons.Default.Search, contentDescription = null) },
-      trailingIcon = {
-        if (searchQuery.isNotEmpty()) {
-          IconButton(onClick = { searchQuery = "" }) {
-            Icon(imageVector = Icons.Default.Close, contentDescription = "Clear")
-          }
-        }
-      },
-      shape = RoundedCornerShape(12.dp),
-      modifier = Modifier.fillMaxWidth().testTag("directory_search_input")
-    )
-
-    // Role filter chips
-    val visibleFilterRoles = if (isDeveloper) {
-      UserRole.values().toList()
-    } else {
-      UserRole.values().filter { it != UserRole.DEVELOPER }
-    }
-
-    LazyRow(
-      modifier = Modifier.fillMaxWidth(),
-      horizontalArrangement = Arrangement.spacedBy(6.dp)
+    // Sub-View Switcher: Master User Roster vs. Organized Data Files Catalog
+    TabRow(
+      selectedTabIndex = selectedManagementTab,
+      containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+      contentColor = MaterialTheme.colorScheme.primary,
+      modifier = Modifier
+        .fillMaxWidth()
+        .clip(RoundedCornerShape(12.dp))
     ) {
-      item {
-        FilterChip(
-          selected = selectedFilterRole == null,
-          onClick = { selectedFilterRole = null },
-          label = { Text("All (${systemUsers.size})") }
-        )
-      }
-      items(visibleFilterRoles, key = { it.name }) { role ->
-        FilterChip(
-          selected = selectedFilterRole == role,
-          onClick = { selectedFilterRole = if (selectedFilterRole == role) null else role },
-          label = { Text(role.displayName) }
-        )
-      }
-    }
-
-    LazyColumn(
-      verticalArrangement = Arrangement.spacedBy(10.dp),
-      modifier = Modifier.fillMaxSize()
-    ) {
-      items(displayList, key = { it.id }) { member ->
-        Card(
-          shape = RoundedCornerShape(12.dp),
-          colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-          elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-          modifier = Modifier.fillMaxWidth()
-        ) {
+      Tab(
+        selected = selectedManagementTab == 0,
+        onClick = {
+          haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+          selectedManagementTab = 0
+        },
+        text = {
           Row(
-            modifier = Modifier
-              .fillMaxWidth()
-              .padding(14.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
           ) {
-            Box(
-              modifier = Modifier
-                .size(44.dp)
-                .clip(CircleShape)
-                .background(Color(member.role.badgeColor).copy(alpha = 0.18f)),
-              contentAlignment = Alignment.Center
-            ) {
-              Icon(
-                imageVector = when(member.role) {
-                  UserRole.STUDENT -> Icons.Default.School
-                  UserRole.TEACHER -> Icons.Default.MenuBook
-                  UserRole.STAFF -> Icons.Default.Engineering
-                  UserRole.DRIVER -> Icons.Default.DirectionsBus
-                  UserRole.ADMIN -> Icons.Default.AdminPanelSettings
-                  UserRole.DEVELOPER -> Icons.Default.Terminal
-                },
-                contentDescription = null,
-                tint = Color(member.role.badgeColor),
-                modifier = Modifier.size(22.dp)
-              )
-            }
+            Icon(Icons.Default.Groups, contentDescription = null, modifier = Modifier.size(18.dp))
+            Text(
+              "Master Roster (${systemUsers.size})",
+              fontWeight = if (selectedManagementTab == 0) FontWeight.Bold else FontWeight.Medium
+            )
+          }
+        },
+        modifier = Modifier.testTag("management_tab_roster")
+      )
+      Tab(
+        selected = selectedManagementTab == 1,
+        onClick = {
+          haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+          selectedManagementTab = 1
+        },
+        text = {
+          Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+          ) {
+            Icon(Icons.Default.FolderCopy, contentDescription = null, modifier = Modifier.size(18.dp))
+            Text(
+              "Data Files (11)",
+              fontWeight = if (selectedManagementTab == 1) FontWeight.Bold else FontWeight.Medium
+            )
+          }
+        },
+        modifier = Modifier.testTag("management_tab_data_files")
+      )
+    }
 
-            Column(modifier = Modifier.weight(1f)) {
-              Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+    if (selectedManagementTab == 0) {
+      // Search bar
+      OutlinedTextField(
+        value = searchQuery,
+        onValueChange = { searchQuery = it },
+        label = { Text("Search by name, class, designation, or email") },
+        leadingIcon = { Icon(imageVector = Icons.Default.Search, contentDescription = null) },
+        trailingIcon = {
+          if (searchQuery.isNotEmpty()) {
+            IconButton(onClick = { searchQuery = "" }) {
+              Icon(imageVector = Icons.Default.Close, contentDescription = "Clear")
+            }
+          }
+        },
+        shape = RoundedCornerShape(12.dp),
+        modifier = Modifier.fillMaxWidth().testTag("directory_search_input")
+      )
+
+      // Role filter chips
+      val visibleFilterRoles = remember(isDeveloper) {
+        if (isDeveloper) {
+          UserRole.entries
+        } else {
+          UserRole.entries.filter { it != UserRole.DEVELOPER }
+        }
+      }
+
+      LazyRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+      ) {
+        item {
+          FilterChip(
+            selected = selectedFilterRole == null,
+            onClick = { selectedFilterRole = null },
+            label = { Text("All (${systemUsers.size})") }
+          )
+        }
+        items(visibleFilterRoles, key = { it.name }) { role ->
+          FilterChip(
+            selected = selectedFilterRole == role,
+            onClick = { selectedFilterRole = if (selectedFilterRole == role) null else role },
+            label = { Text(role.displayName) }
+          )
+        }
+      }
+
+      LazyColumn(
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+        modifier = Modifier.fillMaxSize()
+      ) {
+        items(displayList, key = { it.id }) { member ->
+          Card(
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+            modifier = Modifier.fillMaxWidth()
+          ) {
+            Row(
+              modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+              verticalAlignment = Alignment.CenterVertically,
+              horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+              Box(
+                modifier = Modifier
+                  .size(44.dp)
+                  .clip(CircleShape)
+                  .background(Color(member.role.badgeColor).copy(alpha = 0.18f)),
+                contentAlignment = Alignment.Center
               ) {
-                Text(
-                  text = member.fullName,
-                  style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
+                Icon(
+                  imageVector = when (member.role) {
+                    UserRole.STUDENT -> Icons.Default.School
+                    UserRole.TEACHER -> Icons.Default.MenuBook
+                    UserRole.STAFF -> Icons.Default.Engineering
+                    UserRole.DRIVER -> Icons.Default.DirectionsBus
+                    UserRole.ADMIN -> Icons.Default.AdminPanelSettings
+                    UserRole.DEVELOPER -> Icons.Default.Terminal
+                  },
+                  contentDescription = null,
+                  tint = Color(member.role.badgeColor),
+                  modifier = Modifier.size(22.dp)
                 )
-                Surface(
-                  color = Color(member.role.badgeColor).copy(alpha = 0.15f),
-                  shape = RoundedCornerShape(4.dp)
+              }
+
+              Column(modifier = Modifier.weight(1f)) {
+                Row(
+                  verticalAlignment = Alignment.CenterVertically,
+                  horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                   Text(
-                    text = member.role.displayName,
+                    text = member.fullName,
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
+                  )
+                  Surface(
+                    color = Color(member.role.badgeColor).copy(alpha = 0.15f),
+                    shape = RoundedCornerShape(4.dp)
+                  ) {
+                    Text(
+                      text = member.role.displayName,
+                      style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                      color = Color(member.role.badgeColor),
+                      modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                  }
+                }
+
+                Text(
+                  text = "${member.designation.ifBlank { member.departmentOrGrade }} • ${member.email}",
+                  style = MaterialTheme.typography.bodySmall,
+                  color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                  text = "ID: ${member.identifier} • Ph: ${member.phone}",
+                  style = MaterialTheme.typography.labelSmall,
+                  color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+              }
+
+              if (isDeveloper && viewModel != null) {
+                IconButton(
+                  onClick = { userToEdit = member },
+                  colors = IconButtonDefaults.iconButtonColors(contentColor = Color(0xFF059669)),
+                  modifier = Modifier.testTag("management_edit_user_${member.username}")
+                ) {
+                  Icon(Icons.Default.Edit, contentDescription = "Edit User", modifier = Modifier.size(20.dp))
+                }
+              } else {
+                Surface(
+                  color = MaterialTheme.colorScheme.surfaceVariant,
+                  shape = RoundedCornerShape(6.dp)
+                ) {
+                  Text(
+                    text = "Active",
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                    color = Color(member.role.badgeColor),
-                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    color = SchoolNavyPrimary,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                   )
                 }
               }
-
-              Text(
-                text = "${member.designation.ifBlank { member.departmentOrGrade }} • ${member.email}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-              )
-              Text(
-                text = "ID: ${member.identifier} • Ph: ${member.phone}",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-              )
-            }
-
-            if (isDeveloper && viewModel != null) {
-              IconButton(
-                onClick = { userToEdit = member },
-                colors = IconButtonDefaults.iconButtonColors(contentColor = Color(0xFF059669)),
-                modifier = Modifier.testTag("management_edit_user_${member.username}")
-              ) {
-                Icon(Icons.Default.Edit, contentDescription = "Edit User", modifier = Modifier.size(20.dp))
-              }
-            } else {
-              Surface(
-                color = MaterialTheme.colorScheme.surfaceVariant,
-                shape = RoundedCornerShape(6.dp)
-              ) {
-                Text(
-                  text = "Active",
-                  style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                  color = SchoolNavyPrimary,
-                  modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                )
-              }
             }
           }
+        }
+      }
+    } else if (viewModel != null) {
+      LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(bottom = 24.dp)
+      ) {
+        item {
+          OrganizedDataFilesExplorer(
+            viewModel = viewModel,
+            onNavigateToTab = onNavigateToTab,
+            isDarkThemeStyle = false
+          )
         }
       }
     }

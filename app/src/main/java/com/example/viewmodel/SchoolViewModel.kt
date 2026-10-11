@@ -30,7 +30,7 @@ class SchoolViewModel(
 
   // Session Preferences for persistent login across app launches
   private var sessionPreferences: SessionPreferences? = null
-  private val _isAuthenticated = MutableStateFlow(true)
+  private val _isAuthenticated = MutableStateFlow(false)
   val isAuthenticated: StateFlow<Boolean> = _isAuthenticated.asStateFlow()
 
   // Firebase Auth and Firestore Services
@@ -310,7 +310,7 @@ class SchoolViewModel(
       } else {
         repository.loginAsRole(UserRole.STUDENT)
       }
-      _isAuthenticated.value = true
+      _isAuthenticated.value = false
     }
 
     if (firebaseAuthService == null) {
